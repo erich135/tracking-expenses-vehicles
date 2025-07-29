@@ -1,4 +1,5 @@
 // src/pages/auth/Login.tsx
+
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
@@ -9,8 +10,10 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const isValidEmail = (email: string) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,12 +32,12 @@ export default function Login() {
     if (error) {
       setError(error.message);
     } else {
-      router.push('/');
+      router.push('/'); // Redirect to dashboard or home
     }
   };
 
   return (
-    <div className="form-container">
+    <div>
       <h2>Login</h2>
       <form onSubmit={handleLogin}>
         <input
@@ -51,7 +54,7 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
-        {error && <p className="error">{error}</p>}
+        {error && <p style={{ color: 'red' }}>{error}</p>}
         <button type="submit">Login</button>
       </form>
     </div>
