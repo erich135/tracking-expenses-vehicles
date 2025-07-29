@@ -8,8 +8,10 @@ import VehicleManagement from '@/components/VehicleManagement';
 import DataUpload from '@/components/DataUpload';
 import Reports from '@/components/Reports';
 import Settings from '@/components/Settings';
+import AdminPanel from '@/components/AdminPanel';
+import CostingModule from '@/components/CostingModule'; // ✅ NEW
 
-const AdminPanel = () => {
+const AdminPanelComponent = () => {
   const [approvedUsers, setApprovedUsers] = useState([]);
   const [newEmail, setNewEmail] = useState('');
 
@@ -103,7 +105,9 @@ const AppLayout: React.FC = () => {
       case 'settings':
         return <Settings />;
       case 'admin':
-        return isAdmin ? <AdminPanel /> : <div>Access denied</div>;
+        return isAdmin ? <AdminPanelComponent /> : <div>Access denied</div>;
+      case 'costing':
+        return <CostingModule />;
       default:
         return <AddExpenseForm />;
     }
