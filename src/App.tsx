@@ -9,6 +9,8 @@ import { VehicleProvider } from "@/contexts/VehicleContext";
 import { supabase } from '@/lib/supabase';
 import { Auth } from '@/components/Auth';
 import Watermark from '@/components/Watermark';
+import AppLayout from '@/components/ui/AppLayout';
+
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -30,7 +32,6 @@ const App = () => {
       setSession(session);
     });
 
-    // Only clear session when browser/tab is actually closed
     const handleBeforeUnload = () => {
       supabase.auth.signOut();
     };
@@ -80,8 +81,7 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="*" element={<NotFound />} />
+                  <Route path="*" element={<AppLayout />} />
                 </Routes>
               </BrowserRouter>
             </div>
