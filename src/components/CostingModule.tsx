@@ -1,185 +1,192 @@
-// src/components/CostingModule.tsx
+// src/pages/CostingModule.tsx
 
-import React, { useEffect, useState } from "react";
-import { fetchDropdownData } from "@/lib/api";
+import React, { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-// Types
-type Customer = { id: number; name: string };
-type Supplier = { id: number; name: string };
-type Part = { id: number; name: string; price: number };
-type Job = { id: number; description: string };
-type Rep = { rep_code: string; rep_name: string | null };
-
-const CostingModule = () => {
-  // Dropdown data
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [parts, setParts] = useState<Part[]>([]);
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [reps, setReps] = useState<Rep[]>([]);
-
-  // Selected values
-  const [selectedCustomer, setSelectedCustomer] = useState<number | "">("");
-  const [selectedSupplier, setSelectedSupplier] = useState<number | "">("");
-  const [selectedPart, setSelectedPart] = useState<number | "">("");
-  const [selectedJob, setSelectedJob] = useState<number | "">("");
-  const [selectedRep, setSelectedRep] = useState<string>("");
-  const [unitPrice, setUnitPrice] = useState<number | "">("");
-  const [quantity, setQuantity] = useState<number | "">("");
-
-  // Derived value
-  const total = typeof unitPrice === "number" && typeof quantity === "number"
-    ? unitPrice * quantity
-    : "";
-
-  // Load dropdown data
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setCustomers(await fetchDropdownData("customers"));
-        setSuppliers(await fetchDropdownData("suppliers"));
-        setParts(await fetchDropdownData("parts"));
-        setJobs(await fetchDropdownData("job_descriptions"));
-        setReps(await fetchDropdownData("reps"));
-      } catch (error) {
-        console.error("Error loading dropdown data:", error);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  // Handle part selection to autofill price
-  useEffect(() => {
-    const part = parts.find((p) => p.id === selectedPart);
-    setUnitPrice(part ? part.price : "");
-  }, [selectedPart, parts]);
-
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Add Costing Entry</h1>
-      <form className="grid grid-cols-2 gap-4">
-
-        {/* Customer */}
-        <div>
-          <label className="block">Customer</label>
-          <select
-            className="w-full border p-2"
-            value={selectedCustomer}
-            onChange={(e) => setSelectedCustomer(Number(e.target.value) || "")}
-          >
-            <option value="">Select customer</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Supplier */}
-        <div>
-          <label className="block">Supplier</label>
-          <select
-            className="w-full border p-2"
-            value={selectedSupplier}
-            onChange={(e) => setSelectedSupplier(Number(e.target.value) || "")}
-          >
-            <option value="">Select supplier</option>
-            {suppliers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Part */}
-        <div>
-          <label className="block">Part</label>
-          <select
-            className="w-full border p-2"
-            value={selectedPart}
-            onChange={(e) => setSelectedPart(Number(e.target.value) || "")}
-          >
-            <option value="">Select part</option>
-            {parts.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Price (Autofilled) */}
-        <div>
-          <label className="block">Unit Price</label>
-          <input
-            type="number"
-            className="w-full border p-2 bg-gray-100"
-            value={unitPrice}
-            readOnly
-          />
-        </div>
-
-        {/* Quantity */}
-        <div>
-          <label className="block">Quantity</label>
-          <input
-            type="number"
-            className="w-full border p-2"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value) || "")}
-          />
-        </div>
-
-        {/* Total (Calculated) */}
-        <div>
-          <label className="block">Total</label>
-          <input
-            type="number"
-            className="w-full border p-2 bg-gray-100"
-            value={total}
-            readOnly
-          />
-        </div>
-
-        {/* Job Description */}
-        <div>
-          <label className="block">Job Description</label>
-          <select
-            className="w-full border p-2"
-            value={selectedJob}
-            onChange={(e) => setSelectedJob(Number(e.target.value) || "")}
-          >
-            <option value="">Select job</option>
-            {jobs.map((j) => (
-              <option key={j.id} value={j.id}>
-                {j.description}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Rep */}
-        <div>
-          <label className="block">Rep</label>
-          <select
-            className="w-full border p-2"
-            value={selectedRep}
-            onChange={(e) => setSelectedRep(e.target.value)}
-          >
-            <option value="">Select rep</option>
-            {reps.map((r) => (
-              <option key={r.rep_code} value={r.rep_code}>
-                {r.rep_code} - {r.rep_name || "No name"}
-              </option>
-            ))}
-          </select>
-        </div>
-      </form>
-    </div>
-  );
+type CustomerLineItem = {
+  part: string;
+  quantity: number;
+  price: number;
 };
 
-export default CostingModule;
+type ExpenseLineItem = {
+  part: string;
+  quantity: number;
+  price: number;
+};
+
+export default function CostingModule() {
+  const [jobNumber, setJobNumber] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [customer, setCustomer] = useState('');
+  const [rep, setRep] = useState('');
+
+  const [customerItems, setCustomerItems] = useState<CustomerLineItem[]>([]);
+  const [expenseItems, setExpenseItems] = useState<ExpenseLineItem[]>([]);
+
+  const [currentCustomerItem, setCurrentCustomerItem] = useState<CustomerLineItem>({ part: '', quantity: 1, price: 0 });
+  const [currentExpenseItem, setCurrentExpenseItem] = useState<ExpenseLineItem>({ part: '', quantity: 1, price: 0 });
+
+  const [showDialog, setShowDialog] = useState(false);
+
+  const addCustomerItem = () => {
+    setCustomerItems([...customerItems, currentCustomerItem]);
+    setCurrentCustomerItem({ part: '', quantity: 1, price: 0 });
+  };
+
+  const addExpenseItem = () => {
+    setExpenseItems([...expenseItems, currentExpenseItem]);
+    setCurrentExpenseItem({ part: '', quantity: 1, price: 0 });
+  };
+
+  const totalCustomer = customerItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
+  const totalExpenses = expenseItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
+  const profit = totalCustomer - totalExpenses;
+  const margin = totalCustomer > 0 ? (profit / totalCustomer) * 100 : 0;
+
+  const handleFinalSubmit = () => {
+    // TODO: Save to Supabase or desired backend
+    console.log('Saving job:', {
+      jobNumber,
+      invoiceNumber,
+      jobDescription,
+      customer,
+      rep,
+      customerItems,
+      expenseItems,
+      profit,
+      margin,
+    });
+
+    // Reset form
+    setJobNumber('');
+    setInvoiceNumber('');
+    setJobDescription('');
+    setCustomer('');
+    setRep('');
+    setCustomerItems([]);
+    setExpenseItems([]);
+    setShowDialog(false);
+  };
+
+  return (
+    <div className="p-4 space-y-6">
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <h2 className="text-xl font-bold">Job Header</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Job Number</Label>
+              <Input value={jobNumber} onChange={(e) => setJobNumber(e.target.value)} />
+            </div>
+            <div>
+              <Label>Invoice Number</Label>
+              <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
+            </div>
+            <div>
+              <Label>Job Description</Label>
+              <Input value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} />
+            </div>
+            <div>
+              <Label>Customer</Label>
+              <Input value={customer} onChange={(e) => setCustomer(e.target.value)} />
+            </div>
+            <div>
+              <Label>Rep</Label>
+              <Input value={rep} onChange={(e) => setRep(e.target.value)} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <h2 className="text-xl font-bold">Customer Side Line Items</h2>
+          <div className="flex gap-2">
+            <Input placeholder="Part" value={currentCustomerItem.part} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, part: e.target.value })} />
+            <Input type="number" placeholder="Quantity" value={currentCustomerItem.quantity} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, quantity: parseInt(e.target.value) })} />
+            <Input type="number" placeholder="Price" value={currentCustomerItem.price} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, price: parseFloat(e.target.value) })} />
+            <Button onClick={addCustomerItem}>Add</Button>
+          </div>
+
+          {customerItems.length > 0 && (
+            <div className="space-y-2">
+              {customerItems.map((item, idx) => (
+                <div key={idx} className="flex justify-between">
+                  <span>{item.part} ({item.quantity} × R{item.price.toFixed(2)})</span>
+                  <span>R{(item.quantity * item.price).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="text-right font-bold">Total: R{totalCustomer.toFixed(2)}</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <h2 className="text-xl font-bold">Expenses Side Line Items</h2>
+          <div className="flex gap-2">
+            <Input placeholder="Part" value={currentExpenseItem.part} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, part: e.target.value })} />
+            <Input type="number" placeholder="Quantity" value={currentExpenseItem.quantity} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, quantity: parseInt(e.target.value) })} />
+            <Input type="number" placeholder="Price" value={currentExpenseItem.price} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, price: parseFloat(e.target.value) })} />
+            <Button onClick={addExpenseItem}>Add</Button>
+          </div>
+
+          {expenseItems.length > 0 && (
+            <div className="space-y-2">
+              {expenseItems.map((item, idx) => (
+                <div key={idx} className="flex justify-between">
+                  <span>{item.part} ({item.quantity} × R{item.price.toFixed(2)})</span>
+                  <span>R{(item.quantity * item.price).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="text-right font-bold">Total: R{totalExpenses.toFixed(2)}</div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogTrigger asChild>
+          <Button className="w-full">Submit</Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Confirm Costing Entry</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p><strong>Job:</strong> {jobNumber} | {jobDescription}</p>
+            <p><strong>Customer:</strong> {customer} | <strong>Rep:</strong> {rep}</p>
+            <hr />
+            <h3 className="font-semibold">Customer Items</h3>
+            {customerItems.map((item, idx) => (
+              <div key={idx} className="flex justify-between">
+                <span>{item.part} ({item.quantity} × R{item.price.toFixed(2)})</span>
+                <span>R{(item.quantity * item.price).toFixed(2)}</span>
+              </div>
+            ))}
+            <h3 className="font-semibold">Expenses Items</h3>
+            {expenseItems.map((item, idx) => (
+              <div key={idx} className="flex justify-between">
+                <span>{item.part} ({item.quantity} × R{item.price.toFixed(2)})</span>
+                <span>R{(item.quantity * item.price).toFixed(2)}</span>
+              </div>
+            ))}
+            <hr />
+            <p className="text-right font-bold">Profit: R{profit.toFixed(2)} | Margin: {margin.toFixed(1)}%</p>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button onClick={handleFinalSubmit}>Accept & Save</Button>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
