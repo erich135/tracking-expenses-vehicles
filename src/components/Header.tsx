@@ -1,53 +1,29 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { User, LogOut, Settings } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
-import NotificationIcon from './NotificationIcon';
 
-interface HeaderProps {
-  user?: any;
-}
+type HeaderProps = {
+  onMenuClick: () => void;
+  user: any;
+};
 
-const Header: React.FC<HeaderProps> = ({ user }) => {
-  const { toast } = useToast();
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({ title: 'Success', description: 'Logged out successfully' });
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    }
-  };
-
+const Header: React.FC<HeaderProps> = ({ onMenuClick, user }) => {
   return (
-    <header className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Vehicle Expense Tracker</h1>
-          </div>
-          
-          {user && (
-            <div className="flex items-center gap-4">
-              <NotificationIcon />
-              
-              <Card className="p-2">
-                <CardContent className="flex items-center gap-2 p-0">
-                  <User className="h-4 w-4" />
-                  <span className="text-sm font-medium">{user.email}</span>
-                </CardContent>
-              </Card>
-              
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          )}
-        </div>
+    <header className="bg-white shadow px-4 py-3 flex items-center justify-between">
+      <button onClick={onMenuClick} className="text-gray-500 focus:outline-none">
+        ☰
+      </button>
+      <div className="flex items-center space-x-4">
+        {user && (
+          <span className="text-sm text-gray-700">{user.email}</span>
+        )}
+        <button
+          onClick={() => {
+            localStorage.clear();
+            location.reload();
+          }}
+          className="px-3 py-1 bg-red-500 text-white rounded text-sm"
+        >
+          Logout
+        </button>
       </div>
     </header>
   );

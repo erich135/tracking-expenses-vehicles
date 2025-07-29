@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
+
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import AddExpenseForm from '@/components/AddExpenseForm';
@@ -8,11 +10,16 @@ import VehicleManagement from '@/components/VehicleManagement';
 import DataUpload from '@/components/DataUpload';
 import Reports from '@/components/Reports';
 import Settings from '@/components/Settings';
-import AdminPanel from '@/components/AdminPanel';
-import CostingModule from '@/components/CostingModule'; // ✅ NEW
+import CostingModule from '@/components/CostingModule';
+
+type ApprovedUser = {
+  id: string;
+  email: string;
+  is_admin?: boolean;
+};
 
 const AdminPanelComponent = () => {
-  const [approvedUsers, setApprovedUsers] = useState([]);
+  const [approvedUsers, setApprovedUsers] = useState<ApprovedUser[]>([]);
   const [newEmail, setNewEmail] = useState('');
 
   useEffect(() => {
@@ -53,7 +60,7 @@ const AdminPanelComponent = () => {
           </button>
         </div>
         <div className="space-y-2">
-          {approvedUsers.map((user: any) => (
+          {approvedUsers.map((user) => (
             <div key={user.id} className="flex justify-between items-center p-2 border rounded">
               <span>{user.email} {user.is_admin && '(Admin)'}</span>
               {!user.is_admin && (
@@ -73,7 +80,6 @@ const AdminPanelComponent = () => {
 };
 
 const AppLayout: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('add-expense');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -90,36 +96,11 @@ const AppLayout: React.FC = () => {
     }
   };
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'add-expense':
-        return <AddExpenseForm />;
-      case 'view-expenses':
-        return <ViewExpenses />;
-      case 'vehicles':
-        return <VehicleManagement />;
-      case 'upload':
-        return <DataUpload />;
-      case 'reports':
-        return <Reports />;
-      case 'settings':
-        return <Settings />;
-      case 'admin':
-        return isAdmin ? <AdminPanelComponent /> : <div>Access denied</div>;
-      case 'costing':
-        return <CostingModule />;
-      default:
-        return <AddExpenseForm />;
-    }
-  };
-
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
         isAdmin={isAdmin}
       />
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -128,7 +109,18 @@ const AppLayout: React.FC = () => {
           user={user}
         />
         <main className="flex-1 overflow-auto p-4">
-          {renderContent()}
+          <Routes>
+            <Route path="/" element={<AddExpenseForm />} />
+            <Route path="/vehicle-expenses" element={<AddExpenseForm />} />
+            <Route path="/view-expenses" element={<ViewExpenses />} />
+            <Route path="/vehicles" element={<VehicleManagement />} />
+            <Route path="/upload" element={<DataUpload />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/costing" element={<CostingModule />} />
+            <Route path="/admin" element={isAdmin ? <AdminPanelComponent /> : <div>Access Denied</div>} />
+            <Route path="*" element={<div>Page not found</div>} />
+          </Routes>
         </main>
       </div>
     </div>
