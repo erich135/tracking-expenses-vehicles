@@ -170,7 +170,7 @@ export default function CostingModule() {
           <h2 className="text-xl font-bold">Customer Side Line Items</h2>
           <div className="flex gap-2">
             <Input placeholder="Part" value={currentCustomerItem.part} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, part: e.target.value })} />
-            <Input type="number" placeholder="Qty" value={currentCustomerItem.quantity} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, quantity: parseInt(e.target.value) })} />
+            <Input type="number" placeholder="Qty" className="w-[80px]" value={currentCustomerItem.quantity} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, quantity: parseInt(e.target.value) })} />
             <Input type="number" placeholder="Price" value={currentCustomerItem.price} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, price: parseFloat(e.target.value) })} />
             <Button onClick={addCustomerItem}>Add</Button>
           </div>
@@ -190,7 +190,7 @@ export default function CostingModule() {
         <CardContent className="p-4 space-y-4">
           <h2 className="text-xl font-bold">Expenses Side Line Items</h2>
           <div className="flex gap-2 items-center">
-            <div className="relative w-[220px]">
+            <div className="relative w-[400px]">
               <Combobox value={currentExpenseItem.part ?? ''} onChange={(val: string | null) => handlePartSelect(val)}>
                 <Combobox.Input
                   placeholder="Search Part..."
@@ -214,7 +214,7 @@ export default function CostingModule() {
                 </Combobox.Options>
               </Combobox>
             </div>
-            <Input type="number" placeholder="Qty" value={currentExpenseItem.quantity} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, quantity: parseInt(e.target.value) || 0 })} />
+            <Input type="number" placeholder="Qty" className="w-[80px]" value={currentExpenseItem.quantity} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, quantity: parseInt(e.target.value) || 0 })} />
             <Input type="number" placeholder="Price" value={currentExpenseItem.price} readOnly />
             <Button onClick={addExpenseItem}>Add</Button>
           </div>
