@@ -6,7 +6,7 @@
     "moduleResolution": "Node",
     "baseUrl": "./src",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["./*"]
     },
     "resolveJsonModule": true,
     "esModuleInterop": true,
