@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// src/App.tsx
+import { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,13 +7,20 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { VehicleProvider } from "@/contexts/VehicleContext";
-import { supabase } from '@/lib/supabase';
-import { Auth } from '@/components/Auth';
-import Watermark from '@/components/Watermark';
-import AppLayout from '@/components/ui/AppLayout';
+import { supabase } from "@/lib/supabase";
+import { Auth } from "@/components/Auth";
+import Watermark from "@/components/Watermark";
+import AppLayout from "@/components/ui/AppLayout";
 
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import Index from "@/pages/Index";
+import NotFound from "@/pages/NotFound";
+import Costing from "@/pages/Costing";
+import VehicleExpenses from "@/pages/VehicleExpenses";
+import WorkshopExpenses from "@/pages/WorkshopExpenses";
+import RentalUnitExpenses from "@/pages/RentalUnitExpenses";
+import SalesPlanner from "@/pages/SalesPlanner";
+import Reports from "@/pages/Reports";
+import Settings from "@/pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -36,11 +44,11 @@ const App = () => {
       supabase.auth.signOut();
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
       subscription.unsubscribe();
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
 
@@ -81,7 +89,17 @@ const App = () => {
               <Sonner />
               <BrowserRouter>
                 <Routes>
-                  <Route path="*" element={<AppLayout />} />
+                  <Route path="/" element={<AppLayout />}>
+                    <Route index element={<Index />} />
+                    <Route path="costing" element={<Costing />} />
+                    <Route path="vehicle-expenses" element={<VehicleExpenses />} />
+                    <Route path="workshop-expenses" element={<WorkshopExpenses />} />
+                    <Route path="rental-unit-expenses" element={<RentalUnitExpenses />} />
+                    <Route path="sales-planner" element={<SalesPlanner />} />
+                    <Route path="reports" element={<Reports />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
                 </Routes>
               </BrowserRouter>
             </div>
