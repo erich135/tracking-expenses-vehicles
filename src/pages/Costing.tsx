@@ -1,11 +1,8 @@
-// src/pages/Costing.tsx (repeat for others, just change the title)
+// src/pages/Costing.tsx
+import CostingModule from "@/components/CostingModule";
+
 const Costing = () => {
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Costing</h1>
-      <p>This is the Costing section.</p>
-    </div>
-  );
+  return <CostingModule />;
 };
 
 export default Costing;
