@@ -1,11 +1,13 @@
 // src/pages/CostingModule.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type CustomerLineItem = {
   part: string;
@@ -19,12 +21,19 @@ type ExpenseLineItem = {
   price: number;
 };
 
+type Option = { id: number; name: string } | { id: number; description: string };
+
 export default function CostingModule() {
   const [jobNumber, setJobNumber] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [customer, setCustomer] = useState('');
   const [rep, setRep] = useState('');
+
+  const [jobOptions, setJobOptions] = useState<Option[]>([]);
+  const [customerOptions, setCustomerOptions] = useState<Option[]>([]);
+  const [repOptions, setRepOptions] = useState<Option[]>([]);
+  const [partOptions, setPartOptions] = useState<{ id: number; name: string; price: number }[]>([]);
 
   const [customerItems, setCustomerItems] = useState<CustomerLineItem[]>([]);
   const [expenseItems, setExpenseItems] = useState<ExpenseLineItem[]>([]);
@@ -33,6 +42,29 @@ export default function CostingModule() {
   const [currentExpenseItem, setCurrentExpenseItem] = useState<ExpenseLineItem>({ part: '', quantity: 1, price: 0 });
 
   const [showDialog, setShowDialog] = useState(false);
+
+  const totalCustomer = customerItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
+  const totalExpenses = expenseItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
+  const profit = totalCustomer - totalExpenses;
+  const margin = totalCustomer > 0 ? (profit / totalCustomer) * 100 : 0;
+
+  useEffect(() => {
+    const loadDropdowns = async () => {
+      const [{ data: jobs }, { data: customers }, { data: reps }, { data: parts }] = await Promise.all([
+        supabase.from('job_descriptions').select('id, description'),
+        supabase.from('customers').select('id, name'),
+        supabase.from('reps').select('id, name'),
+        supabase.from('parts').select('id, name, price')
+      ]);
+
+      if (jobs) setJobOptions(jobs);
+      if (customers) setCustomerOptions(customers);
+      if (reps) setRepOptions(reps);
+      if (parts) setPartOptions(parts);
+    };
+
+    loadDropdowns();
+  }, []);
 
   const addCustomerItem = () => {
     setCustomerItems([...customerItems, currentCustomerItem]);
@@ -44,14 +76,16 @@ export default function CostingModule() {
     setCurrentExpenseItem({ part: '', quantity: 1, price: 0 });
   };
 
-  const totalCustomer = customerItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
-  const totalExpenses = expenseItems.reduce((acc, item) => acc + item.quantity * item.price, 0);
-  const profit = totalCustomer - totalExpenses;
-  const margin = totalCustomer > 0 ? (profit / totalCustomer) * 100 : 0;
+  const handlePartSelect = (selectedPart: string) => {
+    const part = partOptions.find((p) => p.name === selectedPart);
+    if (part) {
+      setCurrentExpenseItem({ ...currentExpenseItem, part: selectedPart, price: part.price });
+    }
+  };
 
   const handleFinalSubmit = () => {
-    // TODO: Save to Supabase or desired backend
-    console.log('Saving job:', {
+    // TODO: Save to Supabase
+    console.log({
       jobNumber,
       invoiceNumber,
       jobDescription,
@@ -63,7 +97,6 @@ export default function CostingModule() {
       margin,
     });
 
-    // Reset form
     setJobNumber('');
     setInvoiceNumber('');
     setJobDescription('');
@@ -90,15 +123,42 @@ export default function CostingModule() {
             </div>
             <div>
               <Label>Job Description</Label>
-              <Input value={jobDescription} onChange={(e) => setJobDescription(e.target.value)} />
+              <Select onValueChange={setJobDescription}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Job Description" />
+                </SelectTrigger>
+                <SelectContent>
+                  {jobOptions.map((j: any) => (
+                    <SelectItem key={j.id} value={j.description}>{j.description}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Customer</Label>
-              <Input value={customer} onChange={(e) => setCustomer(e.target.value)} />
+              <Select onValueChange={setCustomer}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customerOptions.map((c: any) => (
+                    <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Rep</Label>
-              <Input value={rep} onChange={(e) => setRep(e.target.value)} />
+              <Select onValueChange={setRep}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Rep" />
+                </SelectTrigger>
+                <SelectContent>
+                  {repOptions.map((r: any) => (
+                    <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -109,22 +169,19 @@ export default function CostingModule() {
           <h2 className="text-xl font-bold">Customer Side Line Items</h2>
           <div className="flex gap-2">
             <Input placeholder="Part" value={currentCustomerItem.part} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, part: e.target.value })} />
-            <Input type="number" placeholder="Quantity" value={currentCustomerItem.quantity} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, quantity: parseInt(e.target.value) })} />
+            <Input type="number" placeholder="Qty" value={currentCustomerItem.quantity} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, quantity: parseInt(e.target.value) })} />
             <Input type="number" placeholder="Price" value={currentCustomerItem.price} onChange={(e) => setCurrentCustomerItem({ ...currentCustomerItem, price: parseFloat(e.target.value) })} />
             <Button onClick={addCustomerItem}>Add</Button>
           </div>
-
-          {customerItems.length > 0 && (
-            <div className="space-y-2">
-              {customerItems.map((item, idx) => (
-                <div key={idx} className="flex justify-between">
-                  <span>{item.part} ({item.quantity} × R{item.price.toFixed(2)})</span>
-                  <span>R{(item.quantity * item.price).toFixed(2)}</span>
-                </div>
-              ))}
-              <div className="text-right font-bold">Total: R{totalCustomer.toFixed(2)}</div>
-            </div>
-          )}
+          <div className="space-y-2">
+            {customerItems.map((item, idx) => (
+              <div key={idx} className="flex justify-between">
+                <span>{item.part} ({item.quantity} × R{item.price.toFixed(2)})</span>
+                <span>R{(item.quantity * item.price).toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="text-right font-bold">Total: R{totalCustomer.toFixed(2)}</div>
+          </div>
         </CardContent>
       </Card>
 
@@ -132,23 +189,31 @@ export default function CostingModule() {
         <CardContent className="p-4 space-y-4">
           <h2 className="text-xl font-bold">Expenses Side Line Items</h2>
           <div className="flex gap-2">
-            <Input placeholder="Part" value={currentExpenseItem.part} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, part: e.target.value })} />
-            <Input type="number" placeholder="Quantity" value={currentExpenseItem.quantity} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, quantity: parseInt(e.target.value) })} />
-            <Input type="number" placeholder="Price" value={currentExpenseItem.price} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, price: parseFloat(e.target.value) })} />
+            <Select onValueChange={handlePartSelect}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select Part" />
+              </SelectTrigger>
+              <SelectContent>
+                {partOptions.map((p) => (
+                  <SelectItem key={p.id} value={p.name}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input type="number" placeholder="Qty" value={currentExpenseItem.quantity} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, quantity: parseInt(e.target.value) })} />
+            <Input type="number" placeholder="Price" value={currentExpenseItem.price} readOnly />
             <Button onClick={addExpenseItem}>Add</Button>
           </div>
-
-          {expenseItems.length > 0 && (
-            <div className="space-y-2">
-              {expenseItems.map((item, idx) => (
-                <div key={idx} className="flex justify-between">
-                  <span>{item.part} ({item.quantity} × R{item.price.toFixed(2)})</span>
-                  <span>R{(item.quantity * item.price).toFixed(2)}</span>
-                </div>
-              ))}
-              <div className="text-right font-bold">Total: R{totalExpenses.toFixed(2)}</div>
-            </div>
-          )}
+          <div className="space-y-2">
+            {expenseItems.map((item, idx) => (
+              <div key={idx} className="flex justify-between">
+                <span>{item.part} ({item.quantity} × R{item.price.toFixed(2)})</span>
+                <span>R{(item.quantity * item.price).toFixed(2)}</span>
+              </div>
+            ))}
+            <div className="text-right font-bold">Total: R{totalExpenses.toFixed(2)}</div>
+          </div>
         </CardContent>
       </Card>
 
@@ -181,7 +246,7 @@ export default function CostingModule() {
             <hr />
             <p className="text-right font-bold">Profit: R{profit.toFixed(2)} | Margin: {margin.toFixed(1)}%</p>
           </div>
-          <DialogFooter className="mt-4">
+          <DialogFooter>
             <Button onClick={handleFinalSubmit}>Accept & Save</Button>
             <Button variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
           </DialogFooter>
