@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@headlessui/react';
 
 type CustomerLineItem = {
   part: string;
@@ -76,7 +77,8 @@ export default function CostingModule() {
     setCurrentExpenseItem({ part: '', quantity: 1, price: 0 });
   };
 
-  const handlePartSelect = (selectedPart: string) => {
+  const handlePartSelect = (selectedPart: string | null) => {
+    if (!selectedPart) return;
     const part = partOptions.find((p) => p.name === selectedPart);
     if (part) {
       setCurrentExpenseItem({ ...currentExpenseItem, part: selectedPart, price: part.price });
@@ -84,7 +86,6 @@ export default function CostingModule() {
   };
 
   const handleFinalSubmit = () => {
-    // TODO: Save to Supabase
     console.log({
       jobNumber,
       invoiceNumber,
@@ -188,20 +189,32 @@ export default function CostingModule() {
       <Card>
         <CardContent className="p-4 space-y-4">
           <h2 className="text-xl font-bold">Expenses Side Line Items</h2>
-          <div className="flex gap-2">
-            <Select onValueChange={handlePartSelect}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Part" />
-              </SelectTrigger>
-              <SelectContent>
-                {partOptions.map((p) => (
-                  <SelectItem key={p.id} value={p.name}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input type="number" placeholder="Qty" value={currentExpenseItem.quantity} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, quantity: parseInt(e.target.value) })} />
+          <div className="flex gap-2 items-center">
+            <div className="relative w-[220px]">
+              <Combobox value={currentExpenseItem.part ?? ''} onChange={(val: string | null) => handlePartSelect(val)}>
+                <Combobox.Input
+                  placeholder="Search Part..."
+                  className="w-full border px-2 py-1 rounded"
+                  onChange={(event) => {
+                    const query = event.target.value.toLowerCase();
+                    const match = partOptions.find(p => p.name.toLowerCase().includes(query));
+                    if (match) handlePartSelect(match.name);
+                    setCurrentExpenseItem({ ...currentExpenseItem, part: event.target.value });
+                  }}
+                />
+                <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto bg-white border shadow-md rounded">
+                  {partOptions
+                    .filter(p => p.name.toLowerCase().includes(currentExpenseItem.part.toLowerCase()))
+                    .slice(0, 20)
+                    .map((p) => (
+                      <Combobox.Option key={p.id} value={p.name} className="cursor-pointer px-3 py-1 hover:bg-gray-100">
+                        {p.name}
+                      </Combobox.Option>
+                    ))}
+                </Combobox.Options>
+              </Combobox>
+            </div>
+            <Input type="number" placeholder="Qty" value={currentExpenseItem.quantity} onChange={(e) => setCurrentExpenseItem({ ...currentExpenseItem, quantity: parseInt(e.target.value) || 0 })} />
             <Input type="number" placeholder="Price" value={currentExpenseItem.price} readOnly />
             <Button onClick={addExpenseItem}>Add</Button>
           </div>
