@@ -1,5 +1,5 @@
 // src/lib/api.ts
-import { supabase } from "./supabase";
+import { supabase } from "./supabaseClient";
 
 // Fetch dropdown data from any table
 export async function fetchDropdownData(table: string) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
