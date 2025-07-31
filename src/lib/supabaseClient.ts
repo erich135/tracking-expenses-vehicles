@@ -11,7 +11,10 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['fsevents'],
+      external: ['fsevents'], // <- this is the correct way to skip macOS-only junk
     },
+  },
+  ssr: {
+    external: ['fsevents'], // <- double safety for SSR
   },
 });
