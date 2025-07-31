@@ -1,9 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
-// ✅ Paste your actual values here:
-const supabaseUrl = 'https://wvbmdgrsxsqmlvpxzqrx.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp...'; // FULL anon key
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-export default supabase;
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
+});
