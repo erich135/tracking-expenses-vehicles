@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { format, parseISO, isWithinInterval } from 'date-fns';
+import { supabase } from '@/lib/supabaseClient'; //
 
 type Entry = {
   id: string;
