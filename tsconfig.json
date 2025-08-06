@@ -2,22 +2,25 @@
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "module": "ESNext",
     "moduleResolution": "Node",
-    "baseUrl": "src",
-    "paths": {
-      "@/*": ["./*"]
-    },
     "resolveJsonModule": true,
-    "esModuleInterop": true,
     "isolatedModules": true,
+    "esModuleInterop": true,
     "jsx": "react-jsx",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "noImplicitAny": false,
-    "types": ["vite/client"]
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": [
+        "*"
+      ]
+    }
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

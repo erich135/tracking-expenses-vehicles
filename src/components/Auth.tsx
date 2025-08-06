@@ -299,3 +299,4 @@ export function Auth() {
     </div>
   );
 }
+export default Auth;

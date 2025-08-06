@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -10,7 +10,11 @@ import VehicleManagement from '@/components/VehicleManagement';
 import DataUpload from '@/components/DataUpload';
 import Reports from '@/components/Reports';
 import Settings from '@/components/Settings';
-import CostingModule from '@/components/CostingModule';
+import CostingModule from '@/pages/CostingModule';
+
+type AppLayoutProps = {
+  children?: ReactNode;
+};
 
 type ApprovedUser = {
   id: string;
@@ -79,7 +83,7 @@ const AdminPanelComponent = () => {
   );
 };
 
-const AppLayout: React.FC = () => {
+const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -109,18 +113,22 @@ const AppLayout: React.FC = () => {
           user={user}
         />
         <main className="flex-1 overflow-auto p-4">
-          <Routes>
-            <Route path="/" element={<AddExpenseForm />} />
-            <Route path="/vehicle-expenses" element={<AddExpenseForm />} />
-            <Route path="/view-expenses" element={<ViewExpenses />} />
-            <Route path="/vehicles" element={<VehicleManagement />} />
-            <Route path="/upload" element={<DataUpload />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/costing" element={<CostingModule />} />
-            <Route path="/admin" element={isAdmin ? <AdminPanelComponent /> : <div>Access Denied</div>} />
-            <Route path="*" element={<div>Page not found</div>} />
-          </Routes>
+          {children ? (
+            children
+          ) : (
+            <Routes>
+              <Route path="/" element={<AddExpenseForm />} />
+              <Route path="/vehicle-expenses" element={<AddExpenseForm />} />
+              <Route path="/view-expenses" element={<ViewExpenses />} />
+              <Route path="/vehicles" element={<VehicleManagement />} />
+              <Route path="/upload" element={<DataUpload />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/costing" element={<CostingModule />} />
+              <Route path="/admin" element={isAdmin ? <AdminPanelComponent /> : <div>Access Denied</div>} />
+              <Route path="*" element={<div>Page not found</div>} />
+            </Routes>
+          )}
         </main>
       </div>
     </div>
