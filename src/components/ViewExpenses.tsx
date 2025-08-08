@@ -1,3 +1,4 @@
+import AddExpenseForm from './AddExpenseForm';
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -299,5 +300,6 @@ const ViewExpenses: React.FC = () => {
     </div>
   );
 };
+
 
 export default ViewExpenses;

@@ -1,6 +1,7 @@
+import logo from './Assets/LMWLogo.png';
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
-import ProtectedRoute from "@/components/ProtectedRoute";
 import NotFound from "@/pages/NotFound";
 
 // Public Pages
@@ -18,11 +19,13 @@ import AdminPanel from "@/components/AdminPanel";
 // Sidebar Pages
 import VehicleExpenses from "@/pages/VehicleExpenses";
 import WorkshopExpenses from "@/pages/WorkshopExpenses";
+import WorkshopAdd from "@/pages/WorkshopExpenses/WorkshopAdd";
+import WorkshopEdit from "@/pages/WorkshopExpenses/WorkshopEdit"; // 👈 ADDED
 import RentalUnitExpenses from "@/pages/RentalUnitExpenses";
 import SalesPlanner from "@/pages/SalesPlanner";
 
 // Costing Pages
-import CostingModule from "@/pages/CostingModule"; // The main dashboard
+import CostingModule from "@/pages/CostingModule";
 import CostingAdd from "@/pages/CostingAdd";
 import CostingList from "@/pages/CostingList";
 import CostingReports from "@/pages/CostingReports";
@@ -31,153 +34,156 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ✅ Public Routes */}
+        {/* Public Routes (still here but unused) */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ✅ Default Route */}
+        {/* Home */}
         <Route
           path="/"
           element={
-            <ProtectedRoute>
-              <AppLayout>
-                <AddExpenseForm />
-              </AppLayout>
-            </ProtectedRoute>
+            <AppLayout>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                <img src={logo} alt="Company Logo" style={{ maxWidth: '300px', maxHeight: '300px' }} />
+              </div>
+            </AppLayout>
           }
         />
 
-        {/* ✅ App Pages */}
+        {/* App Pages */}
         <Route
           path="/view-expenses"
           element={
-            <ProtectedRoute>
-              <AppLayout>
-                <ViewExpenses />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/vehicles"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <VehicleManagement />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/vehicle-expenses"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <VehicleExpenses />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/workshop-expenses"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <WorkshopExpenses />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/rental-unit-expenses"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <RentalUnitExpenses />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/sales-planner"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <SalesPlanner />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <Reports />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <Settings />
-              </AppLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AppLayout>
-                <AdminPanel />
-              </AppLayout>
-            </ProtectedRoute>
+            <AppLayout>
+              <ViewExpenses />
+            </AppLayout>
           }
         />
 
-        {/* ✅ Costing Section */}
+        <Route
+          path="/vehicles"
+          element={
+            <AppLayout>
+              <VehicleManagement />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/vehicle-expenses"
+          element={
+            <AppLayout>
+              <VehicleExpenses />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/workshop-expenses"
+          element={
+            <AppLayout>
+              <WorkshopExpenses />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/workshop-expenses/add"
+          element={
+            <AppLayout>
+              <WorkshopAdd />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/workshop-expenses/edit/:id" // 👈 NEW EDIT ROUTE
+          element={
+            <AppLayout>
+              <WorkshopEdit />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/rental-unit-expenses"
+          element={
+            <AppLayout>
+              <RentalUnitExpenses />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/sales-planner"
+          element={
+            <AppLayout>
+              <SalesPlanner />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <AppLayout>
+              <Reports />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <AppLayout>
+              <Settings />
+            </AppLayout>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <AppLayout>
+              <AdminPanel />
+            </AppLayout>
+          }
+        />
+
+        {/* Costing Section */}
         <Route
           path="/costing"
           element={
-            <ProtectedRoute>
-              <AppLayout>
-                <CostingModule />
-              </AppLayout>
-            </ProtectedRoute>
+            <AppLayout>
+              <CostingModule />
+            </AppLayout>
           }
         />
+
         <Route
           path="/costing/add"
           element={
-            <ProtectedRoute>
-              <AppLayout>
-                <CostingAdd />
-              </AppLayout>
-            </ProtectedRoute>
+            <AppLayout>
+              <CostingAdd />
+            </AppLayout>
           }
         />
+
         <Route
           path="/costing/list"
           element={
-            <ProtectedRoute>
-              <AppLayout>
-                <CostingList />
-              </AppLayout>
-            </ProtectedRoute>
+            <AppLayout>
+              <CostingList />
+            </AppLayout>
           }
         />
+
         <Route
           path="/costing/reports"
           element={
-            <ProtectedRoute>
-              <AppLayout>
-                <CostingReports />
-              </AppLayout>
-            </ProtectedRoute>
+            <AppLayout>
+              <CostingReports />
+            </AppLayout>
           }
         />
 

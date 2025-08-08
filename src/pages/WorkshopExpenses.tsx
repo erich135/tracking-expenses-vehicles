@@ -1,11 +1,5 @@
-// src/pages/Costing.tsx (repeat for others, just change the title)
-const WorkshopExpenses = () => {
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Costing</h1>
-      <p>This is the Costing section.</p>
-    </div>
-  );
-};
+import WorkshopJobsPage from "./WorkshopExpenses/Index";
 
-export default WorkshopExpenses;
+export default function WorkshopExpenses() {
+  return <WorkshopJobsPage />;
+}

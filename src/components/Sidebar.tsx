@@ -1,3 +1,4 @@
+import logo from '../Assets/LMWLogo.png';
 // src/components/Sidebar.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -11,8 +12,11 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isAdmin }) => {
   return (
     <div className={`w-64 bg-white border-r p-4 ${isOpen ? 'block' : 'hidden'} md:block`}>
-      <h2 className="text-xl font-bold mb-6">Nikita Dashboard</h2>
-      <nav className="space-y-2">
+      <h2 className="text-xl font-bold mb-6">Costing Dashboard</h2>
+      <div style={{ textAlign: 'center', padding: '1rem' }}>
+  <img src={logo} alt="Company Logo" style={{ width: '120px' }} />
+</div>
+<nav className="space-y-2">
         <Link to="/" className="block px-4 py-2 rounded hover:bg-blue-100">Dashboard</Link>
         <Link to="/costing" className="block px-4 py-2 rounded hover:bg-blue-100">Costing</Link>
         <Link to="/vehicle-expenses" className="block px-4 py-2 rounded hover:bg-blue-100">Vehicle Expenses</Link>

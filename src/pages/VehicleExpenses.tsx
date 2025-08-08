@@ -1,9 +1,11 @@
-// src/pages/Costing.tsx (repeat for others, just change the title)
-const VehicleExpenses = () => {
+import React from 'react';
+import AddExpenseForm from '@/components/AddExpenseForm';
+
+const VehicleExpenses: React.FC = () => {
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">Costing</h1>
-      <p>This is the Costing section.</p>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-4">Add Vehicle Expense</h2>
+      <AddExpenseForm />
     </div>
   );
 };
