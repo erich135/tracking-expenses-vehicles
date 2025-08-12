@@ -1,0 +1,172 @@
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/customSupabaseClient';
+import { Edit, Trash2, Search, X } from 'lucide-react';
+import { differenceInDays, format } from 'date-fns';
+import AddWorkshopJobPage from './AddWorkshopJobPage';
+
+const getStatusColor = (status, isOverdue) => {
+    if (isOverdue) return 'bg-red-500 text-white';
+    switch (status) {
+        case 'Stripping': return 'bg-blue-300';
+        case 'Go Ahead': return 'bg-yellow-400';
+        case 'Completed': return 'bg-pink-300';
+        case 'Invoiced': return 'bg-green-400';
+        case 'PDI': return 'bg-purple-400';
+        case 'Quoted/Awaiting Order': return 'bg-green-700 text-white';
+        default: return 'bg-gray-200';
+    }
+};
+
+const ViewWorkshopJobsPage = () => {
+    const [jobs, setJobs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState('');
+    const [activeFilter, setActiveFilter] = useState('');
+    const [selectedJob, setSelectedJob] = useState(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const { toast } = useToast();
+
+    const fetchJobs = useCallback(async () => {
+        setLoading(true);
+        let query = supabase
+            .from('workshop_jobs')
+            .select(`
+                *,
+                technician:technicians(name),
+                customer:customers(name)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (activeFilter) {
+            query = query.or(`job_number.ilike.%${activeFilter}%,equipment_detail.ilike.%${activeFilter}%,customer.name.ilike.%${activeFilter}%,cash_customer_name.ilike.%${activeFilter}%,technician.name.ilike.%${activeFilter}%`);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            toast({ variant: 'destructive', title: 'Error fetching jobs', description: error.message });
+        } else {
+            setJobs(data);
+        }
+        setLoading(false);
+    }, [toast, activeFilter]);
+
+    useEffect(() => {
+        fetchJobs();
+    }, [fetchJobs]);
+    
+    const handleApplyFilter = () => setActiveFilter(filter);
+    const handleClearFilter = () => { setFilter(''); setActiveFilter(''); };
+    const handleEditClick = (job) => { setSelectedJob(job); setIsEditDialogOpen(true); };
+    const handleDeleteClick = (job) => { setSelectedJob(job); setIsDeleteDialogOpen(true); };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedJob) return;
+        const { error } = await supabase.from('workshop_jobs').delete().eq('id', selectedJob.id);
+        if (error) {
+            toast({ variant: 'destructive', title: 'Error deleting job', description: error.message });
+        } else {
+            toast({ title: 'Success!', description: 'Workshop job deleted successfully.' });
+            fetchJobs();
+        }
+        setIsDeleteDialogOpen(false);
+        setSelectedJob(null);
+    };
+
+    return (
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>All Workshop Jobs</CardTitle>
+                    <CardDescription>View, filter, and manage all workshop jobs.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Input placeholder="Filter jobs..." value={filter} onChange={(e) => setFilter(e.target.value)} className="max-w-sm" />
+                        <Button onClick={handleApplyFilter}><Search className="mr-2 h-4 w-4"/>Filter</Button>
+                        <Button variant="ghost" onClick={handleClearFilter}><X className="mr-2 h-4 w-4"/>Clear</Button>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Job No.</TableHead>
+                                    <TableHead>Technician</TableHead>
+                                    <TableHead>Equipment</TableHead>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead>PO Date</TableHead>
+                                    <TableHead>Quote Amt.</TableHead>
+                                    <TableHead>Overdue</TableHead>
+                                    <TableHead>Delivery</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {loading ? (
+                                    <TableRow><TableCell colSpan="10" className="text-center">Loading jobs...</TableCell></TableRow>
+                                ) : jobs.length === 0 ? (
+                                    <TableRow><TableCell colSpan="10" className="text-center">No jobs found.</TableCell></TableRow>
+                                ) : (
+                                    jobs.map((job) => {
+                                        const isOverdue = job.po_date && job.days_quoted ? differenceInDays(new Date(), new Date(job.po_date)) > job.days_quoted : false;
+                                        const rowClass = isOverdue ? 'bg-red-100' : '';
+                                        const statusClass = getStatusColor(job.status, isOverdue);
+
+                                        return (
+                                            <TableRow key={job.id} className={rowClass}>
+                                                <TableCell>{job.job_number}</TableCell>
+                                                <TableCell>{job.technician?.name}</TableCell>
+                                                <TableCell className="max-w-[200px] truncate">{job.equipment_detail}</TableCell>
+                                                <TableCell className="max-w-[200px] truncate">{job.customer?.name || job.cash_customer_name}</TableCell>
+                                                <TableCell>{job.po_date ? format(new Date(job.po_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                                                <TableCell className="text-right">R {Number(job.quote_amount || 0).toFixed(2)}</TableCell>
+                                                <TableCell className="font-bold text-center">{isOverdue ? 'YES' : 'NO'}</TableCell>
+                                                <TableCell>{job.delivery_date ? format(new Date(job.delivery_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                                                <TableCell><span className={`px-2 py-1 rounded-md text-xs font-semibold ${statusClass}`}>{job.status}</span></TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(job)}><Edit className="h-4 w-4" /></Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(job)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader><DialogTitle>Edit Workshop Job</DialogTitle></DialogHeader>
+                    <div className="py-4">
+                        <AddWorkshopJobPage isEditMode={true} jobData={selectedJob} onSuccess={() => { setIsEditDialogOpen(false); fetchJobs(); }} />
+                    </div>
+                </DialogContent>
+            </Dialog>
+            
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete the workshop job.</AlertDialogDescription></AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+};
+
+export default ViewWorkshopJobsPage;
