@@ -22,6 +22,8 @@ const permissionOptions = [
 ];
 
 const SettingsPage = () => {
+  const [slaAccess, setSlaAccess] = useState(false);
+
     const [newUserEmail, setNewUserEmail] = useState('');
     const [approvedUsers, setApprovedUsers] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -126,7 +128,19 @@ const SettingsPage = () => {
                 <title>Settings - FleetFlow</title>
                 <meta name="description" content="Manage application settings and user access." />
             </Helmet>
-            <div className="space-y-8">
+            
+      <div className="flex items-center justify-between py-2 border-b">
+        <span className="text-sm font-medium">Enable SLA Module Access</span>
+        <input
+          type="checkbox"
+          className="form-checkbox h-5 w-5 text-blue-600"
+          checked={slaAccess}
+          onChange={() => setSlaAccess(!slaAccess)}
+        />
+      </div>
+
+
+<div className="space-y-8">
                 <Card>
                     <CardHeader>
                         <CardTitle>Add New User</CardTitle>

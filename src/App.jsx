@@ -21,6 +21,10 @@ import ViewRentalEquipmentPage from '@/pages/rental/ViewRentalEquipmentPage';
 import AddRentalIncomePage from '@/pages/rental/AddRentalIncomePage';
 import AddRentalExpensePage from '@/pages/rental/AddRentalExpensePage';
 import DataImportPage from '@/pages/DataImportPage';
+import AddSLAExpensePage from './pages/sla/AddSLAExpensePage';
+import AddSLAIncomePage from './pages/sla/AddSLAIncomePage';
+import ViewSLAEquipmentPage from './pages/sla/ViewSLAEquipmentPage';
+import SLADashboard from './pages/sla/SLADashboard';
 
 const ProtectedRoute = ({ element, requiredPermission }) => {
     const { userProfile, loading } = useAuth();
@@ -97,6 +101,11 @@ function AppRoutes() {
                 <Route path="maintenance/:entity" element={<ProtectedRoute requiredPermission="maintenance" element={<MaintenancePage />} />} />
                 <Route path="settings" element={<AdminRoute element={<SettingsPage />} />} />
                 <Route path="settings/import" element={<AdminRoute element={<DataImportPage />} />} />
+                <Route path="/sla/add-expense" element={<AddSLAExpensePage />} />
+                <Route path="/sla/add-income" element={<AddSLAIncomePage />} />
+                <Route path="/sla/equipment" element={<ViewSLAEquipmentPage />} />
+                <Route path="/sla/view" element={<ViewSLAEquipmentPage />} /> {/* alias so both work */}
+                
             </Route>
         </Routes>
     );

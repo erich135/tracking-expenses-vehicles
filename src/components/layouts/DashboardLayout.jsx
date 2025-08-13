@@ -14,6 +14,19 @@ const navItems = [
         { name: 'Add Income', path: '/rental/income/add' },
         { name: 'Add Expense', path: '/rental/expense/add' },
     ], permission: 'rental' },
+    
+{
+  name: 'SLA',
+  icon: Building,
+  sublinks: [
+    { name: 'View SLA Equipment', path: '/sla/equipment' },
+    { name: 'Add SLA Expense', path: '/sla/add-expense' },
+    { name: 'Add SLA Income', path: '/sla/add-income' },
+    
+  ],
+  permission: 'sla'
+},
+
     { name: 'Reports', icon: BarChart2, path: '/reports', permission: 'reports' },
     { name: 'Maintenance', icon: Database, sublinks: [
         { name: 'Customers', path: '/maintenance/customers' },

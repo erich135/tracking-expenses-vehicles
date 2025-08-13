@@ -5,6 +5,7 @@ import VehicleReports from '@/components/reports/VehicleReports';
 import CostingReports from '@/components/reports/CostingReports';
 import WorkshopReports from '@/components/reports/WorkshopReports';
 import RentalReports from '@/components/reports/RentalReports';
+import SlaReportsSection from "@/components/reports/SlaReportsSection";
 
 const ReportsPage = () => {
   return (
@@ -18,25 +19,31 @@ const ReportsPage = () => {
       <div className="container mx-auto p-4">
         <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Reports</h1>
         <Tabs defaultValue="vehicles" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
-            <TabsTrigger value="costing">Costing</TabsTrigger>
-            <TabsTrigger value="workshop">Workshop</TabsTrigger>
-            <TabsTrigger value="rental">Rental</TabsTrigger>
-          </TabsList>
-          <TabsContent value="vehicles">
-            <VehicleReports />
-          </TabsContent>
-          <TabsContent value="costing">
-            <CostingReports />
-          </TabsContent>
-          <TabsContent value="workshop">
-            <WorkshopReports />
-          </TabsContent>
-          <TabsContent value="rental">
-            <RentalReports />
-          </TabsContent>
-        </Tabs>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+          <TabsTrigger value="costing">Costing</TabsTrigger>
+          <TabsTrigger value="workshop">Workshop</TabsTrigger>
+          <TabsTrigger value="rental">Rental</TabsTrigger>
+          <TabsTrigger value="sla">SLA</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="vehicles">
+          <VehicleReports />
+        </TabsContent>
+        <TabsContent value="costing">
+          <CostingReports />
+        </TabsContent>
+        <TabsContent value="workshop">
+          <WorkshopReports />
+        </TabsContent>
+        <TabsContent value="rental">
+          <RentalReports />
+        </TabsContent>
+        <TabsContent value="sla">
+          <SlaReportsSection />
+        </TabsContent>
+      </Tabs>
+
       </div>
     </>
   );
