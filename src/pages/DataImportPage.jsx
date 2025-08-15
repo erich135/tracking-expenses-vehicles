@@ -48,9 +48,18 @@ const importConfigs = {
   },
   rental_expenses: {
     label: 'Rental Expenses',
-    template: [
-      { plant_no: 'PLANT-001', supplier_name: 'Parts Supplier', date: '2023-10-25', item_description: 'Oil Filter', quantity: 2, unit_price: 150.00 }
+        template: [
+      {
+        plant_no: 'PLANT-001',
+        supplier_name: 'Parts Supplier',
+        date: '2023-10-25',
+        current_hours: 3034,  // ✅ Add this line
+        item_description: 'Oil Filter',
+        quantity: 2,
+        unit_price: 150.00
+      }
     ],
+
     requiredFields: ['plant_no', 'date', 'item_description', 'quantity', 'unit_price'],
     tableName: 'rental_expenses',
     isGrouped: true, // Special handling for grouped items
