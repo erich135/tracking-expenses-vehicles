@@ -1,169 +1,245 @@
-import React, { useState } from 'react';
+
+import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Autocomplete } from '@/components/ui/autocomplete';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Trash2, Plus } from 'lucide-react';
 
 const AddRentalExpensePage = () => {
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const navigate = useNavigate();
+  const { toast } = useToast();
 
-    const [rentalEquipment, setRentalEquipment] = useState(null);
-    const [supplier, setSupplier] = useState(null);
-    const [date, setDate] = useState(new Date());
-    const [expenseItems, setExpenseItems] = useState([{ part: null, description: '', quantity: 1, unit_price: 0 }]);
-    
-    const totalAmount = expenseItems.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0);
+  const [unit, setUnit] = useState(null);
+  const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [enteredHours, setEnteredHours] = useState('');
+  const [equipment, setEquipment] = useState([]);
+  const [items, setItems] = useState([{ part: null, quantity: 1, price: 0 }]);
 
-    const handleItemChange = (index, field, value) => {
-        const newItems = [...expenseItems];
-        newItems[index][field] = value;
+  const totalAmount = useMemo(
+    () =>
+      items.reduce((sum, it) => {
+        const q = Number(it.quantity || 0);
+        const p = Number(it.price || 0);
+        return sum + q * p;
+      }, 0),
+    [items]
+  );
 
-        if (field === 'part' && value) {
-            newItems[index].description = value.name;
-            newItems[index].unit_price = value.price || 0;
-        }
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from('rental_equipment')
+        .select('id, plant_no, make, model, current_hours, last_service_hours, next_service_hours')
+        .order('plant_no', { ascending: true });
 
-        setExpenseItems(newItems);
-    };
+      if (error) {
+        toast({ variant: 'destructive', title: 'Error loading equipment', description: error.message });
+      } else {
+        setEquipment(data || []);
+      }
+    })();
+  }, [toast]);
 
-    const addItem = () => {
-        setExpenseItems([...expenseItems, { part: null, description: '', quantity: 1, unit_price: 0 }]);
-    };
+  const selectedMachine = useMemo(() => {
+    if (!unit?.id) return null;
+    return (equipment || []).find((e) => e.id === unit.id) || null;
+  }, [equipment, unit]);
 
-    const removeItem = (index) => {
-        const newItems = expenseItems.filter((_, i) => i !== index);
-        setExpenseItems(newItems);
-    };
+  const fetchEquipmentOptions = async (q) => {
+    const { data, error } = await supabase
+      .from('rental_equipment')
+      .select('id, plant_no')
+      .ilike('plant_no', `%${q}%`)
+      .limit(10);
 
-    const fetchEquipment = async (searchTerm) => {
-        const { data, error } = await supabase
-            .from('rental_equipment')
-            .select('id, plant_no, make, model')
-            .or(`plant_no.ilike.%${searchTerm}%,make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`)
-            .limit(10);
-        if (error) {
-            toast({ variant: "destructive", title: "Error fetching equipment", description: error.message });
-            return [];
-        }
-        return data.map(d => ({ ...d, name: `${d.plant_no} - ${d.make} ${d.model}`}));
-    };
+    if (error) return [];
+    return (data || []).map((m) => ({ id: m.id, name: m.plant_no || `#${m.id}` }));
+  };
 
-    const fetchSuppliers = async (searchTerm) => {
-        const { data, error } = await supabase.from('suppliers').select('id, name').ilike('name', `%${searchTerm}%`).limit(10);
-        if (error) { toast({ variant: "destructive", title: "Error fetching suppliers" }); return []; }
-        return data;
-    };
-    
-    const fetchParts = async (searchTerm) => {
-        const { data, error } = await supabase.from('parts').select('id, name, price').ilike('name', `%${searchTerm}%`).limit(10);
-        if (error) { toast({ variant: "destructive", title: "Error fetching parts" }); return []; }
-        return data;
-    };
+  const fetchPartsOptions = async (q) => {
+    const { data, error } = await supabase
+      .from('parts')
+      .select('id, name, description, price')
+      .or(`name.ilike.%${q}%,description.ilike.%${q}%`)
+      .limit(15);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        if (!rentalEquipment || expenseItems.some(item => !item.description)) {
-             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a machine and fill all item descriptions.' });
-             return;
-        }
-        
-        // 1. Insert the main expense record
-        const { data: expenseData, error: expenseError } = await supabase.from('rental_expenses').insert({
-            user_id: user.id,
-            rental_equipment_id: rentalEquipment.id,
-            supplier_id: supplier?.id,
-            date: date,
-        }).select().single();
+    if (error || !data) return [];
+    return data.map((p) => ({
+      id: p.id,
+      name: p.name ? `${p.name}${p.description ? ' — ' + p.description : ''}` : p.description ?? `#${p.id}`,
+      price: p.price ?? 0,
+    }));
+  };
 
-        if (expenseError) {
-            toast({ variant: 'destructive', title: 'Error creating expense record', description: expenseError.message });
-            return;
-        }
+  const setItemField = (index, field, value) => {
+    setItems((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
 
-        // 2. Insert the expense items
-        const itemsToInsert = expenseItems.map(item => ({
-            rental_expense_id: expenseData.id,
-            part_id: item.part?.id,
-            description: item.description,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-        }));
-        
-        const { error: itemsError } = await supabase.from('rental_expense_items').insert(itemsToInsert);
-        
-        if(itemsError) {
-             toast({ variant: 'destructive', title: 'Error adding expense items', description: itemsError.message });
-             // Optionally, delete the main expense record here for consistency
-             await supabase.from('rental_expenses').delete().eq('id', expenseData.id);
-        } else {
-             toast({ title: 'Success!', description: 'Rental expense added successfully.' });
-             navigate('/rental/view');
-        }
-    };
+  const handlePartChange = (index, partObj) => {
+    setItemField(index, 'part', partObj);
+    if (partObj && (items[index].price === 0 || items[index].price === '' || items[index].price == null)) {
+      setItemField(index, 'price', Number(partObj.price ?? 0));
+    }
+  };
 
-    return (
-        <>
-            <Helmet>
-                <title>Add Rental Expense</title>
-                <meta name="description" content="Add a new expense for rental equipment." />
-            </Helmet>
-            <form onSubmit={handleSubmit}>
-                <Card className="max-w-4xl mx-auto">
-                    <CardHeader>
-                        <CardTitle>Add Rental Expense</CardTitle>
-                        <CardDescription>Log a new expense for a rental machine, including parts and labour.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2"><Label>Rental Machine</Label><Autocomplete value={rentalEquipment} onChange={setRentalEquipment} fetcher={fetchEquipment} displayField="name" valueField="id" placeholder="Select a machine..." required /></div>
-                            <div className="space-y-2"><Label>Supplier</Label><Autocomplete value={supplier} onChange={setSupplier} fetcher={fetchSuppliers} displayField="name" valueField="id" placeholder="Select a supplier..." /></div>
-                            <div className="space-y-2"><Label>Date</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus /></PopoverContent></Popover></div>
-                        </div>
-                        
-                        <div>
-                            <Label className="text-lg font-semibold">Expense Items</Label>
-                            <Table>
-                                <TableHeader><TableRow><TableHead className="w-2/5">Item/Part</TableHead><TableHead>Description</TableHead><TableHead>Qty</TableHead><TableHead>Unit Price</TableHead><TableHead>Total</TableHead><TableHead></TableHead></TableRow></TableHeader>
-                                <TableBody>
-                                    {expenseItems.map((item, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell><Autocomplete value={item.part} onChange={(v) => handleItemChange(index, 'part', v)} fetcher={fetchParts} displayField="name" valueField="id" placeholder="Select part..." /></TableCell>
-                                            <TableCell><Input value={item.description} onChange={(e) => handleItemChange(index, 'description', e.target.value)} placeholder="Manual Description" /></TableCell>
-                                            <TableCell><Input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
-                                            <TableCell><Input type="number" step="0.01" value={item.unit_price} onChange={(e) => handleItemChange(index, 'unit_price', parseFloat(e.target.value) || 0)} className="w-24"/></TableCell>
-                                            <TableCell>R {(item.quantity * item.unit_price).toFixed(2)}</TableCell>
-                                            <TableCell><Button type="button" variant="ghost" size="icon" onClick={() => removeItem(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                             <Button type="button" variant="outline" size="sm" onClick={addItem} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
-                        </div>
+  const addItem = () => setItems((prev) => [...prev, { part: null, quantity: 1, price: 0 }]);
+  const removeItem = (index) => setItems((prev) => prev.filter((_, i) => i !== index));
 
-                    </CardContent>
-                    <CardFooter className="flex justify-between items-center">
-                        <span className="text-xl font-bold">Total: R {totalAmount.toFixed(2)}</span>
-                        <Button type="submit">Add Expense</Button>
-                    </CardFooter>
-                </Card>
-            </form>
-        </>
+  async function handleSave(e) {
+    e.preventDefault();
+
+    if (!unit?.id) {
+      toast({ variant: 'destructive', title: 'Please choose a machine' });
+      return;
+    }
+
+    const validItems = items.filter(
+      (it) => it.part?.id && Number(it.quantity) > 0 && Number(it.price) >= 0
     );
+    if (validItems.length === 0) {
+      toast({ variant: 'destructive', title: 'Please add at least one line item' });
+      return;
+    }
+
+    const { data: ins, error: insertErr } = await supabase
+      .from('rental_expenses')
+      .insert({
+        rental_equipment_id: unit.id,
+        total_amount: totalAmount,
+        date: expenseDate,
+        current_hours: enteredHours ? Number(enteredHours) : null,
+      })
+      .select('id')
+      .single();
+
+    if (insertErr) {
+      toast({ variant: 'destructive', title: 'Error saving expense', description: insertErr.message });
+      return;
+    }
+
+    const rows = validItems.map((it) => ({
+      rental_expense_id: ins.id,
+      part_id: it.part.id,
+      quantity: Number(it.quantity),
+      price: Number(it.price),
+    }));
+
+    const { error: itemsErr } = await supabase.from('rental_expense_items').insert(rows);
+    if (itemsErr) {
+      toast({
+        variant: 'destructive',
+        title: 'Expense saved, but items failed',
+        description: itemsErr.message,
+      });
+    }
+
+    if (enteredHours !== '' && !Number.isNaN(Number(enteredHours))) {
+      const newHours = Number(enteredHours);
+      const { data: eqRow, error: fetchErr } = await supabase
+        .from('rental_equipment')
+        .select('id, current_hours, last_service_hours, next_service_hours')
+        .eq('id', unit.id)
+        .single();
+
+      if (!fetchErr && eqRow) {
+        let last = eqRow.last_service_hours == null ? null : Number(eqRow.last_service_hours);
+        let next = eqRow.next_service_hours == null ? null : Number(eqRow.next_service_hours);
+        let interval = null;
+        if (last != null && next != null && next > last) interval = next - last;
+        if (interval != null && interval > 0) {
+          if (next == null) {
+            const k = Math.ceil(newHours / interval);
+            next = k * interval;
+          } else {
+            while (newHours >= next) next += interval;
+          }
+        }
+
+        const payload = { current_hours: newHours };
+        if (next != null) payload.next_service_hours = next;
+        await supabase.from('rental_equipment').update(payload).eq('id', unit.id);
+      }
+    }
+
+    toast({ title: 'Saved', description: 'Expense and line items captured.' });
+    setItems([{ part: null, quantity: 1, price: 0 }]);
+    setEnteredHours('');
+  }
+
+  return (
+    <>
+      <Helmet>
+        <title>Add Rental Expense</title>
+      </Helmet>
+      <Card>
+        <CardHeader>
+          <CardTitle>Add Rental Expense</CardTitle>
+          <CardDescription>
+            Select a machine, add expense line items, and (optionally) capture <strong>Current Hours</strong> to update the machine and next service.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-6" onSubmit={handleSave}>
+            <div className="space-y-2">
+              <Label>Machine</Label>
+              <Autocomplete value={unit} onChange={setUnit} fetcher={fetchEquipmentOptions} displayField="name" placeholder="Search by plant number…" />
+            </div>
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Current Hours</Label>
+              <Input type="number" value={enteredHours} onChange={(e) => setEnteredHours(e.target.value)} placeholder={selectedMachine?.current_hours != null ? `Current: ${selectedMachine.current_hours}` : 'e.g. 1234'} />
+            </div>
+            <Card className="border">
+              <CardHeader><CardTitle className="text-lg">Expense Line Items</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {items.map((it, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-3 items-end">
+                    <div className="col-span-5 space-y-2">
+                      <Label>Part</Label>
+                      <Autocomplete value={it.part} onChange={(v) => handlePartChange(idx, v)} fetcher={fetchPartsOptions} displayField="name" placeholder="Type to search parts..." />
+                    </div>
+                    <div className="col-span-3 space-y-2">
+                      <Label>Quantity</Label>
+                      <Input type="number" value={it.quantity} onChange={(e) => setItemField(idx, 'quantity', e.target.value)} min="0" />
+                    </div>
+                    <div className="col-span-3 space-y-2">
+                      <Label>Price (R)</Label>
+                      <input type="number" step="0.01" min="0" value={it.price} onChange={(e) => setItemField(idx, 'price', e.target.value)} className="w-full rounded-md border px-3 py-2 text-sm" />
+                    </div>
+                    <div className="col-span-1 flex items-center">
+                      {items.length > 1 && (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeItem(idx)} title="Remove">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addItem}>
+                  <Plus className="w-4 h-4 mr-2" /> Add Expense Item
+                </Button>
+                <div className="text-right font-medium pt-2">
+                  Total: R {totalAmount.toFixed(2)}
+                </div>
+              </CardContent>
+            </Card>
+            <Button type="submit">Save Expense</Button>
+          </form>
+        </CardContent>
+      </Card>
+    </>
+  );
 };
 
 export default AddRentalExpensePage;

@@ -20,6 +20,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
     jobDescription: null,
     customer: null,
     rep: null,
+    date: '',
   });
   const [customerItems, setCustomerItems] = useState([{ id: Date.now(), part: '', quantity: 1, price: 0 }]);
   const [expenseItems, setExpenseItems] = useState([{ id: Date.now(), part: null, quantity: 1, price: 0 }]);
@@ -170,6 +171,14 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
                 <Autocomplete value={jobDetails.jobDescription} onChange={(value) => handleJobDetailChange('jobDescription', value)} fetcher={(searchTerm) => fetcher('job_descriptions', 'description', searchTerm)} displayField="description" placeholder="Type to search job descriptions..." />
               </div>
               <div className="space-y-2">
+                <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={jobDetails.date}
+                onChange={(e) => handleJobDetailChange('date', e.target.value)}              />
+            </div>
                 <Label>Customer</Label>
                 <Autocomplete value={jobDetails.customer} onChange={(value) => handleJobDetailChange('customer', value)} fetcher={(searchTerm) => fetcher('customers', 'name', searchTerm)} displayField="name" placeholder="Type to search customers..." />
               </div>

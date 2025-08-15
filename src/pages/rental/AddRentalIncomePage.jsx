@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useNavigate } from 'react-router-dom';
@@ -44,7 +45,7 @@ const AddRentalIncomePage = () => {
             toast({ variant: "destructive", title: "Error fetching equipment", description: error.message });
             return [];
         }
-        return data.map(d => ({ ...d, name: `${d.plant_no} - ${d.make} ${d.model}`}));
+        return data.map(d => ({ ...d, name: `${d.plant_no} - ${d.make} ${d.model}`})); 
     };
 
     const fetchCustomers = async (searchTerm) => {
@@ -62,7 +63,7 @@ const AddRentalIncomePage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         const submissionData = {
             ...formData,
             user_id: user.id,
@@ -71,7 +72,7 @@ const AddRentalIncomePage = () => {
             amount: parseFloat(formData.amount)
         };
 
-        if (!submissionData.rental_equipment_id || !submissionData.customer_id || !submissionData.amount) {
+        if (!submissionData.rental_equipment_id || !submissionData.customer_id || isNaN(submissionData.amount)) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please fill out all required fields.' });
             return;
         }
@@ -99,13 +100,90 @@ const AddRentalIncomePage = () => {
                         <CardDescription>Log a new invoice or income for a rental machine.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="space-y-2"><Label>Rental Machine</Label><Autocomplete value={formData.rental_equipment_id} onChange={value => handleInputChange('rental_equipment_id', value)} fetcher={fetchEquipment} displayField="name" valueField="id" placeholder="Select a machine..." required /></div>
-                        <div className="space-y-2"><Label>Customer</Label><Autocomplete value={formData.customer_id} onChange={value => handleInputChange('customer_id', value)} fetcher={fetchCustomers} displayField="name" valueField="id" placeholder="Select a customer..." required /></div>
-                        <div className="space-y-2"><Label>Invoice Number</Label><Input value={formData.invoice_number} onChange={e => handleInputChange('invoice_number', e.target.value)} placeholder="e.g., INV-12345" /></div>
-                        <div className="space-y-2"><Label>Date</Label><Popover><PopoverTrigger asChild><Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !formData.date && "text-muted-foreground")}><CalendarIcon className="mr-2 h-4 w-4" />{formData.date ? format(formData.date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.date} onSelect={date => handleInputChange('date', date)} initialFocus /></PopoverContent></Popover></div>
-                        <div className="space-y-2"><Label>Amount (R)</Label><Input type="number" step="0.01" value={formData.amount} onChange={e => handleInputChange('amount', e.target.value)} placeholder="e.g., 15000.00" required /></div>
-                        <div className="space-y-2"><Label>Notes</Label><Textarea value={formData.notes} onChange={e => handleInputChange('notes', e.target.value)} placeholder="Add any relevant notes..." /></div>
+                        <div className="space-y-2">
+                            <Label>Rental Machine</Label>
+                            <Autocomplete
+                                value={formData.rental_equipment_id}
+                                onChange={value => handleInputChange('rental_equipment_id', value)}
+                                fetcher={fetchEquipment}
+                                displayField="name"
+                                valueField="id"
+                                placeholder="Select a machine..."
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Customer</Label>
+                            <Autocomplete
+                                value={formData.customer_id}
+                                onChange={value => handleInputChange('customer_id', value)}
+                                fetcher={fetchCustomers}
+                                displayField="name"
+                                valueField="id"
+                                placeholder="Select a customer..."
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Invoice Number</Label>
+                            <Input
+                                value={formData.invoice_number}
+                                onChange={e => handleInputChange('invoice_number', e.target.value)}
+                                placeholder="e.g., INV-12345"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal",
+                                            !formData.date && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {formData.date ? format(formData.date, "PPP") : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={formData.date}
+                                        onSelect={date => handleInputChange('date', date)}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Amount (R)</Label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                className="w-full rounded border px-3 py-2"
+                                placeholder="0.00"
+                                value={formData.amount}
+                                onChange={e => handleInputChange('amount', e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Notes</Label>
+                            <Textarea
+                                value={formData.notes}
+                                onChange={e => handleInputChange('notes', e.target.value)}
+                                placeholder="Add any relevant notes..."
+                            />
+                        </div>
                     </CardContent>
+
                     <CardFooter>
                         <Button type="submit">Add Income</Button>
                     </CardFooter>

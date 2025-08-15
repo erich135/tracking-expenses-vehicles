@@ -52,7 +52,14 @@ const Sidebar = () => {
         return (userProfile?.permissions || []).includes(item.permission);
     };
     
-    const visibleNavItems = navItems.filter(hasPermission);
+    const visibleNavItems = navItems
+  .filter(hasPermission)
+  .map(item => ({
+    ...item,
+    sublinks: item.sublinks
+      ? item.sublinks.filter(hasPermission) // works even if later you add sublink-level permissions
+      : undefined,
+  }));
 
     return (
         <div className="w-64 bg-gray-900 text-white flex flex-col min-h-screen">
