@@ -153,7 +153,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-6 overflow-y-auto max-h-screen px-4">
         <Card>
           <CardHeader><CardTitle>{isEditMode ? `Editing Costing Entry` : 'Job Details'}</CardTitle></CardHeader>
           <CardContent>
