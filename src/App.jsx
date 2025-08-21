@@ -21,8 +21,11 @@ import MaintenancePage from '@/pages/MaintenancePage';
 
 import ViewRentalEquipmentPage from '@/pages/rental/ViewRentalEquipmentPage';
 import AddRentalIncomePage from '@/pages/rental/AddRentalIncomePage';
+import ViewRentalIncomes from '@/pages/rental/ViewRentalIncomes';
+import EditRentalIncomePage from '@/pages/rental/EditRentalIncomePage';
 import AddRentalExpensePage from '@/pages/rental/AddRentalExpensePage';
-
+import ViewRentalExpenses from '@/pages/rental/ViewRentalExpenses';
+import EditRentalExpensePage from './pages/rental/EditRentalExpensePage';
 import DataImportPage from '@/pages/DataImportPage';
 
 import AddSLAExpensePage from '@/pages/sla/AddSLAExpensePage';
@@ -156,20 +159,36 @@ function AppRoutes() {
             />
           }
         />
+{/* rental */}
+<Route
+  path="rental/view"
+  element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalEquipmentPage />} />}
+/>
+<Route
+  path="rental/income/add"
+  element={<ProtectedRoute requiredPermission="rental" element={<AddRentalIncomePage />} />}
+/>
+<Route
+  path="rental/income/view"
+  element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalIncomes />} />}
+/>
+<Route
+  path="rental/income/edit/:id"
+  element={<ProtectedRoute requiredPermission="rental" element={<EditRentalIncomePage />} />}
+/>
+<Route
+  path="rental/expense/add"
+  element={<ProtectedRoute requiredPermission="rental" element={<AddRentalExpensePage />} />}
+/>
+<Route
+  path="rental/expense/view"
+  element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalExpenses />} />}
+/>
+<Route
+  path="rental/expense/edit/:id"
+  element={<ProtectedRoute requiredPermission="rental" element={<EditRentalExpensePage />} />}
+/>
 
-        {/* rental */}
-        <Route
-          path="rental/view"
-          element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalEquipmentPage />} />}
-        />
-        <Route
-          path="rental/income/add"
-          element={<ProtectedRoute requiredPermission="rental" element={<AddRentalIncomePage />} />}
-        />
-        <Route
-          path="rental/expense/add"
-          element={<ProtectedRoute requiredPermission="rental" element={<AddRentalExpensePage />} />}
-        />
 
         {/* reports */}
         <Route

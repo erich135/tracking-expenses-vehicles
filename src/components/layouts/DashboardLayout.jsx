@@ -19,6 +19,8 @@ const navItems = [
       { name: 'View Machines', path: '/rental/view' },
       { name: 'Add Income', path: '/rental/income/add' },
       { name: 'Add Expense', path: '/rental/expense/add' },
+      { name: 'View Income', path: '/rental/income/view' },
+      { name: 'View Expenses', path: '/rental/expense/view' },
     ],
     permission: 'rental'
   },
