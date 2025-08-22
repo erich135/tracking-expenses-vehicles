@@ -127,7 +127,7 @@ const AddRentalExpensePage = () => {
       rental_expense_id: ins.id,
       part_id: it.part.id,
       quantity: Number(it.quantity),
-      price: Number(it.price),
+      unit_price: Number(it.price),
       description: it.part.name || '', // 🛠 Fix for NOT NULL constraint
     }));
 
@@ -283,7 +283,11 @@ const AddRentalExpensePage = () => {
                         step="0.01"
                         min="0"
                         value={it.price}
-                        onChange={(e) => setItemField(idx, 'price', e.target.value)}
+                        onChange={(e) => {
+                         const val = e.target.value;
+                          setItemField(idx, 'price', val === '' ? '' : parseFloat(val));
+}}
+
                         className="w-full rounded-md border px-3 py-2 text-sm"
                       />
                     </div>

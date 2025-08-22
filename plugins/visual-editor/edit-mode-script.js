@@ -3,9 +3,8 @@ import { POPUP_STYLES, getPopupHTMLTemplate } from './plugins/visual-editor/visu
 const PLUGIN_APPLY_EDIT_API_URL = '/api/apply-edit';
 
 const ALLOWED_PARENT_ORIGINS = [
-	'https://horizons.hostinger.com',
-	'https://horizons.hostinger.dev',
-	'https://horizons-frontend-local.hostinger.dev',
+	'https://expenses.lmwfinance.com',
+	'https://expenses.lmwfinance.dev',
 	'http://localhost:4000',
 ];
 

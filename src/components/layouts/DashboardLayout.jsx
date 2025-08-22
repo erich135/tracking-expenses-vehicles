@@ -72,10 +72,11 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
       <div className="p-4 flex justify-between items-center border-b border-gray-700">
         {!isCollapsed && (
           <img
-            src="https://horizons-cdn.hostinger.com/bda8c80c-e734-409b-a672-4fa843b3b414/be1ac99c0184750332a8355755d81cd9.png"
-            alt="Company Logo"
-            className="h-10"
-          />
+  src="/company-logo.png"
+  alt="Company Logo"
+  className="h-20 mx-auto"
+/>
+
         )}
         <button onClick={toggleCollapse} className="text-white ml-auto">
           {isCollapsed ? <Menu size={20} /> : <X size={20} />}
