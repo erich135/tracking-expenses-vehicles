@@ -1,9 +1,11 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider, useAuth } from '@/contexts/SupabaseAuthContext';
 import DashboardLayout from '@/components/layouts/DashboardLayout';
+
+import UpdatePasswordPage from '@/pages/UpdatePasswordPage';
 
 import HomePage from '@/pages/HomePage';
 import AddCostingPage from '@/pages/AddCostingPage';
@@ -31,9 +33,8 @@ import DataImportPage from '@/pages/DataImportPage';
 import AddSLAExpensePage from '@/pages/sla/AddSLAExpensePage';
 import AddSLAIncomePage from '@/pages/sla/AddSLAIncomePage';
 import ViewSLAEquipmentPage from '@/pages/sla/ViewSLAEquipmentPage';
-// import SLADashboard from '@/pages/sla/SLADashboard'; // keep if/when you use it
 
-/* ---------- Route guards ---------- */
+// ---------- Route guards ----------
 
 const ProtectedRoute = ({ element, requiredPermission }) => {
   const { userProfile, loading } = useAuth();
@@ -74,10 +75,11 @@ const AdminRoute = ({ element }) => {
   return element;
 };
 
-/* ---------- Routes tree ---------- */
+// ---------- Routes tree ----------
 
 function AppRoutes() {
   const { session, loading, userProfile } = useAuth();
+  const location = useLocation();
 
   const can = (perm) =>
     userProfile?.is_admin || (userProfile?.permissions || []).includes(perm);
@@ -95,11 +97,18 @@ function AppRoutes() {
       {/* public auth routes */}
       <Route path="/login" element={!session ? <LoginPage /> : <Navigate to="/" replace />} />
       <Route path="/register" element={!session ? <RegisterPage /> : <Navigate to="/" replace />} />
+      
+      {/* Allow update-password to always render */}
+      <Route path="/update-password" element={<UpdatePasswordPage />} />
 
-      {/* app shell */}
+      {/* main app routes */}
       <Route
         path="/"
-        element={session ? <DashboardLayout /> : <Navigate to="/login" replace />}
+        element={
+          session || location.pathname === "/update-password"
+            ? <DashboardLayout />
+            : <Navigate to="/login" replace />
+        }
       >
         {/* home */}
         <Route index element={<HomePage />} />
@@ -159,36 +168,36 @@ function AppRoutes() {
             />
           }
         />
-{/* rental */}
-<Route
-  path="rental/view"
-  element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalEquipmentPage />} />}
-/>
-<Route
-  path="rental/income/add"
-  element={<ProtectedRoute requiredPermission="rental" element={<AddRentalIncomePage />} />}
-/>
-<Route
-  path="rental/income/view"
-  element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalIncomes />} />}
-/>
-<Route
-  path="rental/income/edit/:id"
-  element={<ProtectedRoute requiredPermission="rental" element={<EditRentalIncomePage />} />}
-/>
-<Route
-  path="rental/expense/add"
-  element={<ProtectedRoute requiredPermission="rental" element={<AddRentalExpensePage />} />}
-/>
-<Route
-  path="rental/expense/view"
-  element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalExpenses />} />}
-/>
-<Route
-  path="rental/expense/edit/:id"
-  element={<ProtectedRoute requiredPermission="rental" element={<EditRentalExpensePage />} />}
-/>
 
+        {/* rental */}
+        <Route
+          path="rental/view"
+          element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalEquipmentPage />} />}
+        />
+        <Route
+          path="rental/income/add"
+          element={<ProtectedRoute requiredPermission="rental" element={<AddRentalIncomePage />} />}
+        />
+        <Route
+          path="rental/income/view"
+          element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalIncomes />} />}
+        />
+        <Route
+          path="rental/income/edit/:id"
+          element={<ProtectedRoute requiredPermission="rental" element={<EditRentalIncomePage />} />}
+        />
+        <Route
+          path="rental/expense/add"
+          element={<ProtectedRoute requiredPermission="rental" element={<AddRentalExpensePage />} />}
+        />
+        <Route
+          path="rental/expense/view"
+          element={<ProtectedRoute requiredPermission="rental" element={<ViewRentalExpenses />} />}
+        />
+        <Route
+          path="rental/expense/edit/:id"
+          element={<ProtectedRoute requiredPermission="rental" element={<EditRentalExpensePage />} />}
+        />
 
         {/* reports */}
         <Route
@@ -206,13 +215,13 @@ function AppRoutes() {
         <Route path="settings" element={<AdminRoute element={<SettingsPage />} />} />
         <Route path="settings/import" element={<AdminRoute element={<DataImportPage />} />} />
 
-        {/* SLA (guarded with can('sla')) */}
+        {/* SLA */}
         {can('sla') && (
           <>
             <Route path="sla/add-expense" element={<AddSLAExpensePage />} />
             <Route path="sla/add-income" element={<AddSLAIncomePage />} />
             <Route path="sla/equipment" element={<ViewSLAEquipmentPage />} />
-            <Route path="sla/view" element={<ViewSLAEquipmentPage />} /> {/* alias */}
+            <Route path="sla/view" element={<ViewSLAEquipmentPage />} />
           </>
         )}
       </Route>
@@ -220,7 +229,7 @@ function AppRoutes() {
   );
 }
 
-/* ---------- App shell ---------- */
+// ---------- App shell ----------
 
 function App() {
   return (

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/customSupabaseClient'; // <-- Add this line
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -25,8 +26,37 @@ const LoginPage = () => {
         description: "Welcome back!",
       });
       navigate('/');
+    } else {
+      toast({
+        title: "Login Failed",
+        description: error.message,
+      });
     }
     setLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address first.",
+      });
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: "Reset Email Sent",
+        description: "Check your inbox to reset your password.",
+      });
+    }
   };
 
   return (
@@ -63,11 +93,18 @@ const LoginPage = () => {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Logging in...' : 'Login'}
               </Button>
+              <button 
+                type="button" 
+                className="text-blue-600 text-sm hover:underline" 
+                onClick={handleForgotPassword}
+              >
+                Forgot your password?
+              </button>
             </div>
           </form>
         </CardContent>
-         <CardFooter className="text-center text-sm">
-            Don't have an account? <Link to="/register" className="underline ml-1">Register</Link>
+        <CardFooter className="text-center text-sm">
+          Don't have an account? <Link to="/register" className="underline ml-1">Register</Link>
         </CardFooter>
       </Card>
     </div>
