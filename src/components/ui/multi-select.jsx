@@ -107,3 +107,4 @@ export function MultiSelect({ options, selected, onChange, placeholder = 'Select
     </Popover>
   );
 }
+export default MultiSelect;

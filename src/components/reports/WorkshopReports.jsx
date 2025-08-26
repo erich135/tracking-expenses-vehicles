@@ -10,7 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MultiSelect } from '@/components/ui/multi-select';
+import { MultiSelect } from '@/components/ui/multi-select.jsx';
 import { downloadAsCsv } from '@/lib/exportUtils';
 import { jobStatuses } from '@/pages/AddWorkshopJobPage';
 import jsPDF from 'jspdf';

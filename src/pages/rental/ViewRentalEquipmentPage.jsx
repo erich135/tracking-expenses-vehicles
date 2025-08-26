@@ -11,7 +11,7 @@ import { Edit, Search, X } from 'lucide-react';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { MultiSelect } from '@/components/ui/multi-select';
+import { MultiSelect } from '@/components/ui/multi-select.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const getServiceStatusClass = (machine) => {
