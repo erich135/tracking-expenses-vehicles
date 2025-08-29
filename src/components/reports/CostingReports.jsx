@@ -11,24 +11,16 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
-import {
-  Button
-} from "@/components/ui/button";
-import {
-  Input
-} from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select, SelectTrigger, SelectValue, SelectItem, SelectContent
 } from "@/components/ui/select";
 import {
   Popover, PopoverTrigger, PopoverContent
 } from "@/components/ui/popover";
-import {
-  Label
-} from "@/components/ui/label";
-import {
-  Slider
-} from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from "@/components/ui/dialog";
@@ -39,24 +31,47 @@ import AddCostingPage from "@/pages/AddCostingPage.jsx";
 import MultiSelect from "@/components/ui/multi-select.jsx";
 import { downloadAsCsv, downloadAsPdf } from "@/lib/exportUtils";
 
+const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }) => {
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#000"
+      textAnchor={x > cx ? "start" : "end"}
+      dominantBaseline="central"
+      fontSize={12}
+    >
+      {`${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString("en-ZA", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })})`}
+    </text>
+  );
+};
+
 const CostingReports = () => {
   const [allEntries, setAllEntries] = useState([]);
   const [selectedReport, setSelectedReport] = useState("summary_by_rep");
   const [viewMode, setViewMode] = useState("table");
-
   const [dateRange, setDateRange] = useState();
   const [marginRange, setMarginRange] = useState([0, 100]);
-
   const [selectedReps, setSelectedReps] = useState([]);
   const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [selectedJobDescriptions, setSelectedJobDescriptions] = useState([]);
   const [selectedExpenseItems, setSelectedExpenseItems] = useState([]);
   const [jobNumberFilter, setJobNumberFilter] = useState("");
+  const [sortOption, setSortOption] = useState("rep_asc");
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isRepDialogOpen, setIsRepDialogOpen] = useState(false);
   const [selectedRep, setSelectedRep] = useState(null);
+
   const fetchData = async () => {
     const { data, error } = await supabase
       .from("costing_entries")
@@ -101,7 +116,6 @@ const CostingReports = () => {
     const unique = [...new Set(names)];
     return unique.map(v => ({ label: v, value: v }));
   }, [allEntries]);
-
   const filteredData = useMemo(() => {
     return allEntries.filter(entry => {
       const inDateRange =
@@ -158,18 +172,32 @@ const CostingReports = () => {
 
   const processedData = useMemo(() => {
     if (selectedReport === "summary_by_rep") {
-      return {
-        headers: [
-          { key: "group", label: "Rep" },
-          { key: "sales", label: "Sales (R)" },
-          { key: "expenses", label: "Cost (R)" },
-          { key: "profit", label: "Profit (R)" },
-          { key: "margin", label: "Profit %" },
-        ],
-        data: groupAndSummarize("rep"),
-        graphNameKey: "group",
-      };
-    }
+  let data = groupAndSummarize("rep");
+
+  // Apply sorting based on dropdown selection
+  if (sortOption === "rep_asc") {
+    data.sort((a, b) => a.group.localeCompare(b.group));
+  } else if (sortOption === "rep_desc") {
+    data.sort((a, b) => b.group.localeCompare(a.group));
+  } else if (sortOption === "profit_asc") {
+    data.sort((a, b) => a.profit - b.profit);
+  } else if (sortOption === "profit_desc") {
+    data.sort((a, b) => b.profit - a.profit);
+  }
+
+  return {
+    headers: [
+      { key: "group", label: "Rep" },
+      { key: "sales", label: "Sales (R)" },
+      { key: "expenses", label: "Cost (R)" },
+      { key: "profit", label: "Profit (R)" },
+      { key: "margin", label: "Profit %" },
+    ],
+    data,
+    graphNameKey: "group",
+  };
+}
+
 
     if (selectedReport === "summary_by_customer") {
       return {
@@ -184,7 +212,6 @@ const CostingReports = () => {
         graphNameKey: "group",
       };
     }
-
     if (selectedReport === "profit_by_item") {
       const itemMap = {};
       filteredData.forEach(entry => {
@@ -226,7 +253,8 @@ const CostingReports = () => {
       data: filteredData,
       graphNameKey: "job_number",
     };
-  }, [filteredData, selectedReport]);
+  }, [filteredData, selectedReport, sortOption]);
+
   const repBreakdown = useMemo(() => {
     if (!selectedRep) return null;
     const repEntries = filteredData.filter(e => e.rep === selectedRep);
@@ -244,92 +272,108 @@ const CostingReports = () => {
 
   return (
     <div className="p-6">
+      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle>Reports</CardTitle>
           <CardDescription>Use the filters below to refine your report.</CardDescription>
         </CardHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-  <Select value={selectedReport} onValueChange={setSelectedReport}>
+          
+  <Select value={sortOption} onValueChange={setSortOption}>
     <SelectTrigger>
-      <SelectValue placeholder="Select a report type" />
+      <SelectValue placeholder="Sort by" />
     </SelectTrigger>
     <SelectContent>
-      {reportTypes.map(report => (
-        <SelectItem key={report.value} value={report.value}>
-          {report.label}
-        </SelectItem>
-      ))}
+      <SelectItem value="rep_asc">Rep Code A-Z</SelectItem>
+      <SelectItem value="rep_desc">Rep Code Z-A</SelectItem>
+      <SelectItem value="profit_asc">Profit (Lowest First)</SelectItem>
+      <SelectItem value="profit_desc">Profit (Highest First)</SelectItem>
     </SelectContent>
   </Select>
 
-  <Input
-    placeholder="Filter by Job Number..."
-    value={jobNumberFilter}
-    onChange={e => setJobNumberFilter(e.target.value)}
-  />
+     ...
 
-  <Popover>
-    <PopoverTrigger asChild>
-      <Button
-        variant="outline"
-        className={cn("w-full justify-start text-left font-normal", !dateRange?.from && "text-muted-foreground")}
-      >
-        <CalendarIcon className="mr-2 h-4 w-4" />
-        {dateRange?.from ? (
-          dateRange.to
-            ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
-            : format(dateRange.from, "LLL dd, y")
-        ) : (
-          <span>Pick a date</span>
-        )}
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent className="w-auto p-0" align="start">
-      <Calendar
-        initialFocus
-        mode="range"
-        defaultMonth={dateRange?.from}
-        selected={dateRange}
-        onSelect={setDateRange}
-        numberOfMonths={2}
-      />
-    </PopoverContent>
-  </Popover>
+          <Select value={selectedReport} onValueChange={setSelectedReport}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a report type" />
+            </SelectTrigger>
+            <SelectContent>
+              {reportTypes.map(report => (
+                <SelectItem key={report.value} value={report.value}>
+                  {report.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-  <div className="space-y-2 lg:col-span-1">
-    <Label>Filter by Margin (%): {marginRange[0]}% - {marginRange[1]}%</Label>
-    <Slider value={marginRange} onValueChange={setMarginRange} min={0} max={100} step={1} />
-  </div>
+          <Input
+            placeholder="Filter by Job Number..."
+            value={jobNumberFilter}
+            onChange={e => setJobNumberFilter(e.target.value)}
+          />
 
-  <MultiSelect
-    options={repOptions}
-    selected={selectedReps}
-    onChange={setSelectedReps}
-    placeholder="Filter by Rep..."
-  />
-  <MultiSelect
-    options={customerOptions}
-    selected={selectedCustomers}
-    onChange={setSelectedCustomers}
-    placeholder="Filter by Customer..."
-  />
-  <MultiSelect
-    options={jobDescriptionOptions}
-    selected={selectedJobDescriptions}
-    onChange={setSelectedJobDescriptions}
-    placeholder="Filter by Job Type..."
-  />
-  <MultiSelect
-    options={expenseItemOptions}
-    selected={selectedExpenseItems}
-    onChange={setSelectedExpenseItems}
-    placeholder="Filter by Expense Item..."
-  />
-</div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn("w-full justify-start text-left font-normal", !dateRange?.from && "text-muted-foreground")}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange?.from ? (
+                  dateRange.to
+                    ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+                    : format(dateRange.from, "LLL dd, y")
+                ) : (
+                  <span>Pick a date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange?.from}
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
 
+          <div className="space-y-2 lg:col-span-1">
+            <Label>Filter by Margin (%): {marginRange[0]}% - {marginRange[1]}%</Label>
+            <Slider value={marginRange} onValueChange={setMarginRange} min={0} max={100} step={1} />
+          </div>
+
+          <MultiSelect
+            options={repOptions}
+            selected={selectedReps}
+            onChange={setSelectedReps}
+            placeholder="Filter by Rep..."
+          />
+          <MultiSelect
+            options={customerOptions}
+            selected={selectedCustomers}
+            onChange={setSelectedCustomers}
+            placeholder="Filter by Customer..."
+          />
+          <MultiSelect
+            options={jobDescriptionOptions}
+            selected={selectedJobDescriptions}
+            onChange={setSelectedJobDescriptions}
+            placeholder="Filter by Job Type..."
+          />
+          <MultiSelect
+            options={expenseItemOptions}
+            selected={selectedExpenseItems}
+            onChange={setSelectedExpenseItems}
+            placeholder="Filter by Expense Item..."
+          />
+        </div>
       </Card>
 
+      {/* Table / Graph */}
       <Card className="mt-6">
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>
@@ -402,18 +446,16 @@ const CostingReports = () => {
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
-                    data={processedData.data}
-                    dataKey="profit"
-                    nameKey={processedData.graphNameKey}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={130}
-                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    data={repBreakdown}
+                    dataKey="value"
+                    nameKey="name"
+                    outerRadius={100}
+                    label={renderCustomLabel}
                     labelLine={false}
                   >
-                    {processedData.data.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={['#8884d8', '#82ca9d', '#ffc658', '#ff7f50', '#8dd1e1', '#a4de6c'][index % 6]} />
-                    ))}
+                    <Cell fill="#4285F4" />
+                    <Cell fill="#FBBC05" />
+                    <Cell fill="#00C49F" />
                   </Pie>
                   <Tooltip formatter={(value) => `R ${parseFloat(value).toLocaleString()}`} />
                   <Legend />
@@ -424,6 +466,7 @@ const CostingReports = () => {
         </CardContent>
       </Card>
 
+      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl">
           <AddCostingPage editData={selectedEntry} onSave={() => {
@@ -433,6 +476,7 @@ const CostingReports = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Rep Breakdown Dialog */}
       <Dialog open={isRepDialogOpen} onOpenChange={setIsRepDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -446,7 +490,7 @@ const CostingReports = () => {
                   dataKey="value"
                   nameKey="name"
                   outerRadius={100}
-                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                  label={renderCustomLabel}
                   labelLine={false}
                 >
                   <Cell fill="#4285F4" />
