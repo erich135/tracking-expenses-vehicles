@@ -57,24 +57,23 @@ const CostingReports = () => {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isRepDialogOpen, setIsRepDialogOpen] = useState(false);
   const [selectedRep, setSelectedRep] = useState(null);
-
   const fetchData = async () => {
-  const { data, error } = await supabase
-    .from("costing_entries")
-    .select("*")
-    .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("costing_entries")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    console.error("Error fetching costing data", error);
-  } else {
-    setAllEntries(data);
-  }
-};
-
+    if (error) {
+      console.error("Error fetching costing data", error);
+    } else {
+      setAllEntries(data);
+    }
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
+
   const reportTypes = [
     { value: "summary_by_rep", label: "Summary by Rep" },
     { value: "summary_by_customer", label: "Summary by Customer" },
@@ -114,11 +113,9 @@ const CostingReports = () => {
         parseFloat(entry.margin || 0) <= marginRange[1];
 
       const jobMatch = jobNumberFilter === "" || entry.job_number?.toLowerCase().includes(jobNumberFilter.toLowerCase());
-
       const repMatch = selectedReps.length === 0 || selectedReps.includes(entry.rep);
       const customerMatch = selectedCustomers.length === 0 || selectedCustomers.includes(entry.customer);
       const jobDescMatch = selectedJobDescriptions.length === 0 || selectedJobDescriptions.includes(entry.job_description);
-
       const expenseItemMatch =
         selectedExpenseItems.length === 0 ||
         entry.expense_items?.some(i => selectedExpenseItems.includes(i.name));
@@ -148,12 +145,12 @@ const CostingReports = () => {
 
     return Object.entries(groupMap).map(([group, values]) => {
       const { sales, expenses, profit } = values;
-      const margin = sales ? ((profit / sales) * 100).toFixed(1) : "0.0";
+      const margin = sales ? ((profit / sales) * 100).toFixed(2) : "0.00";
       return {
         group,
         sales: sales.toFixed(2),
         expenses: expenses.toFixed(2),
-        profit: Number(profit.toFixed(2)), // FIXED: ensure numeric value for graph
+        profit: Number(profit.toFixed(2)),
         margin
       };
     });
@@ -201,7 +198,7 @@ const CostingReports = () => {
 
       const data = Object.entries(itemMap).map(([name, value]) => ({
         group: name,
-        profit: Number(value.toFixed(2)), // FIXED: ensure numeric value for graph
+        profit: Number(value.toFixed(2)),
       }));
 
       return {
@@ -252,86 +249,85 @@ const CostingReports = () => {
           <CardTitle>Reports</CardTitle>
           <CardDescription>Use the filters below to refine your report.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Select value={selectedReport} onValueChange={setSelectedReport}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a report type" />
-              </SelectTrigger>
-              <SelectContent>
-                {reportTypes.map(report => (
-                  <SelectItem key={report.value} value={report.value}>
-                    {report.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <Select value={selectedReport} onValueChange={setSelectedReport}>
+    <SelectTrigger>
+      <SelectValue placeholder="Select a report type" />
+    </SelectTrigger>
+    <SelectContent>
+      {reportTypes.map(report => (
+        <SelectItem key={report.value} value={report.value}>
+          {report.label}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
 
-            <Input
-              placeholder="Filter by Job Number..."
-              value={jobNumberFilter}
-              onChange={e => setJobNumberFilter(e.target.value)}
-            />
+  <Input
+    placeholder="Filter by Job Number..."
+    value={jobNumberFilter}
+    onChange={e => setJobNumberFilter(e.target.value)}
+  />
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn("w-full justify-start text-left font-normal", !dateRange?.from && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange?.from ? (
-                    dateRange.to
-                      ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
-                      : format(dateRange.from, "LLL dd, y")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={dateRange?.from}
-                  selected={dateRange}
-                  onSelect={setDateRange}
-                  numberOfMonths={2}
-                />
-              </PopoverContent>
-            </Popover>
+  <Popover>
+    <PopoverTrigger asChild>
+      <Button
+        variant="outline"
+        className={cn("w-full justify-start text-left font-normal", !dateRange?.from && "text-muted-foreground")}
+      >
+        <CalendarIcon className="mr-2 h-4 w-4" />
+        {dateRange?.from ? (
+          dateRange.to
+            ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+            : format(dateRange.from, "LLL dd, y")
+        ) : (
+          <span>Pick a date</span>
+        )}
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent className="w-auto p-0" align="start">
+      <Calendar
+        initialFocus
+        mode="range"
+        defaultMonth={dateRange?.from}
+        selected={dateRange}
+        onSelect={setDateRange}
+        numberOfMonths={2}
+      />
+    </PopoverContent>
+  </Popover>
 
-            <div className="space-y-2 lg:col-span-1">
-              <Label>Filter by Margin (%): {marginRange[0]}% - {marginRange[1]}%</Label>
-              <Slider value={marginRange} onValueChange={setMarginRange} min={0} max={100} step={1} />
-            </div>
+  <div className="space-y-2 lg:col-span-1">
+    <Label>Filter by Margin (%): {marginRange[0]}% - {marginRange[1]}%</Label>
+    <Slider value={marginRange} onValueChange={setMarginRange} min={0} max={100} step={1} />
+  </div>
 
-            <MultiSelect
-              options={repOptions}
-              selected={selectedReps}
-              onChange={setSelectedReps}
-              placeholder="Filter by Rep..."
-            />
-            <MultiSelect
-              options={customerOptions}
-              selected={selectedCustomers}
-              onChange={setSelectedCustomers}
-              placeholder="Filter by Customer..."
-            />
-            <MultiSelect
-              options={jobDescriptionOptions}
-              selected={selectedJobDescriptions}
-              onChange={setSelectedJobDescriptions}
-              placeholder="Filter by Job Type..."
-            />
-            <MultiSelect
-              options={expenseItemOptions}
-              selected={selectedExpenseItems}
-              onChange={setSelectedExpenseItems}
-              placeholder="Filter by Expense Item..."
-            />
-          </div>
-        </CardContent>
+  <MultiSelect
+    options={repOptions}
+    selected={selectedReps}
+    onChange={setSelectedReps}
+    placeholder="Filter by Rep..."
+  />
+  <MultiSelect
+    options={customerOptions}
+    selected={selectedCustomers}
+    onChange={setSelectedCustomers}
+    placeholder="Filter by Customer..."
+  />
+  <MultiSelect
+    options={jobDescriptionOptions}
+    selected={selectedJobDescriptions}
+    onChange={setSelectedJobDescriptions}
+    placeholder="Filter by Job Type..."
+  />
+  <MultiSelect
+    options={expenseItemOptions}
+    selected={selectedExpenseItems}
+    onChange={setSelectedExpenseItems}
+    placeholder="Filter by Expense Item..."
+  />
+</div>
+
       </Card>
 
       <Card className="mt-6">
@@ -377,7 +373,11 @@ const CostingReports = () => {
                     <TableRow key={index}>
                       {processedData.headers.map(h => (
                         <TableCell key={h.key} className={h.key === 'margin' ? getMarginColor(parseFloat(row[h.key])) : ''}>
-                          {row[h.key]}
+                          {["sales", "expenses", "total_customer", "total_expenses", "profit"].includes(h.key)
+                            ? new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(row[h.key])
+                            : h.key === "margin"
+                              ? `${parseFloat(row[h.key]).toFixed(2)}%`
+                              : row[h.key]}
                         </TableCell>
                       ))}
                       {selectedReport === 'summary_by_rep' && (
