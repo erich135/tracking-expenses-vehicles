@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import { format } from "date-fns";
 import { CalendarIcon, FileDown, TableIcon, BarChartIcon } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Tooltip, Cell, Legend } from "recharts";
-import { supabase } from '@/lib/customSupabaseClient';
+import { supabase } from "@/lib/customSupabaseClient";
 
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle
@@ -27,10 +26,12 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
-import AddCostingPage from "@/pages/AddCostingPage.jsx";
+import AddCostingPage from "@/pages/AddCostingPage"; // align with ViewCostingsPage import
+
 import MultiSelect from "@/components/ui/multi-select.jsx";
 import { downloadAsCsv, downloadAsPdf } from "@/lib/exportUtils";
 
+/** Pie label with % + amount */
 const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }) => {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
@@ -58,6 +59,7 @@ const CostingReports = () => {
   const [allEntries, setAllEntries] = useState([]);
   const [selectedReport, setSelectedReport] = useState("summary_by_rep");
   const [viewMode, setViewMode] = useState("table");
+
   const [dateRange, setDateRange] = useState();
   const [marginRange, setMarginRange] = useState([0, 100]);
   const [selectedReps, setSelectedReps] = useState([]);
@@ -67,11 +69,15 @@ const CostingReports = () => {
   const [jobNumberFilter, setJobNumberFilter] = useState("");
   const [sortOption, setSortOption] = useState("rep_asc");
 
+  // editing
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
+
+  // rep dialog
   const [isRepDialogOpen, setIsRepDialogOpen] = useState(false);
   const [selectedRep, setSelectedRep] = useState(null);
 
+  /** load all entries (latest first) */
   const fetchData = async () => {
     const { data, error } = await supabase
       .from("costing_entries")
@@ -81,41 +87,40 @@ const CostingReports = () => {
     if (error) {
       console.error("Error fetching costing data", error);
     } else {
-      setAllEntries(data);
+      setAllEntries(data || []);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const reportTypes = [
     { value: "summary_by_rep", label: "Summary by Rep" },
     { value: "summary_by_customer", label: "Summary by Customer" },
     { value: "profit_by_item", label: "Profit by Item" },
-    { value: "detailed_entries", label: "Detailed Costing Entries" }
+    { value: "detailed_entries", label: "Detailed Costing Entries" },
   ];
 
   const repOptions = useMemo(() => {
-    const unique = [...new Set(allEntries.map(e => e.rep))];
+    const unique = [...new Set(allEntries.map(e => e.rep))].filter(Boolean);
     return unique.map(v => ({ label: v, value: v }));
   }, [allEntries]);
 
   const customerOptions = useMemo(() => {
-    const unique = [...new Set(allEntries.map(e => e.customer))];
+    const unique = [...new Set(allEntries.map(e => e.customer))].filter(Boolean);
     return unique.map(v => ({ label: v, value: v }));
   }, [allEntries]);
 
   const jobDescriptionOptions = useMemo(() => {
-    const unique = [...new Set(allEntries.map(e => e.job_description))];
+    const unique = [...new Set(allEntries.map(e => e.job_description))].filter(Boolean);
     return unique.map(v => ({ label: v, value: v }));
   }, [allEntries]);
 
   const expenseItemOptions = useMemo(() => {
     const names = allEntries.flatMap(e => e.expense_items?.map(i => i.name) || []);
-    const unique = [...new Set(names)];
+    const unique = [...new Set(names)].filter(Boolean);
     return unique.map(v => ({ label: v, value: v }));
   }, [allEntries]);
+  /** apply all filters */
   const filteredData = useMemo(() => {
     return allEntries.filter(entry => {
       const inDateRange =
@@ -126,17 +131,43 @@ const CostingReports = () => {
         parseFloat(entry.margin || 0) >= marginRange[0] &&
         parseFloat(entry.margin || 0) <= marginRange[1];
 
-      const jobMatch = jobNumberFilter === "" || entry.job_number?.toLowerCase().includes(jobNumberFilter.toLowerCase());
-      const repMatch = selectedReps.length === 0 || selectedReps.includes(entry.rep);
-      const customerMatch = selectedCustomers.length === 0 || selectedCustomers.includes(entry.customer);
-      const jobDescMatch = selectedJobDescriptions.length === 0 || selectedJobDescriptions.includes(entry.job_description);
+      const jobMatch =
+        jobNumberFilter === "" ||
+        entry.job_number?.toLowerCase().includes(jobNumberFilter.toLowerCase());
+
+      const repMatch =
+        selectedReps.length === 0 || selectedReps.includes(entry.rep);
+
+      const customerMatch =
+        selectedCustomers.length === 0 || selectedCustomers.includes(entry.customer);
+
+      const jobDescMatch =
+        selectedJobDescriptions.length === 0 || selectedJobDescriptions.includes(entry.job_description);
+
       const expenseItemMatch =
         selectedExpenseItems.length === 0 ||
         entry.expense_items?.some(i => selectedExpenseItems.includes(i.name));
 
-      return inDateRange && inMarginRange && jobMatch && repMatch && customerMatch && jobDescMatch && expenseItemMatch;
+      return (
+        inDateRange &&
+        inMarginRange &&
+        jobMatch &&
+        repMatch &&
+        customerMatch &&
+        jobDescMatch &&
+        expenseItemMatch
+      );
     });
-  }, [allEntries, dateRange, marginRange, jobNumberFilter, selectedReps, selectedCustomers, selectedJobDescriptions, selectedExpenseItems]);
+  }, [
+    allEntries,
+    dateRange,
+    marginRange,
+    jobNumberFilter,
+    selectedReps,
+    selectedCustomers,
+    selectedJobDescriptions,
+    selectedExpenseItems
+  ]);
 
   const getMarginColor = (margin) => {
     if (margin >= 60) return "text-green-600";
@@ -144,17 +175,16 @@ const CostingReports = () => {
     return "text-red-600";
   };
 
+  /** summarize by key (rep / customer) */
   const groupAndSummarize = (key) => {
     const groupMap = {};
 
     filteredData.forEach(entry => {
-      const groupKey = entry[key] || "Unknown";
-      if (!groupMap[groupKey]) {
-        groupMap[groupKey] = { sales: 0, expenses: 0, profit: 0 };
-      }
-      groupMap[groupKey].sales += parseFloat(entry.total_customer || 0);
-      groupMap[groupKey].expenses += parseFloat(entry.total_expenses || 0);
-      groupMap[groupKey].profit += parseFloat(entry.profit || 0);
+      const k = entry[key] || "Unknown";
+      if (!groupMap[k]) groupMap[k] = { sales: 0, expenses: 0, profit: 0 };
+      groupMap[k].sales += Number(entry.total_customer || 0);
+      groupMap[k].expenses += Number(entry.total_expenses || 0);
+      groupMap[k].profit += Number(entry.profit || 0);
     });
 
     return Object.entries(groupMap).map(([group, values]) => {
@@ -162,42 +192,36 @@ const CostingReports = () => {
       const margin = sales ? ((profit / sales) * 100).toFixed(2) : "0.00";
       return {
         group,
-        sales: sales.toFixed(2),
-        expenses: expenses.toFixed(2),
+        sales: Number(sales.toFixed(2)),
+        expenses: Number(expenses.toFixed(2)),
         profit: Number(profit.toFixed(2)),
-        margin
+        margin: Number(margin),
       };
     });
   };
 
+  /** dataset for the selected report */
   const processedData = useMemo(() => {
     if (selectedReport === "summary_by_rep") {
-  let data = groupAndSummarize("rep");
+      let data = groupAndSummarize("rep");
 
-  // Apply sorting based on dropdown selection
-  if (sortOption === "rep_asc") {
-    data.sort((a, b) => a.group.localeCompare(b.group));
-  } else if (sortOption === "rep_desc") {
-    data.sort((a, b) => b.group.localeCompare(a.group));
-  } else if (sortOption === "profit_asc") {
-    data.sort((a, b) => a.profit - b.profit);
-  } else if (sortOption === "profit_desc") {
-    data.sort((a, b) => b.profit - a.profit);
-  }
+      if (sortOption === "rep_asc") data.sort((a, b) => a.group.localeCompare(b.group));
+      else if (sortOption === "rep_desc") data.sort((a, b) => b.group.localeCompare(a.group));
+      else if (sortOption === "profit_asc") data.sort((a, b) => a.profit - b.profit);
+      else if (sortOption === "profit_desc") data.sort((a, b) => b.profit - a.profit);
 
-  return {
-    headers: [
-      { key: "group", label: "Rep" },
-      { key: "sales", label: "Sales (R)" },
-      { key: "expenses", label: "Cost (R)" },
-      { key: "profit", label: "Profit (R)" },
-      { key: "margin", label: "Profit %" },
-    ],
-    data,
-    graphNameKey: "group",
-  };
-}
-
+      return {
+        headers: [
+          { key: "group", label: "Rep" },
+          { key: "sales", label: "Sales (R)" },
+          { key: "expenses", label: "Cost (R)" },
+          { key: "profit", label: "Profit (R)" },
+          { key: "margin", label: "Profit %" },
+        ],
+        data,
+        graphNameKey: "group",
+      };
+    }
 
     if (selectedReport === "summary_by_customer") {
       return {
@@ -212,14 +236,12 @@ const CostingReports = () => {
         graphNameKey: "group",
       };
     }
+
     if (selectedReport === "profit_by_item") {
       const itemMap = {};
       filteredData.forEach(entry => {
         (entry.expense_items || []).forEach(item => {
-          if (!itemMap[item.name]) {
-            itemMap[item.name] = 0;
-          }
-          itemMap[item.name] += parseFloat(item.value || 0);
+          itemMap[item.name] = (itemMap[item.name] || 0) + Number(item.value || 0);
         });
       });
 
@@ -238,6 +260,7 @@ const CostingReports = () => {
       };
     }
 
+    // Default: detailed entries
     return {
       headers: [
         { key: "date", label: "Date" },
@@ -255,6 +278,7 @@ const CostingReports = () => {
     };
   }, [filteredData, selectedReport, sortOption]);
 
+  /** breakdown for rep dialog */
   const repBreakdown = useMemo(() => {
     if (!selectedRep) return null;
     const repEntries = filteredData.filter(e => e.rep === selectedRep);
@@ -264,12 +288,11 @@ const CostingReports = () => {
     const profit = repEntries.reduce((acc, e) => acc + Number(e.profit || 0), 0);
 
     return [
-      { name: 'Sales', value: sales },
-      { name: 'Cost', value: expenses },
-      { name: 'Profit', value: profit }
+      { name: "Sales", value: sales },
+      { name: "Cost", value: expenses },
+      { name: "Profit", value: profit },
     ];
   }, [filteredData, selectedRep]);
-
   return (
     <div className="p-6">
       {/* Filters */}
@@ -278,41 +301,37 @@ const CostingReports = () => {
           <CardTitle>Reports</CardTitle>
           <CardDescription>Use the filters below to refine your report.</CardDescription>
         </CardHeader>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          
-  <Select value={sortOption} onValueChange={setSortOption}>
-    <SelectTrigger>
-      <SelectValue placeholder="Sort by" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="rep_asc">Rep Code A-Z</SelectItem>
-      <SelectItem value="rep_desc">Rep Code Z-A</SelectItem>
-      <SelectItem value="profit_asc">Profit (Lowest First)</SelectItem>
-      <SelectItem value="profit_desc">Profit (Highest First)</SelectItem>
-    </SelectContent>
-  </Select>
-
-     ...
-
-          <Select value={selectedReport} onValueChange={setSelectedReport}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a report type" />
-            </SelectTrigger>
+          {/* Sort (used by Summary by Rep) */}
+          <Select value={sortOption} onValueChange={setSortOption}>
+            <SelectTrigger><SelectValue placeholder="Sort by" /></SelectTrigger>
             <SelectContent>
-              {reportTypes.map(report => (
-                <SelectItem key={report.value} value={report.value}>
-                  {report.label}
-                </SelectItem>
+              <SelectItem value="rep_asc">Rep Code A-Z</SelectItem>
+              <SelectItem value="rep_desc">Rep Code Z-A</SelectItem>
+              <SelectItem value="profit_asc">Profit (Lowest First)</SelectItem>
+              <SelectItem value="profit_desc">Profit (Highest First)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Report type */}
+          <Select value={selectedReport} onValueChange={setSelectedReport}>
+            <SelectTrigger><SelectValue placeholder="Select a report type" /></SelectTrigger>
+            <SelectContent>
+              {reportTypes.map(r => (
+                <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
+          {/* Job number filter */}
           <Input
             placeholder="Filter by Job Number..."
             value={jobNumberFilter}
             onChange={e => setJobNumberFilter(e.target.value)}
           />
 
+          {/* Date range */}
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -324,9 +343,7 @@ const CostingReports = () => {
                   dateRange.to
                     ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
                     : format(dateRange.from, "LLL dd, y")
-                ) : (
-                  <span>Pick a date</span>
-                )}
+                ) : <span>Pick a date</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -341,35 +358,17 @@ const CostingReports = () => {
             </PopoverContent>
           </Popover>
 
+          {/* Margin */}
           <div className="space-y-2 lg:col-span-1">
             <Label>Filter by Margin (%): {marginRange[0]}% - {marginRange[1]}%</Label>
             <Slider value={marginRange} onValueChange={setMarginRange} min={0} max={100} step={1} />
           </div>
 
-          <MultiSelect
-            options={repOptions}
-            selected={selectedReps}
-            onChange={setSelectedReps}
-            placeholder="Filter by Rep..."
-          />
-          <MultiSelect
-            options={customerOptions}
-            selected={selectedCustomers}
-            onChange={setSelectedCustomers}
-            placeholder="Filter by Customer..."
-          />
-          <MultiSelect
-            options={jobDescriptionOptions}
-            selected={selectedJobDescriptions}
-            onChange={setSelectedJobDescriptions}
-            placeholder="Filter by Job Type..."
-          />
-          <MultiSelect
-            options={expenseItemOptions}
-            selected={selectedExpenseItems}
-            onChange={setSelectedExpenseItems}
-            placeholder="Filter by Expense Item..."
-          />
+          {/* Multiselects */}
+          <MultiSelect options={repOptions} selected={selectedReps} onChange={setSelectedReps} placeholder="Filter by Rep..." />
+          <MultiSelect options={customerOptions} selected={selectedCustomers} onChange={setSelectedCustomers} placeholder="Filter by Customer..." />
+          <MultiSelect options={jobDescriptionOptions} selected={selectedJobDescriptions} onChange={setSelectedJobDescriptions} placeholder="Filter by Job Type..." />
+          <MultiSelect options={expenseItemOptions} selected={selectedExpenseItems} onChange={setSelectedExpenseItems} placeholder="Filter by Expense Item..." />
         </div>
       </Card>
 
@@ -381,56 +380,67 @@ const CostingReports = () => {
             <div className="text-sm font-normal text-muted-foreground">Viewing as {viewMode}</div>
           </CardTitle>
           <div className="flex space-x-2">
-            <Button variant={viewMode === 'table' ? 'default' : 'outline'} onClick={() => setViewMode('table')}>
-              <TableIcon className="w-4 h-4 mr-2" />
-              Table
+            <Button variant={viewMode === "table" ? "default" : "outline"} onClick={() => setViewMode("table")}>
+              <TableIcon className="w-4 h-4 mr-2" /> Table
             </Button>
-            <Button variant={viewMode === 'graph' ? 'default' : 'outline'} onClick={() => setViewMode('graph')}>
-              <BarChartIcon className="w-4 h-4 mr-2" />
-              Graph
+            <Button variant={viewMode === "graph" ? "default" : "outline"} onClick={() => setViewMode("graph")}>
+              <BarChartIcon className="w-4 h-4 mr-2" /> Graph
             </Button>
             <Button variant="outline" onClick={() => downloadAsPdf(processedData)}>
-              <FileDown className="w-4 h-4 mr-2" />
-              PDF
+              <FileDown className="w-4 h-4 mr-2" /> PDF
             </Button>
             <Button variant="outline" onClick={() => downloadAsCsv(processedData)}>
-              <FileDown className="w-4 h-4 mr-2" />
-              CSV
+              <FileDown className="w-4 h-4 mr-2" /> CSV
             </Button>
           </div>
         </CardHeader>
 
         <CardContent>
-          {viewMode === 'table' && (
+          {viewMode === "table" && (
             <div className="overflow-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {processedData.headers.map(h => (
-                      <TableHead key={h.key}>{h.label}</TableHead>
-                    ))}
-                    {selectedReport === 'summary_by_rep' && <TableHead className="text-right">Actions</TableHead>}
+                    {processedData.headers.map(h => (<TableHead key={h.key}>{h.label}</TableHead>))}
+                    {(selectedReport === "summary_by_rep" || selectedReport === "detailed_entries") && (
+                      <TableHead className="text-right">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   {processedData.data.map((row, index) => (
                     <TableRow key={index}>
                       {processedData.headers.map(h => (
-                        <TableCell key={h.key} className={h.key === 'margin' ? getMarginColor(parseFloat(row[h.key])) : ''}>
+                        <TableCell
+                          key={h.key}
+                          className={h.key === "margin" ? getMarginColor(Number(row[h.key])) : ""}
+                        >
                           {["sales", "expenses", "total_customer", "total_expenses", "profit"].includes(h.key)
-                            ? new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(row[h.key])
+                            ? new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(row[h.key])
                             : h.key === "margin"
-                              ? `${parseFloat(row[h.key]).toFixed(2)}%`
+                              ? `${Number(row[h.key]).toFixed(2)}%`
                               : row[h.key]}
                         </TableCell>
                       ))}
-                      {selectedReport === 'summary_by_rep' && (
+
+                      {/* Actions */}
+                      {selectedReport === "summary_by_rep" && (
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" onClick={() => {
-                            setSelectedRep(row.group);
-                            setIsRepDialogOpen(true);
-                          }}>
+                          <Button variant="ghost" size="sm" onClick={() => { setSelectedRep(row.group); setIsRepDialogOpen(true); }}>
                             View Breakdown
+                          </Button>
+                        </TableCell>
+                      )}
+
+                      {selectedReport === "detailed_entries" && (
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setSelectedEntry(row); setIsEditDialogOpen(true); }} // same idea as ViewCostingsPage
+                          >
+                            Edit
                           </Button>
                         </TableCell>
                       )}
@@ -441,23 +451,23 @@ const CostingReports = () => {
             </div>
           )}
 
-          {viewMode === 'graph' && processedData.data.length > 0 && (
+          {viewMode === "graph" && processedData.data.length > 0 && (
             <div className="h-[400px]">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
-                    data={repBreakdown}
-                    dataKey="value"
-                    nameKey="name"
+                    data={processedData.data}
+                    dataKey="profit"
+                    nameKey={processedData.graphNameKey}
                     outerRadius={100}
                     label={renderCustomLabel}
                     labelLine={false}
                   >
-                    <Cell fill="#4285F4" />
-                    <Cell fill="#FBBC05" />
-                    <Cell fill="#00C49F" />
+                    {processedData.data.map((_, i) => (
+                      <Cell key={i} fill={["#4285F4", "#FBBC05", "#00C49F", "#9C27B0", "#03A9F4", "#8BC34A"][i % 6]} />
+                    ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `R ${parseFloat(value).toLocaleString()}`} />
+                  <Tooltip formatter={(v) => `R ${parseFloat(v).toLocaleString()}`} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -465,14 +475,22 @@ const CostingReports = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Edit Dialog */}
+      {/* Edit Dialog — uses the SAME props pattern as ViewCostingsPage */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <AddCostingPage editData={selectedEntry} onSave={() => {
-            fetchData();
-            setIsEditDialogOpen(false);
-          }} />
+        <DialogContent className="max-w-7xl">
+          <DialogHeader>
+            <DialogTitle>Edit Costing Entry</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <AddCostingPage
+              isEditMode={true}
+              costingData={selectedEntry}
+              onSuccess={() => {
+                setIsEditDialogOpen(false);
+                fetchData();
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -486,7 +504,7 @@ const CostingReports = () => {
             <ResponsiveContainer>
               <PieChart>
                 <Pie
-                  data={repBreakdown}
+                  data={repBreakdown || []}
                   dataKey="value"
                   nameKey="name"
                   outerRadius={100}
