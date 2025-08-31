@@ -1,18 +1,53 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, FileDown, TableIcon, BarChartIcon } from "lucide-react";
-import { ResponsiveContainer, PieChart, Pie, Tooltip, Cell, Legend } from "recharts";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Tooltip,
+  Cell,
+  Legend,
+} from "recharts";
 import { supabase } from "@/lib/customSupabaseClient";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue, SelectItem, SelectContent } from "@/components/ui/select";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectItem,
+  SelectContent,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
@@ -20,7 +55,15 @@ import AddCostingPage from "@/pages/AddCostingPage";
 import MultiSelect from "@/components/ui/multi-select.jsx";
 import { downloadAsCsv, downloadAsPdf } from "@/lib/exportUtils";
 
-const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }) => {
+const renderCustomLabel = ({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+  value,
+}) => {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -33,10 +76,13 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
       textAnchor={x > cx ? "start" : "end"}
       dominantBaseline="central"
       fontSize={12}
-    >{`${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString("en-ZA", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })})`}</text>
+    >{`${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString(
+      "en-ZA",
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    )})`}</text>
   );
 };
 
@@ -59,7 +105,6 @@ const CostingReports = () => {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isRepDialogOpen, setIsRepDialogOpen] = useState(false);
   const [selectedRep, setSelectedRep] = useState(null);
-
   // -------- Data fetch
   const fetchData = async () => {
     const { data, error } = await supabase
@@ -75,16 +120,16 @@ const CostingReports = () => {
     fetchData();
   }, []);
 
-  // -------- Report list (added Job Type summary)
+  // -------- Report list
   const reportTypes = [
     { value: "summary_by_rep", label: "Summary by Rep" },
     { value: "summary_by_customer", label: "Summary by Customer" },
-    { value: "summary_by_job_type", label: "Summary by Job Type" }, // NEW
+    { value: "summary_by_job_type", label: "Summary by Job Type" },
     { value: "profit_by_item", label: "Profit by Item" },
     { value: "detailed_entries", label: "Detailed Costing Entries" },
   ];
 
-  // -------- Filter options
+  // -------- Filter dropdown options
   const repOptions = useMemo(() => {
     const unique = [...new Set(allEntries.map((e) => e.rep))];
     return unique.map((v) => ({ label: v, value: v }));
@@ -106,7 +151,7 @@ const CostingReports = () => {
     return unique.map((v) => ({ label: v, value: v }));
   }, [allEntries]);
 
-  // -------- Filtering
+  // -------- Apply filters to data
   const filteredData = useMemo(() => {
     return allEntries.filter((entry) => {
       const inDateRange =
@@ -132,7 +177,15 @@ const CostingReports = () => {
         selectedExpenseItems.length === 0 ||
         entry.expense_items?.some((i) => selectedExpenseItems.includes(i.name));
 
-      return inDateRange && inMarginRange && jobMatch && repMatch && customerMatch && jobDescMatch && expenseItemMatch;
+      return (
+        inDateRange &&
+        inMarginRange &&
+        jobMatch &&
+        repMatch &&
+        customerMatch &&
+        jobDescMatch &&
+        expenseItemMatch
+      );
     });
   }, [
     allEntries,
@@ -151,7 +204,6 @@ const CostingReports = () => {
     return "text-red-600";
   };
 
-  // -------- Helpers
   const groupAndSummarize = (key) => {
     const groupMap = {};
     filteredData.forEach((entry) => {
@@ -174,9 +226,9 @@ const CostingReports = () => {
       };
     });
   };
-  // -------- Build processedData (added summary_by_job_type with totals)
+
+  // -------- Build processed data
   const processedData = useMemo(() => {
-    // Summary by Rep (sortable)
     if (selectedReport === "summary_by_rep") {
       let data = groupAndSummarize("rep");
       if (sortOption === "rep_asc") data.sort((a, b) => a.group.localeCompare(b.group));
@@ -197,7 +249,6 @@ const CostingReports = () => {
       };
     }
 
-    // Summary by Customer
     if (selectedReport === "summary_by_customer") {
       return {
         headers: [
@@ -212,11 +263,9 @@ const CostingReports = () => {
       };
     }
 
-    // NEW: Summary by Job Type (+ totals row)
     if (selectedReport === "summary_by_job_type") {
       const data = groupAndSummarize("job_description");
 
-      // totals: sales, expenses, profit across all filtered jobs
       const totals = filteredData.reduce(
         (acc, e) => {
           const s = Number(e.total_customer || 0);
@@ -256,7 +305,6 @@ const CostingReports = () => {
       };
     }
 
-    // Profit by Item
     if (selectedReport === "profit_by_item") {
       const itemMap = {};
       filteredData.forEach((entry) => {
@@ -281,7 +329,6 @@ const CostingReports = () => {
       };
     }
 
-    // Default: Detailed Costing Entries
     return {
       headers: [
         { key: "date", label: "Date" },
@@ -299,7 +346,36 @@ const CostingReports = () => {
     };
   }, [filteredData, selectedReport, sortOption]);
 
-  // Rep breakdown pie
+  // ✅ Company-wide totals (only for detailed_entries)
+  const companyTotals = useMemo(() => {
+    const totals = filteredData.reduce(
+      (acc, entry) => {
+        const s = parseFloat(entry.total_customer || 0);
+        const c = parseFloat(entry.total_expenses || 0);
+        const p = parseFloat(entry.profit || 0);
+        acc.sales += s;
+        acc.cost += c;
+        acc.profit += p;
+        if (s > 0) {
+          acc.marginSum += (p / s) * 100;
+          acc.marginCount += 1;
+        }
+        return acc;
+      },
+      { sales: 0, cost: 0, profit: 0, marginSum: 0, marginCount: 0 }
+    );
+
+    return {
+      sales: totals.sales,
+      cost: totals.cost,
+      profit: totals.profit,
+      margin:
+        totals.marginCount > 0
+          ? parseFloat((totals.marginSum / totals.marginCount).toFixed(2))
+          : 0,
+    };
+  }, [filteredData]);
+    // -------- Rep breakdown for pie chart
   const repBreakdown = useMemo(() => {
     if (!selectedRep) return null;
     const repEntries = filteredData.filter((e) => e.rep === selectedRep);
@@ -316,15 +392,17 @@ const CostingReports = () => {
   // ------- UI
   return (
     <div className="p-6">
-      {/* Filters */}
+      {/* Filters Section */}
       <Card>
         <CardHeader>
           <CardTitle>Reports</CardTitle>
-          <CardDescription>Use the filters below to refine your report.</CardDescription>
+          <CardDescription>
+            Use the filters below to refine your report.
+          </CardDescription>
         </CardHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Sorter (effective for Rep report; harmless for others) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+          {/* Sort Option */}
           <Select value={sortOption} onValueChange={setSortOption}>
             <SelectTrigger>
               <SelectValue placeholder="Sort by" />
@@ -337,7 +415,7 @@ const CostingReports = () => {
             </SelectContent>
           </Select>
 
-          {/* Report type */}
+          {/* Report Type Selector */}
           <Select value={selectedReport} onValueChange={setSelectedReport}>
             <SelectTrigger>
               <SelectValue placeholder="Select a report type" />
@@ -351,14 +429,14 @@ const CostingReports = () => {
             </SelectContent>
           </Select>
 
-          {/* Job number filter */}
+          {/* Job Number Filter */}
           <Input
             placeholder="Filter by Job Number..."
             value={jobNumberFilter}
             onChange={(e) => setJobNumberFilter(e.target.value)}
           />
 
-          {/* Date range */}
+          {/* Date Picker */}
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -371,7 +449,10 @@ const CostingReports = () => {
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateRange?.from ? (
                   dateRange.to ? (
-                    `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+                    `${format(dateRange.from, "LLL dd, y")} - ${format(
+                      dateRange.to,
+                      "LLL dd, y"
+                    )}`
                   ) : (
                     format(dateRange.from, "LLL dd, y")
                   )
@@ -392,12 +473,18 @@ const CostingReports = () => {
             </PopoverContent>
           </Popover>
 
-          {/* Margin slider */}
+          {/* Margin Filter */}
           <div className="space-y-2 lg:col-span-1">
             <Label>
               Filter by Margin (%): {marginRange[0]}% - {marginRange[1]}%
             </Label>
-            <Slider value={marginRange} onValueChange={setMarginRange} min={0} max={100} step={1} />
+            <Slider
+              value={marginRange}
+              onValueChange={setMarginRange}
+              min={0}
+              max={100}
+              step={1}
+            />
           </div>
 
           {/* Multi-selects */}
@@ -428,33 +515,105 @@ const CostingReports = () => {
         </div>
       </Card>
 
-      {/* Table / Graph */}
+      {/* ✅ Company Totals Inline Above Table */}
       <Card className="mt-6">
-        <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>
-            {reportTypes.find((rt) => rt.value === selectedReport)?.label}
-            <div className="text-sm font-normal text-muted-foreground">Viewing as {viewMode}</div>
-          </CardTitle>
-          <div className="flex space-x-2">
-            <Button variant={viewMode === "table" ? "default" : "outline"} onClick={() => setViewMode("table")}>
-              <TableIcon className="w-4 h-4 mr-2" />
-              Table
-            </Button>
-            <Button variant={viewMode === "graph" ? "default" : "outline"} onClick={() => setViewMode("graph")}>
-              <BarChartIcon className="w-4 h-4 mr-2" />
-              Graph
-            </Button>
-            <Button variant="outline" onClick={() => downloadAsPdf(processedData)}>
-              <FileDown className="w-4 h-4 mr-2" />
-              PDF
-            </Button>
-            <Button variant="outline" onClick={() => downloadAsCsv(processedData)}>
-              <FileDown className="w-4 h-4 mr-2" />
-              CSV
-            </Button>
+        <CardHeader>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle>
+                  {
+                    reportTypes.find((rt) => rt.value === selectedReport)
+                      ?.label
+                  }
+                </CardTitle>
+                <CardDescription>Viewing as {viewMode}</CardDescription>
+              </div>
+
+              <div className="flex space-x-2">
+                <Button
+                  variant={viewMode === "table" ? "default" : "outline"}
+                  onClick={() => setViewMode("table")}
+                >
+                  <TableIcon className="w-4 h-4 mr-2" />
+                  Table
+                </Button>
+                <Button
+                  variant={viewMode === "graph" ? "default" : "outline"}
+                  onClick={() => setViewMode("graph")}
+                >
+                  <BarChartIcon className="w-4 h-4 mr-2" />
+                  Graph
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => downloadAsPdf(processedData)}
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => downloadAsCsv(processedData)}
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  CSV
+                </Button>
+              </div>
+            </div>
+
+            {/* Inline Totals */}
+            {selectedReport === "detailed_entries" && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm">
+                    Sales (R)
+                  </Label>
+                  <div className="text-base font-medium">
+                    {new Intl.NumberFormat("en-ZA", {
+                      style: "currency",
+                      currency: "ZAR",
+                    }).format(companyTotals.sales)}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm">
+                    Cost (R)
+                  </Label>
+                  <div className="text-base font-medium">
+                    {new Intl.NumberFormat("en-ZA", {
+                      style: "currency",
+                      currency: "ZAR",
+                    }).format(companyTotals.cost)}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm">
+                    Profit (R)
+                  </Label>
+                  <div className="text-base font-medium">
+                    {new Intl.NumberFormat("en-ZA", {
+                      style: "currency",
+                      currency: "ZAR",
+                    }).format(companyTotals.profit)}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm">
+                    Profit %
+                  </Label>
+                  <div
+                    className={`text-base font-medium ${getMarginColor(
+                      companyTotals.margin
+                    )}`}
+                  >
+                    {companyTotals.margin.toFixed(2)}%
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </CardHeader>
-
         <CardContent>
           {viewMode === "table" && (
             <div className="overflow-auto">
@@ -464,7 +623,8 @@ const CostingReports = () => {
                     {processedData.headers.map((h) => (
                       <TableHead key={h.key}>{h.label}</TableHead>
                     ))}
-                    {(selectedReport === "summary_by_rep" || selectedReport === "detailed_entries") && (
+                    {(selectedReport === "summary_by_rep" ||
+                      selectedReport === "detailed_entries") && (
                       <TableHead className="text-right">Actions</TableHead>
                     )}
                   </TableRow>
@@ -476,7 +636,11 @@ const CostingReports = () => {
                       {processedData.headers.map((h) => (
                         <TableCell
                           key={h.key}
-                          className={h.key === "margin" ? getMarginColor(parseFloat(row[h.key])) : ""}
+                          className={
+                            h.key === "margin"
+                              ? getMarginColor(parseFloat(row[h.key]))
+                              : ""
+                          }
                         >
                           {["sales", "expenses", "total_customer", "total_expenses", "profit"].includes(h.key)
                             ? new Intl.NumberFormat("en-ZA", {
@@ -511,14 +675,12 @@ const CostingReports = () => {
                             variant="ghost"
                             size="sm"
                             onClick={async () => {
-                              // fetch full row like ViewCostingsPage
                               let { data, error } = await supabase
                                 .from("costing_entries")
                                 .select("*")
                                 .eq("id", row.id)
                                 .single();
 
-                              // fallback by job_number
                               if (error || !data) {
                                 const res = await supabase
                                   .from("costing_entries")
@@ -534,7 +696,7 @@ const CostingReports = () => {
                                 return;
                               }
 
-                              setSelectedEntry(data); // pass full record to the editor
+                              setSelectedEntry(data);
                               setIsEditDialogOpen(true);
                             }}
                           >
@@ -545,41 +707,58 @@ const CostingReports = () => {
                     </TableRow>
                   ))}
 
-                  {/* Totals row for Job Type summary */}
-                  {selectedReport === "summary_by_job_type" && processedData.totals && (
-                    <TableRow>
-                      <TableCell className="font-semibold">Totals</TableCell>
-                      <TableCell className="font-semibold">
-                        {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(
-                          processedData.totals.sales
-                        )}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(
-                          processedData.totals.expenses
-                        )}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(
-                          processedData.totals.profit
-                        )}
-                      </TableCell>
-                      <TableCell className="font-semibold">{processedData.totals.avgMargin.toFixed(2)}%</TableCell>
-                    </TableRow>
-                  )}
+                  {/* Totals row for summary_by_job_type */}
+                  {selectedReport === "summary_by_job_type" &&
+                    processedData.totals && (
+                      <TableRow>
+                        <TableCell className="font-semibold">Totals</TableCell>
+                        <TableCell className="font-semibold">
+                          {new Intl.NumberFormat("en-ZA", {
+                            style: "currency",
+                            currency: "ZAR",
+                          }).format(processedData.totals.sales)}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {new Intl.NumberFormat("en-ZA", {
+                            style: "currency",
+                            currency: "ZAR",
+                          }).format(processedData.totals.expenses)}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {new Intl.NumberFormat("en-ZA", {
+                            style: "currency",
+                            currency: "ZAR",
+                          }).format(processedData.totals.profit)}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {processedData.totals.avgMargin.toFixed(2)}%
+                        </TableCell>
+                      </TableRow>
+                    )}
                 </TableBody>
               </Table>
             </div>
           )}
 
+          {/* Graph View */}
           {viewMode === "graph" && processedData.data.length > 0 && (
             <div className="h-[400px]">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
-                    data={selectedReport === "summary_by_rep" ? repBreakdown || [] : processedData.data}
-                    dataKey={selectedReport === "summary_by_rep" ? "value" : "profit"}
-                    nameKey={selectedReport === "summary_by_rep" ? "name" : processedData.graphNameKey}
+                    data={
+                      selectedReport === "summary_by_rep"
+                        ? repBreakdown || []
+                        : processedData.data
+                    }
+                    dataKey={
+                      selectedReport === "summary_by_rep" ? "value" : "profit"
+                    }
+                    nameKey={
+                      selectedReport === "summary_by_rep"
+                        ? "name"
+                        : processedData.graphNameKey
+                    }
                     outerRadius={100}
                     label={renderCustomLabel}
                     labelLine={false}
@@ -591,7 +770,11 @@ const CostingReports = () => {
                     <Cell fill="#03A9F4" />
                     <Cell fill="#8BC34A" />
                   </Pie>
-                  <Tooltip formatter={(value) => `R ${parseFloat(value).toLocaleString()}`} />
+                  <Tooltip
+                    formatter={(value) =>
+                      `R ${parseFloat(value).toLocaleString()}`
+                    }
+                  />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -599,7 +782,7 @@ const CostingReports = () => {
           )}
         </CardContent>
       </Card>
-      {/* Edit Dialog — matches ViewCostingsPage props */}
+      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-7xl">
           <DialogHeader>
@@ -639,7 +822,11 @@ const CostingReports = () => {
                   <Cell fill="#FB8C00" />
                   <Cell fill="#00C49F" />
                 </Pie>
-                <Tooltip formatter={(value) => `R ${parseFloat(value).toLocaleString()}`} />
+                <Tooltip
+                  formatter={(value) =>
+                    `R ${parseFloat(value).toLocaleString()}`
+                  }
+                />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
