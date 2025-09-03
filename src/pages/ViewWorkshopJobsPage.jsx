@@ -32,7 +32,6 @@ const getStatusColor = (status, isOverdue) => {
     default: return 'bg-gray-200';
   }
 };
-
 const ViewWorkshopJobsPage = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,11 +40,12 @@ const ViewWorkshopJobsPage = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sortField, setSortField] = useState('job_number');
+  const [sortDirection, setSortDirection] = useState('asc');
   const { toast } = useToast();
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
-
     const { data, error } = await supabase
       .from('workshop_jobs')
       .select(`
@@ -66,22 +66,18 @@ const ViewWorkshopJobsPage = () => {
     }
 
     const safeFilter = activeFilter.trim().toLowerCase();
-
-   const filteredData = safeFilter
-  ? data.filter(job => {
-      return [
-        job.job_number,
-        job.equipment_detail,
-        job.customer?.name,
-        job.cash_customer_name,
-        job.technician?.name,
-        job.status // ✅ This was missing before
-      ]
-      .some(field =>
-        (field || '').toLowerCase().includes(safeFilter)
-      );
-    })
-  : data;
+    const filteredData = safeFilter
+      ? data.filter(job => {
+          return [
+            job.job_number,
+            job.equipment_detail,
+            job.customer?.name,
+            job.cash_customer_name,
+            job.technician?.name,
+            job.status
+          ].some(field => (field || '').toLowerCase().includes(safeFilter));
+        })
+      : data;
 
     setJobs(filteredData);
     setLoading(false);
@@ -91,40 +87,71 @@ const ViewWorkshopJobsPage = () => {
     fetchJobs();
   }, [fetchJobs]);
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedJobs = [...jobs].sort((a, b) => {
+    const valA = a[sortField];
+    const valB = b[sortField];
+
+    if (!valA) return 1;
+    if (!valB) return -1;
+
+    if (typeof valA === 'string') {
+      return sortDirection === 'asc'
+        ? valA.localeCompare(valB)
+        : valB.localeCompare(valA);
+    }
+
+    return sortDirection === 'asc' ? valA - valB : valB - valA;
+  });
   const handleApplyFilter = () => setActiveFilter(filter);
   const handleClearFilter = () => {
     setFilter('');
     setActiveFilter('');
   };
+
   const handleEditClick = (job) => {
     setSelectedJob(job);
     setIsEditDialogOpen(true);
   };
+
   const handleDeleteClick = (job) => {
     setSelectedJob(job);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!selectedJob) return;
-    const { error } = await supabase.from('workshop_jobs').delete().eq('id', selectedJob.id);
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error deleting job',
-        description: error.message
-      });
-    } else {
-      toast({
-        title: 'Success!',
-        description: 'Workshop job deleted successfully.'
-      });
-      fetchJobs();
-    }
-    setIsDeleteDialogOpen(false);
-    setSelectedJob(null);
-  };
+const handleDeleteConfirm = async () => {
+  if (!selectedJob) return;
 
+  const { error } = await supabase
+    .from('workshop_jobs')
+    .delete()
+    .eq('id', selectedJob.id);
+
+  if (error) {
+    toast({
+      variant: 'destructive',
+      title: 'Error deleting job',
+      description: error.message,
+    });
+  } else {
+    toast({
+      title: 'Deleted!',
+      description: 'Workshop job deleted successfully.',
+    });
+    fetchJobs();
+  }
+
+  setIsDeleteDialogOpen(false);
+  setSelectedJob(null);
+};
   return (
     <>
       <Card>
@@ -152,12 +179,13 @@ const ViewWorkshopJobsPage = () => {
             <Table className="min-w-[1200px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Job No.</TableHead>
+                  <TableHead onClick={() => handleSort('job_number')} className="cursor-pointer">Job No.</TableHead>
                   <TableHead>Technician</TableHead>
                   <TableHead>Equipment</TableHead>
                   <TableHead>Customer</TableHead>
-                  <TableHead>PO Date</TableHead>
-                  <TableHead>Quote Amt.</TableHead>
+                  <TableHead onClick={() => handleSort('po_date')} className="cursor-pointer">PO Date</TableHead>
+                  <TableHead onClick={() => handleSort('quote_date')} className="cursor-pointer">Quote Date</TableHead>
+                  <TableHead onClick={() => handleSort('quote_amount')} className="cursor-pointer">Quote Amt.</TableHead>
                   <TableHead>Overdue</TableHead>
                   <TableHead>Delivery</TableHead>
                   <TableHead>Status</TableHead>
@@ -167,17 +195,18 @@ const ViewWorkshopJobsPage = () => {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan="10" className="text-center">Loading jobs...</TableCell>
+                    <TableCell colSpan="11" className="text-center">Loading jobs...</TableCell>
                   </TableRow>
-                ) : jobs.length === 0 ? (
+                ) : sortedJobs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan="10" className="text-center">No jobs found.</TableCell>
+                    <TableCell colSpan="11" className="text-center">No jobs found.</TableCell>
                   </TableRow>
                 ) : (
-                  jobs.map((job) => {
+                  sortedJobs.map((job) => {
                     const isOverdue = job.po_date && job.days_quoted
                       ? differenceInDays(new Date(), new Date(job.po_date)) > job.days_quoted
                       : false;
+
                     const rowClass = isOverdue ? 'bg-red-100' : '';
                     const statusClass = getStatusColor(job.status, isOverdue);
 
@@ -188,6 +217,7 @@ const ViewWorkshopJobsPage = () => {
                         <TableCell className="max-w-[200px] truncate">{job.equipment_detail}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{job.customer?.name || job.cash_customer_name}</TableCell>
                         <TableCell>{job.po_date ? format(new Date(job.po_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                        <TableCell>{job.quote_date ? format(new Date(job.quote_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
                         <TableCell className="text-right">R {Number(job.quote_amount || 0).toFixed(2)}</TableCell>
                         <TableCell className="font-bold text-center">{isOverdue ? 'YES' : 'NO'}</TableCell>
                         <TableCell>{job.delivery_date ? format(new Date(job.delivery_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
@@ -213,10 +243,11 @@ const ViewWorkshopJobsPage = () => {
           </div>
         </CardContent>
       </Card>
-
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl">
-          <DialogHeader><DialogTitle>Edit Workshop Job</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit Workshop Job</DialogTitle>
+          </DialogHeader>
           <div className="py-4">
             <AddWorkshopJobPage
               isEditMode={true}
@@ -234,7 +265,9 @@ const ViewWorkshopJobsPage = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. This will permanently delete the workshop job.</AlertDialogDescription>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the workshop job.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

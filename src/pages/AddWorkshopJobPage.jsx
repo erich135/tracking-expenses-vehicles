@@ -13,24 +13,36 @@ import { CalendarPlus as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 export const jobStatuses = [
-  "Quoted/Awaiting Order", "Stripping", "Go Ahead", "Completed", "Invoiced",
-  "Overdue", "PDI", "Awaiting Spares",
+  'Quoted/Awaiting Order',
+  'Stripping',
+  'Go Ahead',
+  'Completed',
+  'Invoiced',
+  'Overdue',
+  'PDI',
+  'Awaiting Spares',
 ];
 
-// ✅ Updated area to prefix map based on your screenshot
+// Area code mapping
 const areaPrefixMap = {
-  CTN: "WC",
-  DBN: "WD",
-  JHB: "WJ",
-  LDB: "WL",
-  MDB: "WM",
-  PE: "WP",
-  RTB: "WU",
-  NAMIBIA: "WN",
+  CTN: 'WC',
+  DBN: 'WD',
+  JHB: 'WJ',
+  LDB: 'WL',
+  MDB: 'WM',
+  PE: 'WP',
+  RTB: 'WU',
+  NAMIBIA: 'WN',
 };
 
 const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
@@ -38,152 +50,160 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    job_number: '',
-    technician_id: null,
-    equipment_detail: '',
-    customer_id: null,
-    cash_customer_name: '',
-    quote_date: null,
-    po_date: null,
-    quote_amount: '',
-    days_quoted: '',
-    area: '',
-    delivery_date: null,
-    status: '',
-    notes: '',
-  });
+  const [jobNumber, setJobNumber] = useState('');
+  const [area, setArea] = useState('');
+  const [equipmentDetail, setEquipmentDetail] = useState('');
+  const [quoteAmount, setQuoteAmount] = useState('');
+  const [quoteDate, setQuoteDate] = useState(null);
+  const [poDate, setPoDate] = useState(null);
+  const [deliveryDate, setDeliveryDate] = useState(null);
+  const [status, setStatus] = useState('');
+  const [notes, setNotes] = useState('');
+  const [cashCustomer, setCashCustomer] = useState('');
+  const [customerList, setCustomerList] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  // ✅ Fetch customer list on mount
+useEffect(() => {
+  const fetchCustomers = async () => {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('id, name')
+      .order('name', { ascending: true });
 
-  const resetForm = useCallback(() => {
-    setFormData({
-      job_number: '',
-      technician_id: null,
-      equipment_detail: '',
-      customer_id: null,
-      cash_customer_name: '',
-      quote_date: null,
-      po_date: null,
-      quote_amount: '',
-      days_quoted: '',
-      area: '',
-      delivery_date: null,
-      status: '',
-      notes: '',
-    });
-  }, []);
-  useEffect(() => {
-    if (isEditMode && jobData) {
-      setFormData({
-        job_number: jobData.job_number || '',
-        technician_id: jobData.technician ? { id: jobData.technician_id, name: jobData.technician.name } : null,
-        equipment_detail: jobData.equipment_detail || '',
-        customer_id: jobData.customer ? { id: jobData.customer_id, name: jobData.customer.name } : null,
-        cash_customer_name: jobData.cash_customer_name || '',
-        quote_date: jobData.quote_date ? new Date(jobData.quote_date) : null,
-        po_date: jobData.po_date ? new Date(jobData.po_date) : null,
-        quote_amount: jobData.quote_amount || '',
-        days_quoted: jobData.days_quoted || '',
-        area: jobData.area || '',
-        delivery_date: jobData.delivery_date ? new Date(jobData.delivery_date) : null,
-        status: jobData.status || '',
-        notes: jobData.notes || '',
+    if (error) {
+      toast({
+        title: 'Error loading customers',
+        description: error.message,
+        variant: 'destructive',
       });
+    } else {
+      setCustomerList(data);
     }
-  }, [isEditMode, jobData]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAreaChange = async (selectedArea) => {
-    setFormData((prev) => ({ ...prev, area: selectedArea }));
-    if (!isEditMode) {
-      const prefix = areaPrefixMap[selectedArea];
-      if (!prefix) return;
+  fetchCustomers();
+}, [toast]);
 
-      const { data, error } = await supabase
-        .from('workshop_jobs')
-        .select('job_number')
-        .like('job_number', `${prefix}%`)
-        .order('job_number', { ascending: false })
-        .limit(1);
+// ✅ Pre-fill fields in edit mode
+useEffect(() => {
+  if (isEditMode && jobData) {
+    // Infer area from job number prefix if not directly available
+let areaValue = jobData.area;
+if (!areaValue && jobData.job_number) {
+  const prefix = jobData.job_number.substring(0, 2); // e.g., 'WJ'
+  const matchedArea = Object.keys(areaPrefixMap).find(
+    (key) => areaPrefixMap[key] === prefix
+  );
+  areaValue = matchedArea || '';
+}
 
-      if (error) {
-        console.error("Failed to fetch job numbers:", error);
-        return;
-      }
+setArea(areaValue);
 
-      const lastJob = data?.[0]?.job_number || `${prefix}0000`;
-      const lastNumber = parseInt(lastJob.replace(prefix, ''), 10);
-      const newNumber = (lastNumber + 1).toString().padStart(4, '0');
-      const newJobNumber = `${prefix}${newNumber}`;
+    setJobNumber(jobData.job_number || '');
+    setEquipmentDetail(jobData.equipment_detail || '');
+    setQuoteAmount(jobData.quote_amount?.toString() || '');
+    setQuoteDate(jobData.quote_date ? new Date(jobData.quote_date) : null);
+    setPoDate(jobData.po_date ? new Date(jobData.po_date) : null);
+    setDeliveryDate(jobData.delivery_date ? new Date(jobData.delivery_date) : null);
+    setStatus(jobData.status || '');
+    setNotes(jobData.notes || '');
+    setCashCustomer(jobData.cash_customer_name || '');
 
-      setFormData((prev) => ({
-        ...prev,
-        job_number: newJobNumber,
-      }));
+    if (customerList.length > 0 && jobData.customer_id_int) {
+      const matchedCustomer = customerList.find(
+        (cust) => cust.id === jobData.customer_id_int
+      );
+      setSelectedCustomer(matchedCustomer || null);
+    }
+  }
+}, [isEditMode, jobData, customerList]);
+
+  // Auto-generate job number when area is selected
+  useEffect(() => {
+    if (!isEditMode && area) {
+      const prefix = areaPrefixMap[area];
+      const unique = Math.floor(1000 + Math.random() * 9000);
+      setJobNumber(`${prefix}-${unique}`);
+    }
+  }, [area, isEditMode]);
+
+  const handleCustomerChange = (customer) => {
+    setSelectedCustomer(customer);
+    if (customer?.name !== 'Cash Sale') {
+      setCashCustomer('');
     }
   };
   return (
     <div className="p-4">
       <Card>
         <CardHeader>
-          <CardTitle>{isEditMode ? "Edit Job" : "Add New Workshop Job"}</CardTitle>
+          <CardTitle>{isEditMode ? 'Edit Workshop Job' : 'Add New Workshop Job'}</CardTitle>
         </CardHeader>
-
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Area Dropdown */}
           <div>
             <Label>Area</Label>
-            <Select
-              onValueChange={handleAreaChange}
-              value={formData.area}
-              disabled={isEditMode}
-            >
+            <Select onValueChange={setArea} value={area}>
               <SelectTrigger>
                 <SelectValue placeholder="Select an area" />
               </SelectTrigger>
               <SelectContent>
-                {Object.keys(areaPrefixMap).map((area) => (
-                  <SelectItem key={area} value={area}>
-                    {area}
+                {Object.keys(areaPrefixMap).map((areaKey) => (
+                  <SelectItem key={areaKey} value={areaKey}>
+                    {areaKey}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Job Number */}
+          {/* Job Number (Auto-generated) */}
           <div>
             <Label>Job Number</Label>
-            <Input
-              name="job_number"
-              value={formData.job_number}
-              readOnly
-              placeholder="Auto-generated after area selection"
-            />
+            <Input value={jobNumber} disabled />
           </div>
 
           {/* Equipment Detail */}
           <div className="md:col-span-2">
             <Label>Equipment Detail</Label>
             <Textarea
-              name="equipment_detail"
-              value={formData.equipment_detail}
-              onChange={handleChange}
               placeholder="e.g., Atlas Copco GA37 - Repair and quote"
+              value={equipmentDetail}
+              onChange={(e) => setEquipmentDetail(e.target.value)}
             />
+          </div>
+
+          {/* Customer Dropdown */}
+          <div>
+            <Label>Customer</Label>
+            <Select
+              onValueChange={(id) => {
+                const customer = customerList.find((c) => c.id === id);
+                handleCustomerChange(customer);
+              }}
+              value={selectedCustomer?.id || ''}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select customer" />
+              </SelectTrigger>
+              <SelectContent>
+                {customerList.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Cash Customer Name */}
           <div>
             <Label>Cash Customer Name</Label>
             <Input
-              name="cash_customer_name"
-              value={formData.cash_customer_name}
-              onChange={handleChange}
               placeholder="e.g., Engen Coedmore"
+              value={cashCustomer}
+              onChange={(e) => setCashCustomer(e.target.value)}
+              disabled={selectedCustomer?.name !== 'Cash Sale'}
             />
           </div>
 
@@ -191,92 +211,61 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
           <div>
             <Label>Quote Amount (R)</Label>
             <Input
-              name="quote_amount"
-              value={formData.quote_amount}
-              onChange={handleChange}
+              type="number"
               placeholder="e.g., 15000"
+              value={quoteAmount}
+              onChange={(e) => setQuoteAmount(e.target.value)}
             />
           </div>
+          {/* PO Date */}
+          <div>
+            <Label>PO Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                  {poDate ? format(poDate, 'yyyy/MM/dd') : <span>Select date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar mode="single" selected={poDate} onSelect={setPoDate} initialFocus />
+              </PopoverContent>
+            </Popover>
+          </div>
+
           {/* Quote Date */}
           <div>
             <Label>Quote Date</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.quote_date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.quote_date
-                    ? format(formData.quote_date, "PPP")
-                    : "Pick a date"}
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                  {quoteDate ? format(quoteDate, 'yyyy/MM/dd') : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={formData.quote_date}
-                  onSelect={(date) =>
-                    setFormData((prev) => ({ ...prev, quote_date: date }))
-                  }
-                  initialFocus
-                />
+              <PopoverContent className="w-auto p-0">
+                <Calendar mode="single" selected={quoteDate} onSelect={setQuoteDate} initialFocus />
               </PopoverContent>
             </Popover>
-          </div>
-
-          {/* PO Date */}
-          <div>
-            <Label>PO Date</Label>
-            <Input
-              type="date"
-              name="po_date"
-              value={
-                formData.po_date
-                  ? format(formData.po_date, "yyyy-MM-dd")
-                  : ""
-              }
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  po_date: new Date(e.target.value),
-                }))
-              }
-            />
           </div>
 
           {/* Delivery Date */}
           <div>
             <Label>Delivery Date</Label>
-            <Input
-              type="date"
-              name="delivery_date"
-              value={
-                formData.delivery_date
-                  ? format(formData.delivery_date, "yyyy-MM-dd")
-                  : ""
-              }
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  delivery_date: new Date(e.target.value),
-                }))
-              }
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                  {deliveryDate ? format(deliveryDate, 'yyyy/MM/dd') : <span>Select date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar mode="single" selected={deliveryDate} onSelect={setDeliveryDate} initialFocus />
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Status Dropdown */}
+          {/* Status */}
           <div>
             <Label>Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(status) =>
-                setFormData((prev) => ({ ...prev, status }))
-              }
-            >
+            <Select onValueChange={setStatus} value={status}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -294,54 +283,50 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
           <div className="md:col-span-2">
             <Label>Notes</Label>
             <Textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
               placeholder="Additional notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
             />
           </div>
         </CardContent>
 
-        <CardFooter className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => {
-              resetForm();
-              navigate(-1);
-            }}
-          >
-            Cancel
-          </Button>
+        <CardFooter className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
           <Button
             onClick={async () => {
-              const payload = {
-                ...formData,
-                quote_date: formData.quote_date?.toISOString(),
-                po_date: formData.po_date?.toISOString(),
-                delivery_date: formData.delivery_date?.toISOString(),
-                user_id: user?.id,
-                technician_id: formData.technician_id?.id || null,
-                customer_id: formData.customer_id?.id || null,
-              };
+              const { error } = await supabase.from('workshop_jobs').insert({
+                area,
+                job_number: jobNumber,
+                equipment_detail: equipmentDetail,
+                quote_amount: quoteAmount === '' ? null : parseFloat(quoteAmount),
+                quote_date: quoteDate,
+                po_date: poDate,
+                delivery_date: deliveryDate,
+                status,
+                notes,
+                customer_id_int: selectedCustomer?.id || null,
+                cash_customer_name: selectedCustomer?.name === 'Cash Sales' ? cashCustomer : null,
+                user_id: user.id, // ✅ Fixed from created_by to user_id
+              });
 
-              const { error } = isEditMode
-                ? await supabase
-                    .from("workshop_jobs")
-                    .update(payload)
-                    .eq("id", jobData.id)
-                : await supabase.from("workshop_jobs").insert(payload);
 
               if (error) {
-                toast({ title: "Error", description: error.message });
+                toast({
+                  title: 'Failed to add job',
+                  description: error.message,
+                  variant: 'destructive',
+                });
               } else {
-                toast({ title: "Success", description: "Job saved successfully" });
-                resetForm();
+                toast({
+                  title: 'Success',
+                  description: 'Workshop job added successfully',
+                });
                 if (onSuccess) onSuccess();
-                else navigate("/workshop");
+                navigate('/workshop-jobs/view');
               }
             }}
           >
-            {isEditMode ? "Update" : "Submit"}
+            Submit
           </Button>
         </CardFooter>
       </Card>
