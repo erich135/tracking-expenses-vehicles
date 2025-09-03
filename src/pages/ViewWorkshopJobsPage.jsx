@@ -22,13 +22,16 @@ import AddWorkshopJobPage from './AddWorkshopJobPage';
 
 const getStatusColor = (status, isOverdue) => {
   if (isOverdue) return 'bg-red-500 text-white';
-  switch (status) {
-    case 'Stripping': return 'bg-blue-300';
-    case 'Go Ahead': return 'bg-yellow-400';
-    case 'Completed': return 'bg-pink-300';
-    case 'Invoiced': return 'bg-green-400';
-    case 'PDI': return 'bg-purple-400';
-    case 'Quoted/Awaiting Order': return 'bg-green-700 text-white';
+
+  const normalizedStatus = (status || '').toLowerCase();
+
+  switch (normalizedStatus) {
+    case 'stripping': return 'bg-blue-300';
+    case 'go ahead': return 'bg-yellow-400';
+    case 'completed': return 'bg-pink-300';
+    case 'invoiced': return 'bg-green-400';
+    case 'pdi': return 'bg-purple-400';
+    case 'quoted/awaiting order': return 'bg-green-700 text-white';
     default: return 'bg-gray-200';
   }
 };
@@ -97,20 +100,37 @@ const ViewWorkshopJobsPage = () => {
   };
 
   const sortedJobs = [...jobs].sort((a, b) => {
-    const valA = a[sortField];
-    const valB = b[sortField];
-
-    if (!valA) return 1;
-    if (!valB) return -1;
-
-    if (typeof valA === 'string') {
-      return sortDirection === 'asc'
-        ? valA.localeCompare(valB)
-        : valB.localeCompare(valA);
+  const getValue = (job) => {
+    switch (sortField) {
+      case 'overdue':
+        return job.po_date && job.days_quoted
+          ? differenceInDays(new Date(), new Date(job.po_date)) > job.days_quoted
+            ? 1
+            : 0
+          : 0;
+      case 'status':
+        return (job.status || '').toLowerCase().trim();
+      default:
+        return job[sortField];
     }
+  };
 
-    return sortDirection === 'asc' ? valA - valB : valB - valA;
-  });
+  const valA = getValue(a);
+  const valB = getValue(b);
+
+  if (valA === undefined || valA === null) return 1;
+  if (valB === undefined || valB === null) return -1;
+
+  if (typeof valA === 'string') {
+    return sortDirection === 'asc'
+      ? valA.localeCompare(valB)
+      : valB.localeCompare(valA);
+  }
+
+  return sortDirection === 'asc' ? valA - valB : valB - valA;
+});
+
+
   const handleApplyFilter = () => setActiveFilter(filter);
   const handleClearFilter = () => {
     setFilter('');
