@@ -143,7 +143,14 @@ const WorkshopReports = () => {
                     {loading ? <p>Loading report...</p> : (
                         viewMode === 'table' ? (
                             <Table>
-                                <TableHeader><TableRow><TableHead>Job No.</TableHead><TableHead>Technician</TableHead><TableHead>Equipment</TableHead><TableHead>Customer</TableHead><TableHead>PO Date</TableHead><TableHead>Quote Amt.</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="table-head-bold">
+Job No.</TableHead><TableHead className="table-head-bold">
+Technician</TableHead><TableHead className="table-head-bold">
+Equipment</TableHead><TableHead className="table-head-bold">
+Customer</TableHead><TableHead className="table-head-bold">
+PO Date</TableHead><TableHead className="table-head-bold">
+Quote Amt.</TableHead><TableHead className="table-head-bold">
+Status</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {filteredData.length > 0 ? filteredData.map(job => (
                                         <TableRow key={job.id}>

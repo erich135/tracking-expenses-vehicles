@@ -189,7 +189,7 @@ const ViewRentalEquipmentPage = () => {
                             <TableHeader>
                                 <TableRow>
                                     {columns.map(col => <TableHead key={col.key}>{col.label}</TableHead>)}
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right table-head-bold">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

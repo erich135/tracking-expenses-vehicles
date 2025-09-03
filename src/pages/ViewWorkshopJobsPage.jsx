@@ -180,16 +180,22 @@ const handleDeleteConfirm = async () => {
               <TableHeader>
                 <TableRow>
                   <TableHead onClick={() => handleSort('job_number')} className="cursor-pointer">Job No.</TableHead>
-                  <TableHead>Technician</TableHead>
-                  <TableHead>Equipment</TableHead>
-                  <TableHead>Customer</TableHead>
+                  <TableHead className="table-head-bold">
+Technician</TableHead>
+                  <TableHead className="table-head-bold">
+Equipment</TableHead>
+                  <TableHead className="table-head-bold">
+Customer</TableHead>
                   <TableHead onClick={() => handleSort('po_date')} className="cursor-pointer">PO Date</TableHead>
                   <TableHead onClick={() => handleSort('quote_date')} className="cursor-pointer">Quote Date</TableHead>
                   <TableHead onClick={() => handleSort('quote_amount')} className="cursor-pointer">Quote Amt.</TableHead>
-                  <TableHead>Overdue</TableHead>
-                  <TableHead>Delivery</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="table-head-bold">
+Overdue</TableHead>
+                  <TableHead className="table-head-bold">
+Delivery</TableHead>
+                  <TableHead className="table-head-bold">
+Status</TableHead>
+                  <TableHead className="text-right table-head-bold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

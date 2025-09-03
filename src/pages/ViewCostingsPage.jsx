@@ -108,13 +108,16 @@ const ViewCostingsPage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Job Number</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Job Description</TableHead>
-                  <TableHead className="text-right">Profit (R)</TableHead>
-                  <TableHead className="text-right">Margin (%)</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
+                  <TableHead className="table-head-bold">
+Job Number</TableHead>
+                  <TableHead className="table-head-bold">
+Customer</TableHead>
+                  <TableHead className="table-head-bold">
+Job Description</TableHead>
+                  <TableHead className="text-right table-head-bold">Profit (R)</TableHead>
+                  <TableHead className="text-right table-head-bold">Margin (%)</TableHead>
+                  <TableHead className="text-right table-head-bold">Actions</TableHead>
+              </TableRow>
               </TableHeader>
               <TableBody>
                 {costings.length === 0 ? (

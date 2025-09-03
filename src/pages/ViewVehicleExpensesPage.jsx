@@ -184,13 +184,17 @@ const ViewVehicleExpensesPage = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Vehicle</TableHead>
-                                    <TableHead>Category</TableHead>
-                                    <TableHead>Supplier</TableHead>
+                                    <TableHead className="table-head-bold">
+Date</TableHead>
+                                    <TableHead className="table-head-bold">
+Vehicle</TableHead>
+                                    <TableHead className="table-head-bold">
+Category</TableHead>
+                                    <TableHead className="table-head-bold">
+Supplier</TableHead>
                                     <TableHead className="text-right">Amount</TableHead>
                                     <TableHead className="text-right">Odometer</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead className="text-right table-head-bold">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>

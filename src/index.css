@@ -74,3 +74,13 @@ body {
 .dark body {
     @apply bg-slate-900 text-slate-50;
 }
+@layer base {
+  .table-head-bold {
+    @apply font-bold;
+  }
+}
+@layer base {
+  th {
+    @apply font-bold;
+  }
+}

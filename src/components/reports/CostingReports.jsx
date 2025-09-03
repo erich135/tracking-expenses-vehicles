@@ -625,7 +625,7 @@ const CostingReports = () => {
                     ))}
                     {(selectedReport === "summary_by_rep" ||
                       selectedReport === "detailed_entries") && (
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-right table-head-bold">Actions</TableHead>
                     )}
                   </TableRow>
                 </TableHeader>

@@ -123,7 +123,7 @@ export const GenericMaintenanceTable = ({ tableName, columns, title }) => {
                     <TableHeader>
                         <TableRow>
                             {columns.map(col => <TableHead key={col.accessor}>{col.header}</TableHead>)}
-                            <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="text-right table-head-bold">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>

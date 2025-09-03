@@ -208,12 +208,18 @@ const ViewSLAEquipmentPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Unit</TableHead>
-                <TableHead>Make</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="table-head-bold">
+Unit</TableHead>
+                <TableHead className="table-head-bold">
+Make</TableHead>
+                <TableHead className="table-head-bold">
+Model</TableHead>
+                <TableHead className="table-head-bold">
+Customer</TableHead>
+                <TableHead className="table-head-bold">
+Location</TableHead>
+                <TableHead className="table-head-bold">
+Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

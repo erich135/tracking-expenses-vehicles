@@ -190,12 +190,17 @@ import React, { useState, useEffect, useCallback } from 'react';
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Registration No.</TableHead>
-                                        <TableHead>Make</TableHead>
-                                        <TableHead>Model</TableHead>
-                                        <TableHead>Odometer</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead className="table-head-bold">
+Name</TableHead>
+                                        <TableHead className="table-head-bold">
+Registration No.</TableHead>
+                                        <TableHead className="table-head-bold">
+Make</TableHead>
+                                        <TableHead className="table-head-bold">
+Model</TableHead>
+                                        <TableHead className="table-head-bold">
+Odometer</TableHead>
+                                        <TableHead className="text-right table-head-bold">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

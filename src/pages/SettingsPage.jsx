@@ -171,10 +171,13 @@ const SettingsPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Is Admin?</TableHead>
-                    <TableHead>Permissions</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="table-head-bold">
+Email</TableHead>
+                    <TableHead className="table-head-bold">
+Is Admin?</TableHead>
+                    <TableHead className="table-head-bold">
+Permissions</TableHead>
+                    <TableHead className="text-right table-head-bold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

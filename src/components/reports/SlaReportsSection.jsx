@@ -216,7 +216,8 @@ export default function SlaReportsSection() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Unit</TableHead>
+                <TableHead className="table-head-bold">
+Unit</TableHead>
                 <TableHead className="text-right">Total Cost (R)</TableHead>
               </TableRow>
             </TableHeader>
@@ -243,7 +244,8 @@ export default function SlaReportsSection() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Unit</TableHead>
+                <TableHead className="table-head-bold">
+Unit</TableHead>
                 <TableHead className="text-right">Total Income (R)</TableHead>
               </TableRow>
             </TableHeader>
@@ -270,7 +272,8 @@ export default function SlaReportsSection() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Month</TableHead>
+                <TableHead className="table-head-bold">
+Month</TableHead>
                 <TableHead className="text-right">Income (R)</TableHead>
                 <TableHead className="text-right">Expense (R)</TableHead>
                 <TableHead className="text-right">Net (R)</TableHead>
@@ -302,7 +305,8 @@ export default function SlaReportsSection() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
+                  <TableHead className="table-head-bold">
+Date</TableHead>
                   <TableHead className="text-right">Cost (R)</TableHead>
                 </TableRow>
               </TableHeader>
@@ -327,7 +331,8 @@ export default function SlaReportsSection() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
+                  <TableHead className="table-head-bold">
+Date</TableHead>
                   <TableHead className="text-right">Income (R)</TableHead>
                 </TableRow>
               </TableHeader>

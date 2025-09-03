@@ -138,7 +138,12 @@ const AddSLAExpensePage = () => {
                         <div>
                             <Label className="text-lg font-semibold">Expense Items</Label>
                             <Table>
-                                <TableHeader><TableRow><TableHead className="w-2/5">Item/Part</TableHead><TableHead>Description</TableHead><TableHead>Qty</TableHead><TableHead>Unit Price</TableHead><TableHead>Total</TableHead><TableHead></TableHead></TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="w-2/5">Item/Part</TableHead><TableHead className="table-head-bold">
+Description</TableHead><TableHead className="table-head-bold">
+Qty</TableHead><TableHead className="table-head-bold">
+Unit Price</TableHead><TableHead className="table-head-bold">
+Total</TableHead><TableHead className="table-head-bold">
+</TableHead></TableRow></TableHeader>
                                 <TableBody>
                                     {expenseItems.map((item, index) => (
                                         <TableRow key={index}>

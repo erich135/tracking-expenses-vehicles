@@ -143,8 +143,10 @@ const VehicleReports = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Vehicle</TableHead>
-              <TableHead>Reg No.</TableHead>
+              <TableHead className="table-head-bold">
+Vehicle</TableHead>
+              <TableHead className="table-head-bold">
+Reg No.</TableHead>
               <TableHead className="text-right">Current Odo</TableHead>
               <TableHead className="text-right">Next Service Odo</TableHead>
               <TableHead className="text-right">Km to Service</TableHead>
