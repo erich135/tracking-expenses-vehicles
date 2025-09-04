@@ -182,11 +182,15 @@ const handleDeleteConfirm = async () => {
         <CardContent>
           <div className="flex items-center gap-2 mb-4">
             <Input
-              placeholder="Filter jobs..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="max-w-sm"
-            />
+  placeholder="Filter jobs..."
+  value={filter}
+  onChange={(e) => {
+    const value = e.target.value;
+    setFilter(value);
+    setActiveFilter(value);
+  }}
+  className="max-w-sm"
+/>
             <Button onClick={handleApplyFilter}>
               <Search className="mr-2 h-4 w-4" />Filter
             </Button>
