@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format } from 'date-fns';
 import {
@@ -47,6 +48,23 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const fetchFromSupabase = async (table, searchColumn, searchTerm) => {
+    const { data, error } = await supabase
+      .from(table)
+      .select('*')
+      .ilike(searchColumn, `%${searchTerm}%`)
+      .limit(10);
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: `Error fetching ${table}`,
+        description: error.message,
+      });
+      return [];
+    }
+    return data;
+  };
+
   const [jobNumber, setJobNumber] = useState('');
   const [area, setArea] = useState('');
   const [isManualJobNumber, setIsManualJobNumber] = useState(false);
@@ -59,10 +77,16 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
   const [notes, setNotes] = useState('');
   const [cashCustomer, setCashCustomer] = useState('');
   const [customerList, setCustomerList] = useState([]);
+  const [technicianList, setTechnicianList] = useState([]);
+  const [selectedTechnician, setSelectedTechnician] = useState(null);
+  const fetchTechnicians = useCallback(async () => {
+    const { data, error } = await supabase.from('technicians').select('*').order('name');
+    if (!error) setTechnicianList(data);
+  }, []);
+
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const fetchCustomers = useCallback(async () => {
     const { data, error } = await supabase.from('customers').select('*').order('name');
-
     if (!error) {
       setCustomerList(data);
     }
@@ -70,8 +94,8 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
 
   useEffect(() => {
     fetchCustomers();
+    fetchTechnicians();
   }, [fetchCustomers]);
-
   useEffect(() => {
     if (isEditMode && jobData) {
       setJobNumber(jobData.job_number || '');
@@ -84,14 +108,37 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
       setStatus(jobData.status || '');
       setNotes(jobData.notes || '');
       setCashCustomer(jobData.cash_customer_name || '');
-      setSelectedCustomer(jobData.customer || null);
+
+      // Fetch full customer and technician records for edit mode
+      const fetchRelatedRecords = async () => {
+        if (jobData.customer_id_int) {
+          const { data: customerData } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('id', jobData.customer_id_int)
+            .single();
+          setSelectedCustomer(customerData);
+        }
+
+        if (jobData.technician_id) {
+          const { data: technicianData } = await supabase
+            .from('technicians')
+            .select('*')
+            .eq('id', jobData.technician_id)
+            .single();
+          setSelectedTechnician(technicianData);
+        }
+      };
+
+      fetchRelatedRecords();
+
       setIsManualJobNumber(jobData.area === 'Rental' || jobData.area === 'Other');
     }
   }, [isEditMode, jobData]);
 
   const handleCustomerChange = (customer) => {
     setSelectedCustomer(customer);
-    if (customer.name !== 'Cash Sale') {
+    if (customer?.name !== 'Cash Sale') {
       setCashCustomer('');
     }
   };
@@ -109,7 +156,6 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
       setJobNumber('');
     }
   };
-
   const handleSubmit = async () => {
     if (!jobNumber.trim()) {
       toast({
@@ -133,6 +179,7 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
       cash_customer_name: cashCustomer || null,
       customer_id_int: selectedCustomer?.id || null,
       updated_at: new Date().toISOString(),
+      technician_id: selectedTechnician?.id || null,
     };
 
     if (!isEditMode) {
@@ -168,11 +215,10 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
       if (onSuccess) {
         onSuccess();
       } else {
-        navigate('/workshop');
+        navigate('/workshop-jobs/view');
       }
     }
   };
-
   return (
     <Card className="w-full">
       <CardHeader>
@@ -209,24 +255,25 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
           </div>
 
           <div>
+            <Label>Technician</Label>
+            <Autocomplete
+              value={selectedTechnician}
+              onChange={(value) => setSelectedTechnician(value)}
+              fetcher={(search) => fetchFromSupabase('technicians', 'name', search)}
+              displayField="name"
+              placeholder="Search technician..."
+            />
+          </div>
+
+          <div>
             <Label>Customer</Label>
-            <Select
-              value={selectedCustomer?.id || ''}
-              onValueChange={(id) =>
-                handleCustomerChange(customerList.find((c) => c.id.toString() === id))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select customer" />
-              </SelectTrigger>
-              <SelectContent>
-                {customerList.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id.toString()}>
-                    {customer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Autocomplete
+              value={selectedCustomer}
+              onChange={handleCustomerChange}
+              fetcher={(search) => fetchFromSupabase('customers', 'name', search)}
+              displayField="name"
+              placeholder="Search customer..."
+            />
           </div>
 
           {selectedCustomer?.name === 'Cash Sale' && (

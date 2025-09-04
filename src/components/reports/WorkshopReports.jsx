@@ -25,7 +25,7 @@ const WorkshopReports = () => {
     const { toast } = useToast();
 
     const [viewMode, setViewMode] = useState('table');
-    const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 90), to: new Date() });
+    const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 3650), to: new Date() });
     const [selectedTechnicians, setSelectedTechnicians] = useState([]);
     const [selectedCustomers, setSelectedCustomers] = useState([]);
     const [selectedStatuses, setSelectedStatuses] = useState([]);

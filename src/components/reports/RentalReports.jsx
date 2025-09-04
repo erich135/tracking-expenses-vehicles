@@ -49,7 +49,7 @@ const RentalReports = () => {
     const { toast } = useToast();
 
     // Filters
-    const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 90), to: new Date() });
+    const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 3650), to: new Date() });
     const [selectedMachines, setSelectedMachines] = useState([]);
     const [selectedCustomers, setSelectedCustomers] = useState([]);
     const [attributeFilter, setAttributeFilter] = useState({ key: 'all', value: '' });
