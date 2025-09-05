@@ -34,10 +34,10 @@ const ViewWorkshopJobsPage = () => {
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('workshop_jobs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(99999);
+        .from('workshop_jobs')
+  .select("*, technicians(name)")
+    .order('created_at', { ascending: false })
+  .limit(99999);
 
     if (error) {
       toast({
@@ -155,7 +155,7 @@ const ViewWorkshopJobsPage = () => {
                     return (
                       <TableRow key={job.id}>
                         <TableCell>{job.job_number}</TableCell>
-                        <TableCell>{job.technician?.name || 'Unknown'}</TableCell>
+                        <TableCell>{job.technicians?.name || 'Unknown'}</TableCell>
                         <TableCell>{job.equipment_detail || 'N/A'}</TableCell>
                         <TableCell>{job.cash_customer_name || job.customer?.name || 'Unknown'}</TableCell>
                         <TableCell>{job.po_date ? format(new Date(job.po_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
