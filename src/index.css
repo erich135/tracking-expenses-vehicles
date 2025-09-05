@@ -84,3 +84,40 @@ body {
     @apply font-bold;
   }
 }
+.status-label {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-label.stripping {
+  background-color: #00FFFF; /* Cyan */
+}
+
+.status-label.quoted-awaiting-order {
+  background-color: #006400; /* Dark green */
+  color: white;
+}
+
+.status-label.go-ahead {
+  background-color: #ffd54f; /* Amber */
+}
+
+.status-label.completed {
+  background-color: #ffffff; /* White / Default */
+  border: 1px solid #ccc;
+}
+
+.status-label.invoiced {
+  background-color: #ADFF2F; /* GreenYellow */
+  color: black;              /* Optional: keeps it readable */
+}
+
+.status-label.apx-equipment---completed {
+  background-color: #f8bbd0; /* Light pink */
+}
+.status-label.pdi {
+  background-color: #BA55D3;
+  color: white;
+}

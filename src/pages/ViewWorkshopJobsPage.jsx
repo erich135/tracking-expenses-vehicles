@@ -163,7 +163,11 @@ const ViewWorkshopJobsPage = () => {
                         <TableCell>R {Number(job.quote_amount || 0).toFixed(2)}</TableCell>
                         <TableCell className="text-center font-bold">{isOverdue ? 'YES' : 'NO'}</TableCell>
                         <TableCell>{job.delivery_date ? format(new Date(job.delivery_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
-                        <TableCell>{job.status || 'N/A'}</TableCell>
+                        <TableCell>
+                        <span className={`status-label ${job.status?.toLowerCase().replace(/\s+/g, '-').replace(/\//g, '-') || 'default'}`}>
+                          {job.status || 'N/A'}
+                        </span>
+                      </TableCell>
                         <TableCell className="text-right whitespace-nowrap">
                           <Button variant="ghost" size="icon" onClick={() => { setSelectedJob(job); setIsEditDialogOpen(true); }}>
                             <Edit className="h-4 w-4" />

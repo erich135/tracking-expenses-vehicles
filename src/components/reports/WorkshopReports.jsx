@@ -160,7 +160,12 @@ Status</TableHead></TableRow></TableHeader>
                                             <TableCell>{job.customer?.name || job.cash_customer_name}</TableCell>
                                             <TableCell>{job.po_date ? format(new Date(job.po_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
                                             <TableCell>R {Number(job.quote_amount || 0).toFixed(2)}</TableCell>
-                                            <TableCell>{job.status}</TableCell>
+                                            <TableCell>
+                                            <span className={`status-label ${job.status?.toLowerCase().replace(/\s+/g, '-') || 'default'}`}>
+                                                {job.status || 'N/A'}
+                                            </span>
+                                            </TableCell>
+
                                         </TableRow>
                                     )) : <TableRow><TableCell colSpan={7} className="text-center">No data available for the selected filters.</TableCell></TableRow>}
                                 </TableBody>
