@@ -157,7 +157,7 @@ Status</TableHead></TableRow></TableHeader>
                                             <TableCell>{job.job_number}</TableCell>
                                             <TableCell>{job.technician?.name}</TableCell>
                                             <TableCell>{job.equipment_detail}</TableCell>
-                                            <TableCell>{job.customer?.name || job.cash_customer_name}</TableCell>
+                                            <TableCell>{job.customers?.name || job.cash_customer_name || 'Unknown'}</TableCell>
                                             <TableCell>{job.po_date ? format(new Date(job.po_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
                                             <TableCell>R {Number(job.quote_amount || 0).toFixed(2)}</TableCell>
                                             <TableCell>
