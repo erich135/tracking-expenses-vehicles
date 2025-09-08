@@ -185,6 +185,31 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
     if (!isEditMode) {
       payload.created_at = new Date().toISOString();
     }
+// ✅ Check for duplicate job number unless area is "Rental" or "Other"
+if (!["Rental", "Other"].includes(area)) {
+  const { data: existingJobs, error: checkError } = await supabase
+    .from('workshop_jobs')
+    .select('id')
+    .eq('job_number', jobNumber);
+
+  if (checkError) {
+    toast({
+      variant: 'destructive',
+      title: 'Error checking job number',
+      description: checkError.message,
+    });
+    return;
+  }
+
+  if (existingJobs.length > 0) {
+    toast({
+      variant: 'destructive',
+      title: 'Duplicate Job Number',
+      description: `A job with number "${jobNumber}" already exists.`,
+    });
+    return;
+  }
+}
 
     let result;
     if (isEditMode && jobData?.id) {
