@@ -14,7 +14,6 @@ import { supabase } from '@/lib/customSupabaseClient';
 const normalizeDateYYYYMMDD = (d) => {
   if (!d) return '';
   try {
-    // Handle Date object or string (date/timestamp)
     const dt = typeof d === 'string' ? new Date(d) : d;
     if (Number.isNaN(dt.getTime())) return String(d).slice(0, 10);
     return dt.toISOString().slice(0, 10);
@@ -33,9 +32,10 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
     jobDescription: null,
     customer: null,
     rep: null,
-    date: '', // <-- keep date as "YYYY-MM-DD"
+    date: '',
   });
 
+  const [cashCustomerName, setCashCustomerName] = useState('');
   const [customerItems, setCustomerItems] = useState([
     { id: Date.now(), part: '', quantity: 1, price: 0 },
   ]);
@@ -59,12 +59,12 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
       jobDescription: null,
       customer: null,
       rep: null,
-      date: '', // <-- reset date too
+      date: '',
     });
+    setCashCustomerName('');
     setCustomerItems([{ id: Date.now(), part: '', quantity: 1, price: 0 }]);
     setExpenseItems([{ id: Date.now(), part: null, quantity: 1, price: 0 }]);
   }, []);
-
   // Load data when editing
   useEffect(() => {
     if (isEditMode && costingData) {
@@ -76,8 +76,9 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
           : null,
         customer: costingData.customer ? { name: costingData.customer } : null,
         rep: costingData.rep ? { rep_name: costingData.rep } : null,
-        date: normalizeDateYYYYMMDD(costingData.date), // <-- load date
+        date: normalizeDateYYYYMMDD(costingData.date),
       });
+      setCashCustomerName(costingData.cash_customer_name || '');
       setCustomerItems(
         costingData.customer_items || [{ id: Date.now(), part: '', quantity: 1, price: 0 }]
       );
@@ -152,6 +153,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
   const handleInitiateSubmit = () => {
     setIsConfirming(true);
   };
+
   const handleConfirmSubmit = async () => {
     const entry = {
       job_number: jobDetails.jobNumber || null,
@@ -159,7 +161,8 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
       job_description: jobDetails.jobDescription?.description || null,
       customer: jobDetails.customer?.name || null,
       rep: jobDetails.rep?.rep_name || null,
-      date: jobDetails.date || null, // <-- save date to DB (DATE column)
+      date: jobDetails.date || null,
+      cash_customer_name: jobDetails.customer?.name === "Cash Sales" ? cashCustomerName : null,
       customer_items: customerItems,
       expense_items: expenseItems,
       total_customer: totals.customer,
@@ -198,7 +201,6 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
     }
     setIsConfirming(false);
   };
-
   const fetcher = async (table, searchColumn, searchTerm) => {
     const { data, error } = await supabase
       .from(table)
@@ -277,6 +279,18 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
                 />
               </div>
 
+              {jobDetails.customer?.name === "Cash Sales" && (
+                <div className="space-y-2">
+                  <Label>Cash Customer Name</Label>
+                  <Input
+                    type="text"
+                    value={cashCustomerName}
+                    onChange={(e) => setCashCustomerName(e.target.value)}
+                    placeholder="Enter cash customer name"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Rep</Label>
                 <Autocomplete
@@ -291,7 +305,6 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
             </div>
           </CardContent>
         </Card>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
