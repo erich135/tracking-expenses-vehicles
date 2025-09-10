@@ -187,10 +187,17 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
     }
 // ✅ Check for duplicate job number unless area is "Rental" or "Other"
 if (!["Rental", "Other"].includes(area)) {
-  const { data: existingJobs, error: checkError } = await supabase
+  let query = supabase
     .from('workshop_jobs')
     .select('id')
     .eq('job_number', jobNumber);
+
+  // ✅ Ignore the current record during edit
+  if (isEditMode && jobData?.id) {
+    query = query.neq('id', jobData.id);
+  }
+
+  const { data: existingJobs, error: checkError } = await query;
 
   if (checkError) {
     toast({
@@ -210,6 +217,7 @@ if (!["Rental", "Other"].includes(area)) {
     return;
   }
 }
+
 
     let result;
     if (isEditMode && jobData?.id) {
