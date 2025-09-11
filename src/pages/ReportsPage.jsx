@@ -6,7 +6,8 @@ import CostingReports from '@/components/reports/CostingReports';
 import WorkshopReports from '@/components/reports/WorkshopReports';
 import RentalReports from '@/components/reports/RentalReports';
 import SlaReportsSection from "@/components/reports/SlaReportsSection";
-import  AuthContext  from '@/contexts/SupabaseAuthContext';
+import { AuthContext } from '@/contexts/SupabaseAuthContext';
+
 
 const ReportsPage = () => {
   const { userProfile } = useContext(AuthContext);
