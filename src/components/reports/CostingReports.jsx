@@ -546,19 +546,52 @@ const CostingReports = () => {
                   Graph
                 </Button>
                 <Button
-                  variant="outline"
-                  onClick={() => downloadAsPdf(processedData)}
-                >
-                  <FileDown className="w-4 h-4 mr-2" />
-                  PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => downloadAsCsv(processedData)}
-                >
-                  <FileDown className="w-4 h-4 mr-2" />
-                  CSV
-                </Button>
+  variant="outline"
+  onClick={() => {
+    if (!processedData || processedData.data.length === 0) {
+      alert("No data available to export to PDF.");
+      return;
+    }
+
+    const title =
+      reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
+
+    const headers = processedData.headers;
+    const dataRows = processedData.data.map((row) =>
+      headers.map((h) => row[h.key])
+    );
+
+    downloadAsPdf(title, headers, dataRows);
+  }}
+>
+  <FileDown className="w-4 h-4 mr-2" />
+  PDF
+</Button>
+
+<Button
+  variant="outline"
+  onClick={() => {
+    if (!processedData || processedData.data.length === 0) {
+      alert("No data available to export to CSV.");
+      return;
+    }
+
+    const title =
+      reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
+
+    const csvData = [
+      processedData.headers.map((h) => h.label),
+      ...processedData.data.map((row) =>
+        processedData.headers.map((h) => row[h.key])
+      ),
+    ];
+
+    downloadAsCsv(`${title}.csv`, csvData);
+  }}
+>
+  <FileDown className="w-4 h-4 mr-2" />
+  CSV
+</Button>
               </div>
             </div>
 

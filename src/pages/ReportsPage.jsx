@@ -5,9 +5,8 @@ import VehicleReports from '@/components/reports/VehicleReports';
 import CostingReports from '@/components/reports/CostingReports';
 import WorkshopReports from '@/components/reports/WorkshopReports';
 import RentalReports from '@/components/reports/RentalReports';
-import SlaReportsSection from "@/components/reports/SlaReportsSection";
-import { AuthContext } from '@/contexts/SupabaseAuthContext';
-
+import SlaReportsSection from '@/components/reports/SlaReportsSection';
+import { AuthContext } from '@/contexts/SupabaseAuthContext'; // ✅ Fixed import here
 
 const ReportsPage = () => {
   const { userProfile } = useContext(AuthContext);
