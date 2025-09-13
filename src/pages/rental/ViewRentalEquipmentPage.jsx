@@ -14,12 +14,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { MultiSelect } from '@/components/ui/multi-select.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const getServiceStatusClass = (machine) => {
+const getServiceStatusStyle = (machine) => {
     const hoursToService = (machine.next_service_hours || 0) - (machine.current_hours || 0);
-    if (hoursToService <= 500) return 'bg-red-200 dark:bg-red-900/50';
-    if (hoursToService <= 1000) return 'bg-orange-200 dark:bg-orange-900/50';
-    return '';
+    if (hoursToService <= 500) return { backgroundColor: '#FF0000', color: '#ffffff' };
+    if (hoursToService <= 1000) return { backgroundColor: '#FFA500' };
+    return {};
 };
+
 
 const ViewRentalEquipmentPage = () => {
     const [allEquipment, setAllEquipment] = useState([]);
@@ -201,7 +202,8 @@ const ViewRentalEquipmentPage = () => {
                                     filteredEquipment.map((machine) => {
                                         const hoursToService = (machine.next_service_hours || 0) - (machine.current_hours || 0);
                                         return (
-                                            <TableRow key={machine.id} className={getServiceStatusClass(machine)}>
+                                            <TableRow key={machine.id} style={getServiceStatusStyle(machine)}>
+
                                                 <TableCell>{machine.plant_no}</TableCell>
                                                 <TableCell>{machine.make}</TableCell>
                                                 <TableCell>{machine.model}</TableCell>

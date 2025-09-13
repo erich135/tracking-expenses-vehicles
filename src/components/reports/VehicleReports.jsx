@@ -90,12 +90,21 @@ const VehicleReports = () => {
     [rows]
   );
 
-  const rowClass = (r) => {
-    if (r.km_to_service === null) return '';
-    if (r.km_to_service <= 1000) return 'bg-red-200 dark:bg-red-900/50';
-    if (r.km_to_service <= 3000) return 'bg-orange-200 dark:bg-orange-900/50';
-    return '';
-  };
+ const rowClass = (r) => {
+  if (r.km_to_service === null) return '';
+
+  // 🚨 Service overdue (negative or 0 km left) → RED
+  if (r.km_to_service <= 0) return 'bg-red-600 text-white';
+
+  // ⚠️ Service due soon (≤ 1000 km) → ORANGE
+  if (r.km_to_service <= 1000) return 'bg-orange-400 text-black';
+
+  // ⏳ Service approaching (≤ 3000 km) → YELLOW
+  if (r.km_to_service <= 3000) return 'bg-yellow-300 text-black';
+
+  return '';
+};
+
 
   return (
     <Card>

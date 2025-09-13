@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VehicleReports from '@/components/reports/VehicleReports';
@@ -6,11 +6,15 @@ import CostingReports from '@/components/reports/CostingReports';
 import WorkshopReports from '@/components/reports/WorkshopReports';
 import RentalReports from '@/components/reports/RentalReports';
 import SlaReportsSection from '@/components/reports/SlaReportsSection';
-import { AuthContext } from '@/contexts/SupabaseAuthContext'; // ✅ Fixed import here
+import { useAuth } from '@/contexts/SupabaseAuthContext'; // ✅ correct hook usage
 
 const ReportsPage = () => {
-  const { userProfile } = useContext(AuthContext);
+  const { userProfile } = useAuth(); // ✅ using hook
   const permissions = userProfile?.permissions || [];
+
+  // ✅ DEBUG OUTPUT
+  console.log('✅ userProfile:', userProfile);
+  console.log('✅ permissions:', permissions); // <-- Add THIS LINE
 
   return (
     <>

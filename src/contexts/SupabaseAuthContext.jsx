@@ -1,116 +1,105 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
-import { useToast } from '@/components/ui/use-toast';
 
-const AuthContext = createContext(undefined);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const { toast } = useToast();
-
   const [session, setSession] = useState(null);
+  const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserProfile = useCallback(async (user) => {
+  // ✅ Handle session and user setup
+  const handleSession = useCallback(async (session) => {
+    setSession(session);
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
+
+    if (currentUser) {
+      await fetchUserProfile(currentUser);
+    } else {
+      setUserProfile(null);
+    }
+
+    setLoading(false);
+  }, []);
+
+  // ✅ Fetch user profile (hybrid: new + old)
+  const fetchUserProfile = async (user) => {
     if (!user) {
-      return null;
+      setUserProfile(null);
+      return;
     }
 
+    // 🔑 Super admin override (old behavior)
     if (user.email === 'erich.oberholzer@gmail.com') {
-      return { 
-        is_admin: true, 
-        permissions: ['costing', 'vehicle_expenses', 'workshop_jobs', 'rental', 'reports', 'maintenance', 'settings'] 
-      };
+      setUserProfile({
+        email: user.email,
+        is_admin: true,
+        permissions: ['costing', 'vehicle_expenses', 'workshop_jobs', 'rental', 'sla', 'reports', 'maintenance'],
+      });
+      return;
     }
 
+    // ✅ Fetch from Supabase
     const { data, error } = await supabase
       .from('approved_users')
-      .select('is_admin, permissions')
+      .select('*')
       .eq('email', user.email)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching user profile:', error);
-      return null;
+    if (error || !data) {
+      console.warn('User not approved or profile fetch failed:', user.email);
+      await supabase.auth.signOut();
+      setUser(null);
+      setUserProfile(null);
+      return;
     }
-    
-    return data || { is_admin: false, permissions: [] };
-  }, []);
 
+    // ✅ If permissions missing, fallback to admin-only flag
+    setUserProfile({
+      ...data,
+      permissions: Array.isArray(data.permissions) ? data.permissions : [],
+    });
+  };
+
+  // ✅ Init session
   useEffect(() => {
-    setLoading(true);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        if (session?.user) {
-            const profile = await fetchUserProfile(session.user);
-            setUserProfile(profile);
-        } else {
-            setUserProfile(null);
-        }
-        setLoading(false);
-      }
-    );
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      handleSession(data.session);
+    };
+
+    getSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleSession(session);
+    });
 
     return () => {
-      subscription.unsubscribe();
+      listener?.subscription.unsubscribe();
     };
-  }, [fetchUserProfile]);
+  }, [handleSession]);
 
-  const signUp = useCallback(async (email, password) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign up Failed',
-        description: error.message || 'Something went wrong',
-      });
-    }
-    return { error };
-  }, [toast]);
+  // ✅ Sign in
+  const signIn = async (email, password) => {
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+    return { error, data };
+  };
 
-  const signIn = useCallback(async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign in Failed',
-        description: error.message || 'Something went wrong',
-      });
-    }
-    return { error };
-  }, [toast]);
+  // ✅ Sign out
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setUserProfile(null);
+    setSession(null);
+  };
 
-  const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign out Failed',
-        description: error.message || 'Something went wrong',
-      });
-    }
-    return { error };
-  }, [toast]);
-
-  const value = useMemo(() => ({
-    user: session?.user ?? null,
-    session,
-    loading,
-    userProfile,
-    signUp,
-    signIn,
-    signOut,
-  }), [session, loading, userProfile, signUp, signIn, signOut]);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, session, userProfile, loading, signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-export { AuthContext };
+export const useAuth = () => useContext(AuthContext);
