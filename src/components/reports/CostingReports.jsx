@@ -878,35 +878,44 @@ const CostingReports = () => {
       </Dialog>
     
       {/* Full-Screen Chart Modal */}
-      <Dialog open={openChartModal} onOpenChange={setOpenChartModal}>
-  <DialogContent className="max-w-screen-lg h-[95vh] overflow-auto">
+      
+
+<Dialog open={openChartModal} onOpenChange={setOpenChartModal}>
+  <DialogContent className="max-w-screen-lg h-[95vh] overflow-auto" aria-describedby="chart-dialog">
     <DialogHeader>
-      <DialogTitle>Chart - Summary by {selectedReport.replaceAll('_', ' ')}</DialogTitle>
+      <DialogTitle>
+        Chart - {reportTypes.find(r => r.value === selectedReport)?.label}
+      </DialogTitle>
     </DialogHeader>
-    <div className="w-full h-[85vh]">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={selectedReport === "summary_by_rep" ? repBreakdown || [] : processedData.data}
-            dataKey={selectedReport === "summary_by_rep" ? "value" : "profit"}
-            nameKey={selectedReport === "summary_by_rep" ? "name" : processedData.graphNameKey}
-            outerRadius={230}
-            label={renderCustomLabel}
-            labelLine={true}
-            paddingAngle={2}
-          >
-            {(selectedReport === "summary_by_rep" ? repBreakdown || [] : processedData.data).map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip formatter={(value) => `R ${parseFloat(value).toLocaleString()}`} />
-          
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="w-full h-[85vh]" id="chart-dialog">
+      {processedData.data.length === 0 ? (
+        <p className="text-center mt-10 text-muted-foreground">No data to display in chart.</p>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={processedData.data}
+              dataKey="profit"
+              nameKey={processedData.graphNameKey}
+              outerRadius={230}
+              label={renderCustomLabel}
+              labelLine={true}
+              paddingAngle={2}
+            >
+              {processedData.data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => `R ${parseFloat(value).toLocaleString()}`} />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
     </div>
   </DialogContent>
 </Dialog>
 </div>
+
+
   );
 };
 
