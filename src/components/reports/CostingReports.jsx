@@ -63,12 +63,15 @@ const renderCustomLabel = ({
   outerRadius,
   percent,
   value,
-  name
+  name, // ← This is the job type label (e.g. "Call Out")
 }) => {
+  if (percent < 0.005) return null; // Hide very tiny labels altogether (optional)
+
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
   return (
     <text
       x={x}
@@ -76,13 +79,19 @@ const renderCustomLabel = ({
       fill="#000"
       textAnchor={x > cx ? "start" : "end"}
       dominantBaseline="central"
-      fontSize={12}
-    >{`${name}: ${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString("en-ZA", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })})`}</text>
+      fontSize={11}
+    >
+      {`${name}: ${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString(
+        "en-ZA",
+        {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }
+      )})`}
+    </text>
   );
 };
+
 
 const CostingReports = () => {
   const [openChartModal, setOpenChartModal] = useState(false);
@@ -870,11 +879,11 @@ const CostingReports = () => {
     
       {/* Full-Screen Chart Modal */}
       <Dialog open={openChartModal} onOpenChange={setOpenChartModal}>
-  <DialogContent className="max-w-screen-lg h-[90vh] overflow-auto">
+  <DialogContent className="max-w-screen-lg h-[95vh] overflow-auto">
     <DialogHeader>
       <DialogTitle>Chart - Summary by {selectedReport.replaceAll('_', ' ')}</DialogTitle>
     </DialogHeader>
-    <div className="w-full h-[70vh]">
+    <div className="w-full h-[85vh]">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
