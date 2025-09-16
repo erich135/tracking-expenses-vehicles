@@ -31,6 +31,8 @@ import DataImportPage from '@/pages/DataImportPage';
 import AddSLAExpensePage from '@/pages/sla/AddSLAExpensePage';
 import AddSLAIncomePage from '@/pages/sla/AddSLAIncomePage';
 import ViewSLAEquipmentPage from '@/pages/sla/ViewSLAEquipmentPage';
+import AuditTrailPage from '@/pages/AuditTrailPage';
+
 
 
 // ---------- Route Guards ----------
@@ -105,6 +107,8 @@ function AppRoutes() {
         element={!session ? <RegisterPage /> : <Navigate to="/" replace />}
       />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
+      <Route path="/settings/audit" element={<AuditTrailPage />} />
+
 
       {/* Main app routes */}
       <Route

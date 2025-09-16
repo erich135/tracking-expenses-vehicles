@@ -43,8 +43,17 @@ const navItems = [
       { name: 'Parts', path: '/maintenance/parts' },
     ], permission: 'maintenance'
   },
-  { name: 'Settings', icon: Settings, path: '/settings', adminOnly: true },
+  {
+  name: 'Settings',
+  icon: Settings,
+  adminOnly: true,
+  sublinks: [
+    { name: 'Settings Home', path: '/settings' },
+    { name: 'Audit Trail', path: '/settings/audit' },
+  ],
+},
 ];
+
 
 const Sidebar = ({ isCollapsed, toggleCollapse }) => {
   const { signOut, userProfile } = useAuth();

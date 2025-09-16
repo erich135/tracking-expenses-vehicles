@@ -63,6 +63,7 @@ const renderCustomLabel = ({
   outerRadius,
   percent,
   value,
+  name
 }) => {
   const RADIAN = Math.PI / 180;
   const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
@@ -76,17 +77,17 @@ const renderCustomLabel = ({
       textAnchor={x > cx ? "start" : "end"}
       dominantBaseline="central"
       fontSize={12}
-    >{`${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString(
-      "en-ZA",
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }
-    )})`}</text>
+    >{`${name}: ${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString("en-ZA", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })})`}</text>
   );
 };
 
 const CostingReports = () => {
+  const [openChartModal, setOpenChartModal] = useState(false);
+  const COLORS = ["#4285F4", "#FBBC05", "#00C49F", "#9C27B0", "#03A9F4", "#8BC34A", "#FF7043", "#9575CD", "#4DB6AC", "#FFCA28"];
+
   const [allEntries, setAllEntries] = useState([]);
   const [selectedReport, setSelectedReport] = useState("summary_by_rep");
   const [viewMode, setViewMode] = useState("table");
@@ -540,7 +541,7 @@ const CostingReports = () => {
                 </Button>
                 <Button
                   variant={viewMode === "graph" ? "default" : "outline"}
-                  onClick={() => setViewMode("graph")}
+                  onClick={() => setOpenChartModal(true)}
                 >
                   <BarChartIcon className="w-4 h-4 mr-2" />
                   Graph
@@ -808,7 +809,7 @@ const CostingReports = () => {
                       `R ${parseFloat(value).toLocaleString()}`
                     }
                   />
-                  <Legend />
+                  
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -860,13 +861,43 @@ const CostingReports = () => {
                     `R ${parseFloat(value).toLocaleString()}`
                   }
                 />
-                <Legend />
+                
               </PieChart>
             </ResponsiveContainer>
           </div>
         </DialogContent>
       </Dialog>
+    
+      {/* Full-Screen Chart Modal */}
+      <Dialog open={openChartModal} onOpenChange={setOpenChartModal}>
+  <DialogContent className="max-w-screen-lg h-[90vh] overflow-auto">
+    <DialogHeader>
+      <DialogTitle>Chart - Summary by {selectedReport.replaceAll('_', ' ')}</DialogTitle>
+    </DialogHeader>
+    <div className="w-full h-[70vh]">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={selectedReport === "summary_by_rep" ? repBreakdown || [] : processedData.data}
+            dataKey={selectedReport === "summary_by_rep" ? "value" : "profit"}
+            nameKey={selectedReport === "summary_by_rep" ? "name" : processedData.graphNameKey}
+            outerRadius={230}
+            label={renderCustomLabel}
+            labelLine={true}
+            paddingAngle={2}
+          >
+            {(selectedReport === "summary_by_rep" ? repBreakdown || [] : processedData.data).map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip formatter={(value) => `R ${parseFloat(value).toLocaleString()}`} />
+          
+        </PieChart>
+      </ResponsiveContainer>
     </div>
+  </DialogContent>
+</Dialog>
+</div>
   );
 };
 

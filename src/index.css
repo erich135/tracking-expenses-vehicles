@@ -121,3 +121,11 @@ body {
   background-color: #BA55D3;
   color: white;
 }
+
+/* ✅ Sticky table header */
+thead th {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  z-index: 10;
+}
