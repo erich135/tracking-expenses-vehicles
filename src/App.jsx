@@ -32,6 +32,7 @@ import AddSLAExpensePage from '@/pages/sla/AddSLAExpensePage';
 import AddSLAIncomePage from '@/pages/sla/AddSLAIncomePage';
 import ViewSLAEquipmentPage from '@/pages/sla/ViewSLAEquipmentPage';
 import AuditTrailPage from '@/pages/AuditTrailPage';
+import AdminPage from '@/pages/AdminPage';
 
 
 
@@ -289,6 +290,12 @@ function AppRoutes() {
           path="settings/import"
           element={<AdminRoute element={<DataImportPage />} />}
         />
+
+          {/* Admin page (admin only) */}
+          <Route
+            path="admin"
+            element={<AdminRoute element={<AdminPage />} />}
+          />
 
         {/* SLA */}
         {can('sla') && (

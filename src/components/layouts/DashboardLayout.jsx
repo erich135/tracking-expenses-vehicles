@@ -44,14 +44,20 @@ const navItems = [
     ], permission: 'maintenance'
   },
   {
-  name: 'Settings',
-  icon: Settings,
-  adminOnly: true,
-  sublinks: [
-    { name: 'Settings Home', path: '/settings' },
-    { name: 'Audit Trail', path: '/settings/audit' },
-  ],
-},
+    name: 'Settings',
+    icon: Settings,
+    adminOnly: true,
+    sublinks: [
+      { name: 'Settings Home', path: '/settings' },
+      { name: 'Audit Trail', path: '/settings/audit' },
+    ],
+  },
+  {
+    name: 'Admin',
+    icon: Settings,
+    adminOnly: true,
+    path: '/admin',
+  },
 ];
 
 

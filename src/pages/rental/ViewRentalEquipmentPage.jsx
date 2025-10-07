@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Edit, Search, X } from 'lucide-react';
+import { Edit, Search, X, Plus } from 'lucide-react';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,8 +27,10 @@ const ViewRentalEquipmentPage = () => {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [selectedMachine, setSelectedMachine] = useState(null);
     const [editFormData, setEditFormData] = useState({});
+    const [addFormData, setAddFormData] = useState({});
     const { toast } = useToast();
 
     // Filters
@@ -94,6 +96,15 @@ const ViewRentalEquipmentPage = () => {
     const handleInputChange = (field, value) => {
         setEditFormData(prev => ({ ...prev, [field]: value }));
     };
+
+    const handleAddInputChange = (field, value) => {
+        setAddFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleAddClick = () => {
+        setAddFormData({});
+        setIsAddDialogOpen(true);
+    };
     
     const fetchCustomersForAutocomplete = async (searchTerm) => {
         const { data, error } = await supabase
@@ -120,6 +131,22 @@ const ViewRentalEquipmentPage = () => {
         } else {
             toast({ title: 'Success!', description: 'Machine details updated.' });
             setIsEditDialogOpen(false);
+            fetchData();
+        }
+    };
+
+    const handleCreate = async (e) => {
+        e.preventDefault();
+        const createData = { ...addFormData };
+        createData.customer_id = createData.customer_id?.id || null;
+        
+        const { error } = await supabase.from('rental_equipment').insert(createData);
+
+        if (error) {
+            toast({ variant: 'destructive', title: 'Error creating machine', description: error.message });
+        } else {
+            toast({ title: 'Success!', description: 'New machine created successfully.' });
+            setIsAddDialogOpen(false);
             fetchData();
         }
     };
@@ -168,8 +195,16 @@ const ViewRentalEquipmentPage = () => {
             </Helmet>
             <Card>
                 <CardHeader>
-                    <CardTitle>Rental Equipment</CardTitle>
-                    <CardDescription>View, filter, and manage all rental machines.</CardDescription>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>Rental Equipment</CardTitle>
+                            <CardDescription>View, filter, and manage all rental machines.</CardDescription>
+                        </div>
+                        <Button onClick={handleAddClick} className="flex items-center gap-2">
+                            <Plus className="h-4 w-4" />
+                            Add New Machine
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -262,6 +297,49 @@ const ViewRentalEquipmentPage = () => {
                          <DialogFooter className="mt-6">
                             <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
                             <Button type="submit">Save Changes</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader><DialogTitle>Add New Rental Machine</DialogTitle></DialogHeader>
+                    <form onSubmit={handleCreate} className="py-4 max-h-[70vh] overflow-y-auto pr-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {editFields.map(field => (
+                            <div key={field.key} className={`space-y-2 ${field.colSpan ? `lg:col-span-${field.colSpan}` : ''}`}>
+                                <Label htmlFor={`add_${field.key}`}>{field.label}</Label>
+                                {field.type === 'autocomplete' ? (
+                                    <Autocomplete
+                                        value={addFormData[field.key]}
+                                        onChange={value => handleAddInputChange(field.key, value)}
+                                        fetcher={fetchCustomersForAutocomplete}
+                                        displayField="name"
+                                        valueField="id"
+                                        placeholder="Select a customer..."
+                                    />
+                                ) : field.type === 'textarea' ? (
+                                    <Textarea
+                                        id={`add_${field.key}`}
+                                        value={addFormData[field.key] || ''}
+                                        onChange={e => handleAddInputChange(field.key, e.target.value)}
+                                        rows={4}
+                                    />
+                                ): (
+                                    <Input
+                                        id={`add_${field.key}`}
+                                        type={field.type}
+                                        value={addFormData[field.key] || ''}
+                                        onChange={e => handleAddInputChange(field.key, e.target.value)}
+                                    />
+                                )}
+                            </div>
+                        ))}
+                        </div>
+                         <DialogFooter className="mt-6">
+                            <DialogClose asChild><Button type="button" variant="secondary">Cancel</Button></DialogClose>
+                            <Button type="submit">Create Machine</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
