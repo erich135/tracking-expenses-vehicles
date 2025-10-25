@@ -240,51 +240,6 @@ const CostingReports = () => {
     });
   };
 
-  // -------- CSV Export Helper
-  const handleCsvExport = () => {
-    if (!processedData || processedData.data.length === 0) {
-      alert("No data available to export to CSV.");
-      return;
-    }
-
-    try {
-      const title = reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
-      const headers = processedData.headers.map((h) => h.label);
-      const csvRows = [headers.join(',')];
-
-      processedData.data.forEach((row) => {
-        const values = processedData.headers.map((h) => {
-          let value = row[h.key];
-          if (value === null || value === undefined) return '';
-          if (typeof value === 'number') return value.toFixed(2);
-          if (typeof value === 'string') {
-            if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-              return `"${value.replace(/"/g, '""')}"`;
-            }
-            return value;
-          }
-          return String(value);
-        });
-        csvRows.push(values.join(','));
-      });
-
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('CSV Export error:', error);
-      alert(`There was a problem generating the CSV file: ${error.message}`);
-    }
-  };
-
   // -------- Build processed data
   const processedData = useMemo(() => {
     if (selectedReport === "summary_by_rep") {
@@ -396,7 +351,9 @@ const CostingReports = () => {
         }
 
         const jobType = (entry.job_description || "other").toLowerCase().replace(/\s+/g, "_");
-        const cost = parseFloat(entry.total_expenses || 0);
+        
+        // FIXED: Use total_customer (SALES) instead of total_expenses (costs)
+        const sales = parseFloat(entry.total_customer || 0);
 
         const categoryMapping = {
           "air_audit": "air_audit",
@@ -431,12 +388,11 @@ const CostingReports = () => {
         };
 
         const category = categoryMapping[jobType] || "other";
-        branchMap[branch][category] += cost;
-        branchMap[branch].total += cost;
+        branchMap[branch][category] += sales;
+        branchMap[branch].total += sales;
       });
 
       const data = Object.values(branchMap);
-
       const totals = {
         branch_code: "TOTAL",
         air_audit: 0,
@@ -463,15 +419,13 @@ const CostingReports = () => {
 
       data.forEach((row) => {
         Object.keys(totals).forEach((key) => {
-          if (key !== "branch_code") {
-            totals[key] += row[key];
-          }
+          if (key !== "branch_code") totals[key] += row[key];
         });
       });
 
       return {
         headers: [
-          { key: "branch_code", label: "Branch" },
+          { key: "branch_code", label: "Rep" },
           { key: "air_audit", label: "Air Audit" },
           { key: "annual_service", label: "Annual Service" },
           { key: "break_down", label: "Break Down" },
@@ -767,7 +721,30 @@ const CostingReports = () => {
 
                 <Button
                   variant="outline"
-                  onClick={handleCsvExport}
+                  onClick={() => {
+                    if (!processedData || processedData.data.length === 0) {
+                      alert("No data available to export to CSV.");
+                      return;
+                    }
+
+                    try {
+                      const title = reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
+                      const headers = processedData.headers.map((h) => h.label);
+                      const dataRows = processedData.data.map((row) =>
+                        processedData.headers.map((h) => {
+                          const value = row[h.key];
+                          if (value === null || value === undefined) return '';
+                          if (typeof value === 'number') return value.toFixed(2);
+                          return String(value);
+                        })
+                      );
+
+                      downloadAsCsv(title, headers, dataRows);
+                    } catch (error) {
+                      console.error('Export error:', error);
+                      alert(`There was a problem generating the CSV file: ${error.message}`);
+                    }
+                  }}
                 >
                   <FileDown className="w-4 h-4 mr-2" />
                   CSV
