@@ -137,7 +137,7 @@ const CostingReports = () => {
     { value: "summary_by_rep", label: "Summary by Rep" },
     { value: "summary_by_customer", label: "Summary by Customer" },
     { value: "summary_by_job_type", label: "Summary by Job Type" },
-    { value: "comprehensive_summary", label: "Comprehensive Summary by Branch" },
+    { value: "comprehensive_summary", label: "Comprehensive Summary by Rep" },
     { value: "profit_by_item", label: "Profit by Item" },
     { value: "detailed_entries", label: "Detailed Costing Entries" },
   ];

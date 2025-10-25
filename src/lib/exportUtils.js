@@ -60,3 +60,52 @@ export const downloadAsCsv = (filename, data) => {
     document.body.removeChild(link);
   }
 };
+
+// Add this function before the return statement
+
+const handleCsvExport = () => {
+  if (!processedData || processedData.data.length === 0) {
+    alert("No data available to export to CSV.");
+    return;
+  }
+
+  try {
+    const title = reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
+    const headers = processedData.headers.map((h) => h.label);
+    
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...processedData.data.map(row =>
+        processedData.headers.map(h => {
+          const value = row[h.key];
+          if (selectedReport === "comprehensive_summary" && h.key !== "branch_code") {
+            return typeof value === 'number' ? value.toFixed(2) : '0.00';
+          }
+          return typeof value === 'number' ? value.toString() : (value || '');
+        }).join(',')
+      )
+    ].join('\n');
+
+    // Download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${title.replace(/\s+/g, '_')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Export error:', error);
+    alert("There was a problem generating the CSV file. Please try again.");
+  }
+};
+
+// ...existing code...
+
+// Replace the CSV button onClick with:
+onClick={handleCsvExport}
+
+// ...existing code...
