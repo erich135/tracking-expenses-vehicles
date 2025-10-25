@@ -1,111 +1,111 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import Papa from 'papaparse';
 
 /**
- * Downloads tabular data as a PDF file.
- *
- * @param {string} title - The title of the PDF document and filename.
- * @param {Array} headers - An array of header objects with a 'label' property.
- * @param {Array} data - A 2D array representing table rows.
+ * Download data as CSV file
+ * @param {string} filename - Name of the file (without extension)
+ * @param {string[]} headers - Array of column headers
+ * @param {any[][]} data - 2D array of data rows
  */
-export const downloadAsPdf = (title, headers, data) => {
-  if (!Array.isArray(data) || data.length === 0) {
-    console.error('PDF Export failed: data is invalid or empty:', data);
-    alert('No data available to export to PDF.');
-    return;
-  }
-
-  const doc = new jsPDF();
-  doc.text(title, 14, 16);
-  doc.autoTable({
-    head: [headers.map(h => h.label)],
-    body: data,
-    startY: 20,
-  });
-  doc.save(`${title}.pdf`);
-};
-
-/**
- * Downloads tabular data as a CSV file.
- *
- * @param {string} filename - The desired filename for the CSV.
- * @param {Array} data - The data to convert and download.
- */
-export const downloadAsCsv = (filename, data) => {
-  if (!Array.isArray(data) || data.length === 0) {
-    console.error('CSV Export failed: data is invalid or empty:', data);
-    alert('No data available to export to CSV.');
-    return;
-  }
-
-  let csv;
+export const downloadAsCsv = (filename, headers, data) => {
   try {
-    csv = Papa.unparse(data);
-  } catch (err) {
-    console.error('CSV export failed during parsing:', err, data);
-    alert('There was a problem generating the CSV file.');
-    return;
-  }
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-};
-
-// Add this function before the return statement
-
-const handleCsvExport = () => {
-  if (!processedData || processedData.data.length === 0) {
-    alert("No data available to export to CSV.");
-    return;
-  }
-
-  try {
-    const title = reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
-    const headers = processedData.headers.map((h) => h.label);
-    
     // Create CSV content
-    const csvContent = [
-      headers.join(','),
-      ...processedData.data.map(row =>
-        processedData.headers.map(h => {
-          const value = row[h.key];
-          if (selectedReport === "comprehensive_summary" && h.key !== "branch_code") {
-            return typeof value === 'number' ? value.toFixed(2) : '0.00';
-          }
-          return typeof value === 'number' ? value.toString() : (value || '');
-        }).join(',')
-      )
-    ].join('\n');
+    const csvRows = [headers.join(',')];
 
-    // Download the file
+    data.forEach((row) => {
+      const values = row.map((value) => {
+        // Handle null/undefined
+        if (value === null || value === undefined) {
+          return '';
+        }
+
+        // Convert to string
+        const stringValue = String(value);
+
+        // Escape commas, quotes, and newlines
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+
+        return stringValue;
+      });
+
+      csvRows.push(values.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+
+    // Create blob and download
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
+
     link.setAttribute('href', url);
-    link.setAttribute('download', `${title.replace(/\s+/g, '_')}.csv`);
+    link.setAttribute('download', `${filename.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
   } catch (error) {
-    console.error('Export error:', error);
-    alert("There was a problem generating the CSV file. Please try again.");
+    console.error('CSV Export error:', error);
+    throw new Error(`Failed to export CSV: ${error.message}`);
   }
 };
 
-// ...existing code...
+/**
+ * Download data as PDF file
+ * @param {string} title - Title of the PDF document
+ * @param {string[]} headers - Array of column headers
+ * @param {any[][]} data - 2D array of data rows
+ */
+export const downloadAsPdf = (title, headers, data) => {
+  try {
+    const doc = new jsPDF('l', 'mm', 'a4'); // landscape, millimeters, A4 size
 
-// Replace the CSV button onClick with:
-onClick={handleCsvExport}
+    // Add title
+    doc.setFontSize(16);
+    doc.text(title, 14, 15);
 
-// ...existing code...
+    // Add date
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString('en-ZA')}`, 14, 22);
+
+    // Format data for PDF
+    const formattedData = data.map((row) =>
+      row.map((cell) => {
+        if (cell === null || cell === undefined) return '';
+        if (typeof cell === 'number') return cell.toFixed(2);
+        return String(cell);
+      })
+    );
+
+    // Generate table
+    doc.autoTable({
+      head: [headers],
+      body: formattedData,
+      startY: 28,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [66, 133, 244],
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      margin: { top: 28, left: 14, right: 14 },
+    });
+
+    // Save the PDF
+    doc.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+  } catch (error) {
+    console.error('PDF Export error:', error);
+    throw new Error(`Failed to export PDF: ${error.message}`);
+  }
+};
