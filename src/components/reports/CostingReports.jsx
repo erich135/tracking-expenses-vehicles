@@ -332,59 +332,107 @@ const CostingReports = () => {
             break_down: 0,
             call_out: 0,
             collection_delivery: 0,
-            defect: 0,
+            defect_repair: 0,
             installation: 0,
             labour: 0,
-            major_repair: 0,
             major_service: 0,
             minor_service: 0,
-            new_equipment: 0,
+            new_sale: 0,
             other: 0,
-            pressure_test: 0,
-            refurb: 0,
+            parts_supply: 0,
+            pressure_testing: 0,
+            refurbishment: 0,
             rental: 0,
             sla_aotf: 0,
-            supply: 0,
-            trans_port: 0,
+            transport: 0,
             total: 0,
           };
         }
 
-        const jobType = (entry.job_description || "other").toLowerCase().replace(/\s+/g, "_");
-        
-        // FIXED: Use total_customer (SALES) instead of total_expenses (costs)
+        const jobType = (entry.job_description || "other").toLowerCase().trim().replace(/\s+/g, "_");
         const sales = parseFloat(entry.total_customer || 0);
 
+        // Enhanced category mapping to handle all variations
         const categoryMapping = {
+          // Air Audit
           "air_audit": "air_audit",
+          
+          // Annual Service
           "annual_service": "annual_service",
+          
+          // Breakdown Service
+          "breakdown_service": "break_down",
           "break_down": "break_down",
           "breakdown": "break_down",
+          
+          // Call Out
           "call_out": "call_out",
           "callout": "call_out",
+          
+          // Collection/Delivery
+          "collection/delivery": "collection_delivery",
+          "collection_delivery": "collection_delivery",
           "collection": "collection_delivery",
           "delivery": "collection_delivery",
-          "collection/delivery": "collection_delivery",
-          "defect": "defect",
+          
+          // Defect Repair
+          "defect_repair": "defect_repair",
+          "defect": "defect_repair",
+          
+          // Installation
           "installation": "installation",
           "instal": "installation",
+          "install": "installation",
+          
+          // Labour
           "labour": "labour",
           "labor": "labour",
-          "major_repair": "major_repair",
+          
+          // Major/Seperator Service (note the typo in your data)
+          "major/seperator_service": "major_service",
+          "major_seperator_service": "major_service",
+          "major/separator_service": "major_service",
+          "major_separator_service": "major_service",
           "major_service": "major_service",
+          "major": "major_service",
+          
+          // Minor Service
           "minor_service": "minor_service",
-          "new_equipment": "new_equipment",
-          "new": "new_equipment",
-          "pressure_test": "pressure_test",
-          "refurb": "refurb",
-          "refurbish": "refurb",
+          "minor": "minor_service",
+          
+          // New Sale
+          "new_sale": "new_sale",
+          "new": "new_sale",
+          "new_equipment": "new_sale",
+          
+          // Parts Supply
+          "parts_supply": "parts_supply",
+          "parts": "parts_supply",
+          "supply": "parts_supply",
+          
+          // Pressure Testing
+          "pressure_testing": "pressure_testing",
+          "pressure_test": "pressure_testing",
+          "pressure": "pressure_testing",
+          
+          // Refurbishment
+          "refurbishment": "refurbishment",
+          "refurb": "refurbishment",
+          "refurbish": "refurbishment",
+          
+          // Rental
           "rental": "rental",
+          "rent": "rental",
+          
+          // SLA/AOTF
+          "sla/aotf": "sla_aotf",
+          "sla_aotf": "sla_aotf",
           "sla": "sla_aotf",
           "aotf": "sla_aotf",
-          "sla/aotf": "sla_aotf",
-          "supply": "supply",
-          "transport": "trans_port",
-          "trans_port": "trans_port",
+          
+          // Transport
+          "transport": "transport",
+          "trans_port": "transport",
         };
 
         const category = categoryMapping[jobType] || "other";
@@ -400,20 +448,19 @@ const CostingReports = () => {
         break_down: 0,
         call_out: 0,
         collection_delivery: 0,
-        defect: 0,
+        defect_repair: 0,
         installation: 0,
         labour: 0,
-        major_repair: 0,
         major_service: 0,
         minor_service: 0,
-        new_equipment: 0,
+        new_sale: 0,
         other: 0,
-        pressure_test: 0,
-        refurb: 0,
+        parts_supply: 0,
+        pressure_testing: 0,
+        refurbishment: 0,
         rental: 0,
         sla_aotf: 0,
-        supply: 0,
-        trans_port: 0,
+        transport: 0,
         total: 0,
       };
 
@@ -428,23 +475,22 @@ const CostingReports = () => {
           { key: "branch_code", label: "Rep" },
           { key: "air_audit", label: "Air Audit" },
           { key: "annual_service", label: "Annual Service" },
-          { key: "break_down", label: "Break Down" },
+          { key: "break_down", label: "Breakdown Service" },
           { key: "call_out", label: "Call Out" },
           { key: "collection_delivery", label: "Collection/Delivery" },
-          { key: "defect", label: "Defect" },
+          { key: "defect_repair", label: "Defect Repair" },
           { key: "installation", label: "Installation" },
           { key: "labour", label: "Labour" },
-          { key: "major_repair", label: "Major Repair" },
-          { key: "major_service", label: "Major Service" },
+          { key: "major_service", label: "Major/Seperator Service" },
           { key: "minor_service", label: "Minor Service" },
-          { key: "new_equipment", label: "New Equipment" },
+          { key: "new_sale", label: "New Sale" },
           { key: "other", label: "Other" },
-          { key: "pressure_test", label: "Pressure Test" },
-          { key: "refurb", label: "Refurb" },
+          { key: "parts_supply", label: "Parts Supply" },
+          { key: "pressure_testing", label: "Pressure Testing" },
+          { key: "refurbishment", label: "Refurbishment" },
           { key: "rental", label: "Rental" },
           { key: "sla_aotf", label: "SLA/AOTF" },
-          { key: "supply", label: "Supply" },
-          { key: "trans_port", label: "Transport" },
+          { key: "transport", label: "Transport" },
           { key: "total", label: "TOTAL" },
         ],
         data: [...data, totals],
