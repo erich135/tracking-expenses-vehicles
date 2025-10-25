@@ -114,6 +114,8 @@ const CostingReports = () => {
   const [selectedEntry, setSelectedEntry] = useState(null);
   const [isRepDialogOpen, setIsRepDialogOpen] = useState(false);
   const [selectedRep, setSelectedRep] = useState(null);
+  const [isBranchDetailDialogOpen, setIsBranchDetailDialogOpen] = useState(false);
+  const [selectedBranchDetails, setSelectedBranchDetails] = useState(null);
 
   // -------- Data fetch
   const fetchData = async () => {
@@ -596,6 +598,22 @@ const CostingReports = () => {
     ];
   }, [filteredData, selectedRep]);
 
+  // Add function to get branch transaction details
+  const getBranchDetails = (branchCode) => {
+    const branchEntries = filteredData.filter((e) => (e.rep || "Unknown") === branchCode);
+    
+    return branchEntries.map(entry => ({
+      date: entry.date,
+      job_number: entry.job_number,
+      customer: entry.customer,
+      job_description: entry.job_description,
+      total_expenses: parseFloat(entry.total_expenses || 0),
+      total_customer: parseFloat(entry.total_customer || 0),
+      profit: parseFloat(entry.profit || 0),
+      margin: parseFloat(entry.margin || 0),
+    }));
+  };
+
   return (
     <div className="p-6">
       <Card>
@@ -842,7 +860,8 @@ const CostingReports = () => {
                       </TableHead>
                     ))}
                     {(selectedReport === "summary_by_rep" ||
-                      selectedReport === "detailed_entries") && (
+                      selectedReport === "detailed_entries" ||
+                      selectedReport === "comprehensive_summary") && (
                       <TableHead className="text-right table-head-bold">Actions</TableHead>
                     )}
                   </TableRow>
@@ -892,6 +911,25 @@ const CostingReports = () => {
                               }}
                             >
                               View Breakdown
+                            </Button>
+                          </TableCell>
+                        )}
+
+                        {selectedReport === "comprehensive_summary" && !isTotalsRow && (
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const details = getBranchDetails(row.branch_code);
+                                setSelectedBranchDetails({
+                                  branchCode: row.branch_code,
+                                  transactions: details
+                                });
+                                setIsBranchDetailDialogOpen(true);
+                              }}
+                            >
+                              View Details
                             </Button>
                           </TableCell>
                         )}
@@ -1096,8 +1134,101 @@ const CostingReports = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-};
 
-export default CostingReports;
+      {/* New Branch Details Dialog */}
+      <Dialog open={isBranchDetailDialogOpen} onOpenChange={setIsBranchDetailDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Transaction Details: {selectedBranchDetails?.branchCode}
+            </DialogTitle>
+            <DialogDescription>
+              Detailed breakdown of all transactions for this branch.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {selectedBranchDetails?.transactions.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Job #</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Job Type</TableHead>
+                    <TableHead className="text-right">Sales (R)</TableHead>
+                    <TableHead className="text-right">Cost (R)</TableHead>
+                    <TableHead className="text-right">Profit (R)</TableHead>
+                    <TableHead className="text-right">Margin %</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {selectedBranchDetails.transactions.map((txn, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{txn.date}</TableCell>
+                      <TableCell>{txn.job_number}</TableCell>
+                      <TableCell>{txn.customer}</TableCell>
+                      <TableCell>{txn.job_description}</TableCell>
+                      <TableCell className="text-right">
+                        {new Intl.NumberFormat("en-ZA", {
+                          style: "currency",
+                          currency: "ZAR",
+                        }).format(txn.total_customer)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {new Intl.NumberFormat("en-ZA", {
+                          style: "currency",
+                          currency: "ZAR",
+                        }).format(txn.total_expenses)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {new Intl.NumberFormat("en-ZA", {
+                          style: "currency",
+                          currency: "ZAR",
+                        }).format(txn.profit)}
+                      </TableCell>
+                      <TableCell className={cn("text-right", getMarginColor(txn.margin))}>
+                        {txn.margin.toFixed(2)}%
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="font-semibold bg-muted">
+                    <TableCell colSpan={4}>Totals</TableCell>
+                    <TableCell className="text-right">
+                      {new Intl.NumberFormat("en-ZA", {
+                        style: "currency",
+                        currency: "ZAR",
+                      }).format(
+                        selectedBranchDetails.transactions.reduce(
+                          (sum, txn) => sum + txn.total_customer,
+                          0
+                        )
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {new Intl.NumberFormat("en-ZA", {
+                        style: "currency",
+                        currency: "ZAR",
+                      }).format(
+                        selectedBranchDetails.transactions.reduce(
+                          (sum, txn) => sum + txn.total_expenses,
+                          0
+                        )
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {new Intl.NumberFormat("en-ZA", {
+                        style: "currency",
+                        currency: "ZAR",
+                      }).format(
+                        selectedBranchDetails.transactions.reduce(
+                          (sum, txn) => sum + txn.profit,
+                          0
+                        )
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {(
+                        (selectedBranchDetails.transactions.reduce(
+                          (sum, txn) => sum + txn.profit,
+                          0
+                        ) /
