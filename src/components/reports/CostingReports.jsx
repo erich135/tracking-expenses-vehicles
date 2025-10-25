@@ -44,6 +44,7 @@ import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -235,6 +236,67 @@ const CostingReports = () => {
         margin: Number(margin),
       };
     });
+  };
+
+  // -------- CSV Export Helper
+  const handleCsvExport = () => {
+    if (!processedData || processedData.data.length === 0) {
+      alert("No data available to export to CSV.");
+      return;
+    }
+
+    try {
+      const title = reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
+      
+      // Create CSV content manually
+      const headers = processedData.headers.map((h) => h.label);
+      const csvRows = [headers.join(',')];
+
+      processedData.data.forEach((row) => {
+        const values = processedData.headers.map((h) => {
+          let value = row[h.key];
+          
+          // Handle different data types
+          if (value === null || value === undefined) {
+            return '';
+          }
+          
+          if (typeof value === 'number') {
+            return value.toFixed(2);
+          }
+          
+          // Escape commas and quotes in strings
+          if (typeof value === 'string') {
+            if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          }
+          
+          return String(value);
+        });
+        
+        csvRows.push(values.join(','));
+      });
+
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('CSV Export error:', error);
+      alert(`There was a problem generating the CSV file: ${error.message}`);
+    }
   };
 
   // -------- Build processed data
@@ -706,41 +768,7 @@ const CostingReports = () => {
 
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    if (!processedData || processedData.data.length === 0) {
-                      alert("No data available to export to CSV.");
-                      return;
-                    }
-
-                    try {
-                      const title = reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
-                      const headers = processedData.headers.map((h) => h.label);
-                      
-                      // Fix data formatting for comprehensive_summary
-                      const dataRows = processedData.data.map((row) =>
-                        processedData.headers.map((h) => {
-                          const value = row[h.key];
-                          
-                          // For comprehensive_summary, format numbers properly for CSV
-                          if (selectedReport === "comprehensive_summary" && h.key !== "branch_code") {
-                            return typeof value === 'number' ? value.toFixed(2) : '0.00';
-                          }
-                          
-                          // For other numeric fields
-                          if (typeof value === 'number') {
-                            return value.toString();
-                          }
-                          
-                          return value || '';
-                        })
-                      );
-
-                      downloadAsCsv(title, headers, dataRows);
-                    } catch (error) {
-                      console.error('Export error:', error);
-                      alert("There was a problem generating the CSV file. Please try again.");
-                    }
-                  }}
+                  onClick={handleCsvExport}
                 >
                   <FileDown className="w-4 h-4 mr-2" />
                   CSV
@@ -981,6 +1009,9 @@ const CostingReports = () => {
         <DialogContent className="max-w-7xl">
           <DialogHeader>
             <DialogTitle>Edit Costing Entry</DialogTitle>
+            <DialogDescription>
+              Make changes to the costing entry below.
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <AddCostingPage
@@ -999,6 +1030,9 @@ const CostingReports = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Rep Summary: {selectedRep}</DialogTitle>
+            <DialogDescription>
+              Breakdown of sales, costs, and profit for this rep.
+            </DialogDescription>
           </DialogHeader>
           <div className="h-[300px] mt-4">
             <ResponsiveContainer>
@@ -1027,13 +1061,16 @@ const CostingReports = () => {
       </Dialog>
 
       <Dialog open={openChartModal} onOpenChange={setOpenChartModal}>
-        <DialogContent className="max-w-screen-lg h-[95vh] overflow-auto" aria-describedby="chart-dialog">
+        <DialogContent className="max-w-screen-lg h-[95vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>
               Chart - {reportTypes.find(r => r.value === selectedReport)?.label}
             </DialogTitle>
+            <DialogDescription>
+              Visual representation of the {reportTypes.find(r => r.value === selectedReport)?.label.toLowerCase()} data.
+            </DialogDescription>
           </DialogHeader>
-          <div className="w-full h-[85vh]" id="chart-dialog">
+          <div className="w-full h-[85vh]">
             {processedData.data.length === 0 ? (
               <p className="text-center mt-10 text-muted-foreground">No data to display in chart.</p>
             ) : (
