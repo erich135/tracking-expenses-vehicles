@@ -249,35 +249,22 @@ const CostingReports = () => {
 
     try {
       const title = reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
-      
-      // Create CSV content manually
       const headers = processedData.headers.map((h) => h.label);
       const csvRows = [headers.join(',')];
 
       processedData.data.forEach((row) => {
         const values = processedData.headers.map((h) => {
           let value = row[h.key];
-          
-          // Handle different data types
-          if (value === null || value === undefined) {
-            return '';
-          }
-          
-          if (typeof value === 'number') {
-            return value.toFixed(2);
-          }
-          
-          // Escape commas and quotes in strings
+          if (value === null || value === undefined) return '';
+          if (typeof value === 'number') return value.toFixed(2);
           if (typeof value === 'string') {
             if (value.includes(',') || value.includes('"') || value.includes('\n')) {
               return `"${value.replace(/"/g, '""')}"`;
             }
             return value;
           }
-          
           return String(value);
         });
-        
         csvRows.push(values.join(','));
       });
 
@@ -285,15 +272,12 @@ const CostingReports = () => {
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
-      
       link.setAttribute('href', url);
       link.setAttribute('download', `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
       link.style.visibility = 'hidden';
-      
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('CSV Export error:', error);
@@ -578,10 +562,7 @@ const CostingReports = () => {
       sales: totals.sales,
       cost: totals.cost,
       profit: totals.profit,
-      margin:
-        totals.marginCount > 0
-          ? parseFloat((totals.marginSum / totals.marginCount).toFixed(2))
-          : 0,
+      margin: totals.marginCount > 0 ? parseFloat((totals.marginSum / totals.marginCount).toFixed(2)) : 0,
     };
   }, [filteredData]);
 
@@ -1148,87 +1129,82 @@ const CostingReports = () => {
           </DialogHeader>
           <div className="mt-4">
             {selectedBranchDetails?.transactions.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Job #</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Job Type</TableHead>
-                    <TableHead className="text-right">Sales (R)</TableHead>
-                    <TableHead className="text-right">Cost (R)</TableHead>
-                    <TableHead className="text-right">Profit (R)</TableHead>
-                    <TableHead className="text-right">Margin %</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {selectedBranchDetails.transactions.map((txn, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>{txn.date}</TableCell>
-                      <TableCell>{txn.job_number}</TableCell>
-                      <TableCell>{txn.customer}</TableCell>
-                      <TableCell>{txn.job_description}</TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Job #</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Job Type</TableHead>
+                      <TableHead className="text-right">Sales (R)</TableHead>
+                      <TableHead className="text-right">Cost (R)</TableHead>
+                      <TableHead className="text-right">Profit (R)</TableHead>
+                      <TableHead className="text-right">Margin %</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedBranchDetails.transactions.map((txn, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>{txn.date}</TableCell>
+                        <TableCell>{txn.job_number}</TableCell>
+                        <TableCell>{txn.customer}</TableCell>
+                        <TableCell>{txn.job_description}</TableCell>
+                        <TableCell className="text-right">
+                          {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(txn.total_customer)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(txn.total_expenses)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(txn.profit)}
+                        </TableCell>
+                        <TableCell className={cn("text-right", getMarginColor(txn.margin))}>
+                          {txn.margin.toFixed(2)}%
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-semibold bg-muted">
+                      <TableCell colSpan={4}>Totals</TableCell>
                       <TableCell className="text-right">
-                        {new Intl.NumberFormat("en-ZA", {
-                          style: "currency",
-                          currency: "ZAR",
-                        }).format(txn.total_customer)}
+                        {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(
+                          selectedBranchDetails.transactions.reduce((sum, txn) => sum + txn.total_customer, 0)
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {new Intl.NumberFormat("en-ZA", {
-                          style: "currency",
-                          currency: "ZAR",
-                        }).format(txn.total_expenses)}
+                        {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(
+                          selectedBranchDetails.transactions.reduce((sum, txn) => sum + txn.total_expenses, 0)
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {new Intl.NumberFormat("en-ZA", {
-                          style: "currency",
-                          currency: "ZAR",
-                        }).format(txn.profit)}
+                        {new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(
+                          selectedBranchDetails.transactions.reduce((sum, txn) => sum + txn.profit, 0)
+                        )}
                       </TableCell>
-                      <TableCell className={cn("text-right", getMarginColor(txn.margin))}>
-                        {txn.margin.toFixed(2)}%
+                      <TableCell className="text-right">
+                        {(
+                          (selectedBranchDetails.transactions.reduce(
+                            (sum, txn) => sum + txn.profit,
+                            0
+                          ) /
+                          selectedBranchDetails.transactions.reduce(
+                            (sum, txn) => sum + txn.total_customer,
+                            0
+                          )) * 100
+                        ).toFixed(2)}%
                       </TableCell>
                     </TableRow>
-                  ))}
-                  <TableRow className="font-semibold bg-muted">
-                    <TableCell colSpan={4}>Totals</TableCell>
-                    <TableCell className="text-right">
-                      {new Intl.NumberFormat("en-ZA", {
-                        style: "currency",
-                        currency: "ZAR",
-                      }).format(
-                        selectedBranchDetails.transactions.reduce(
-                          (sum, txn) => sum + txn.total_customer,
-                          0
-                        )
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {new Intl.NumberFormat("en-ZA", {
-                        style: "currency",
-                        currency: "ZAR",
-                      }).format(
-                        selectedBranchDetails.transactions.reduce(
-                          (sum, txn) => sum + txn.total_expenses,
-                          0
-                        )
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {new Intl.NumberFormat("en-ZA", {
-                        style: "currency",
-                        currency: "ZAR",
-                      }).format(
-                        selectedBranchDetails.transactions.reduce(
-                          (sum, txn) => sum + txn.profit,
-                          0
-                        )
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {(
-                        (selectedBranchDetails.transactions.reduce(
-                          (sum, txn) => sum + txn.profit,
-                          0
-                        ) /
+                  </TableBody>
+                </Table>
+              </>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">No transactions found for this branch.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default CostingReports;
