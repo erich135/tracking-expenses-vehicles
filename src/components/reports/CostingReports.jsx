@@ -712,15 +712,34 @@ const CostingReports = () => {
                       return;
                     }
 
-                    const title =
-                      reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
+                    try {
+                      const title = reportTypes.find((r) => r.value === selectedReport)?.label || "Report";
+                      const headers = processedData.headers.map((h) => h.label);
+                      
+                      // Fix data formatting for comprehensive_summary
+                      const dataRows = processedData.data.map((row) =>
+                        processedData.headers.map((h) => {
+                          const value = row[h.key];
+                          
+                          // For comprehensive_summary, format numbers properly for CSV
+                          if (selectedReport === "comprehensive_summary" && h.key !== "branch_code") {
+                            return typeof value === 'number' ? value.toFixed(2) : '0.00';
+                          }
+                          
+                          // For other numeric fields
+                          if (typeof value === 'number') {
+                            return value.toString();
+                          }
+                          
+                          return value || '';
+                        })
+                      );
 
-                    const headers = processedData.headers.map((h) => h.label);
-                    const dataRows = processedData.data.map((row) =>
-                      processedData.headers.map((h) => row[h.key])
-                    );
-
-                    downloadAsCsv(title, headers, dataRows);
+                      downloadAsCsv(title, headers, dataRows);
+                    } catch (error) {
+                      console.error('Export error:', error);
+                      alert("There was a problem generating the CSV file. Please try again.");
+                    }
                   }}
                 >
                   <FileDown className="w-4 h-4 mr-2" />
