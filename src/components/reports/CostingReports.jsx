@@ -97,6 +97,7 @@ const CostingReports = () => {
   const COLORS = ["#4285F4", "#FBBC05", "#00C49F", "#9C27B0", "#03A9F4", "#8BC34A", "#FF7043", "#9575CD", "#4DB6AC", "#FFCA28"];
 
   const [allEntries, setAllEntries] = useState([]);
+  const [invoiceEntries, setInvoiceEntries] = useState([]);
   const [selectedReport, setSelectedReport] = useState("summary_by_rep");
   const [viewMode, setViewMode] = useState("table");
 
@@ -126,6 +127,77 @@ const CostingReports = () => {
 
     if (!error && data) setAllEntries(data);
     else console.error("Error fetching costing data", error);
+
+    // Fetch invoices from all three tables
+    await fetchInvoices();
+  };
+
+  const fetchInvoices = async () => {
+    try {
+      // Fetch from costing_entries
+      const { data: costingInvoices, error: costingError } = await supabase
+        .from("costing_entries")
+        .select("date, invoice_number, total_customer")
+        .not("invoice_number", "is", null)
+        .order("date", { ascending: false });
+
+      // Fetch from rental_incomes
+      const { data: rentalInvoices, error: rentalError } = await supabase
+        .from("rental_incomes")
+        .select("date, invoice_number, amount")
+        .not("invoice_number", "is", null)
+        .order("date", { ascending: false });
+
+      // Fetch from sla_incomes
+      const { data: slaInvoices, error: slaError } = await supabase
+        .from("sla_incomes")
+        .select("date, invoice_number, amount")
+        .not("invoice_number", "is", null)
+        .order("date", { ascending: false });
+
+      // Combine and normalize data
+      const combined = [];
+
+      if (!costingError && costingInvoices) {
+        combined.push(
+          ...costingInvoices.map((inv) => ({
+            date: inv.date,
+            invoice_number: inv.invoice_number,
+            sales_amount: parseFloat(inv.total_customer || 0),
+            source: "Costing",
+          }))
+        );
+      }
+
+      if (!rentalError && rentalInvoices) {
+        combined.push(
+          ...rentalInvoices.map((inv) => ({
+            date: inv.date,
+            invoice_number: inv.invoice_number,
+            sales_amount: parseFloat(inv.amount || 0),
+            source: "Rental",
+          }))
+        );
+      }
+
+      if (!slaError && slaInvoices) {
+        combined.push(
+          ...slaInvoices.map((inv) => ({
+            date: inv.date,
+            invoice_number: inv.invoice_number,
+            sales_amount: parseFloat(inv.amount || 0),
+            source: "SLA",
+          }))
+        );
+      }
+
+      // Sort by date descending
+      combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      setInvoiceEntries(combined);
+    } catch (error) {
+      console.error("Error fetching invoice data:", error);
+    }
   };
 
   useEffect(() => {
@@ -139,6 +211,7 @@ const CostingReports = () => {
     { value: "summary_by_job_type", label: "Summary by Job Type" },
     { value: "comprehensive_summary", label: "Comprehensive Summary by Rep" },
     { value: "profit_by_item", label: "Profit by Item" },
+    { value: "invoices", label: "Invoices" },
     { value: "detailed_entries", label: "Detailed Costing Entries" },
   ];
 
@@ -210,6 +283,21 @@ const CostingReports = () => {
     selectedJobDescriptions,
     selectedExpenseItems,
   ]);
+
+  // -------- Apply filters to invoice data
+  const filteredInvoiceData = useMemo(() => {
+    return invoiceEntries.filter((entry) => {
+      const inDateRange =
+        (!dateRange?.from || new Date(entry.date) >= new Date(dateRange.from)) &&
+        (!dateRange?.to || new Date(entry.date) <= new Date(dateRange.to));
+
+      const invoiceMatch =
+        jobNumberFilter === "" ||
+        entry.invoice_number?.toLowerCase().includes(jobNumberFilter.toLowerCase());
+
+      return inDateRange && invoiceMatch;
+    });
+  }, [invoiceEntries, dateRange, jobNumberFilter]);
 
   const getMarginColor = (margin) => {
     if (margin >= 60) return "text-green-600";
@@ -523,6 +611,19 @@ const CostingReports = () => {
       };
     }
 
+    if (selectedReport === "invoices") {
+      return {
+        headers: [
+          { key: "date", label: "Date" },
+          { key: "invoice_number", label: "Invoice Number" },
+          { key: "sales_amount", label: "Sales Amount (R)" },
+          { key: "source", label: "Source" },
+        ],
+        data: filteredInvoiceData,
+        graphNameKey: "invoice_number",
+      };
+    }
+
     return {
       headers: [
         { key: "date", label: "Date" },
@@ -538,7 +639,7 @@ const CostingReports = () => {
       data: filteredData,
       graphNameKey: "job_number",
     };
-  }, [filteredData, selectedReport, sortOption]);
+  }, [filteredData, filteredInvoiceData, selectedReport, sortOption]);
 
   const companyTotals = useMemo(() => {
     const totals = filteredData.reduce(
@@ -798,6 +899,32 @@ const CostingReports = () => {
               </div>
             </div>
 
+            {selectedReport === "invoices" && filteredInvoiceData.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                <div>
+                  <Label className="text-muted-foreground text-sm">
+                    Total Invoices
+                  </Label>
+                  <div className="text-base font-medium">
+                    {filteredInvoiceData.length}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-sm">
+                    Total Sales (R)
+                  </Label>
+                  <div className="text-base font-medium">
+                    {new Intl.NumberFormat("en-ZA", {
+                      style: "currency",
+                      currency: "ZAR",
+                    }).format(
+                      filteredInvoiceData.reduce((sum, inv) => sum + inv.sales_amount, 0)
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {selectedReport === "detailed_entries" && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                 <div>
@@ -893,7 +1020,7 @@ const CostingReports = () => {
                                   style: "currency",
                                   currency: "ZAR",
                                 }).format(row[h.key])
-                              : ["sales", "expenses", "total_customer", "total_expenses", "profit"].includes(h.key)
+                              : ["sales", "expenses", "total_customer", "total_expenses", "profit", "sales_amount"].includes(h.key)
                               ? new Intl.NumberFormat("en-ZA", {
                                   style: "currency",
                                   currency: "ZAR",
