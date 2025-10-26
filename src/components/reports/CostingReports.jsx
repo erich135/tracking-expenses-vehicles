@@ -120,13 +120,58 @@ const CostingReports = () => {
 
   // -------- Data fetch
   const fetchData = async () => {
+    // Fetch costing entries
     const { data, error } = await supabase
       .from("costing_entries")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (!error && data) setAllEntries(data);
-    else console.error("Error fetching costing data", error);
+    if (!error && data) {
+      setAllEntries(data);
+    } else {
+      console.error("Error fetching costing data", error);
+    }
+
+    // Fetch rental incomes
+    const { data: rentalData, error: rentalError } = await supabase
+      .from("rental_incomes")
+      .select("*")
+      .order("date", { ascending: false });
+
+    // Fetch SLA incomes
+    const { data: slaData, error: slaError } = await supabase
+      .from("sla_incomes")
+      .select("*")
+      .order("date", { ascending: false });
+
+    if (rentalError) console.error("Error fetching rental data", rentalError);
+    if (slaError) console.error("Error fetching SLA data", slaError);
+
+    // Normalize and combine all data for comprehensive summary
+    const normalizedRental = (rentalData || []).map(entry => ({
+      ...entry,
+      rep: entry.rep || "Unknown",
+      job_description: "Rental",
+      total_customer: parseFloat(entry.amount || 0),
+      source: "Rental"
+    }));
+
+    const normalizedSLA = (slaData || []).map(entry => ({
+      ...entry,
+      rep: entry.rep || "Unknown", 
+      job_description: "SLA/AOTF",
+      total_customer: parseFloat(entry.amount || 0),
+      source: "SLA"
+    }));
+
+    // Combine all entries for comprehensive reporting
+    const combinedEntries = [
+      ...(data || []),
+      ...normalizedRental,
+      ...normalizedSLA
+    ];
+
+    setAllEntries(combinedEntries);
 
     // Fetch invoices from all three tables
     await fetchInvoices();
