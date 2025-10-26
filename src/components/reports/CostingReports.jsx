@@ -125,7 +125,7 @@ const CostingReports = () => {
     const { data, error } = await supabase
       .from("costing_entries")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("date", { ascending: false });
 
     if (!error && data) {
       setAllEntries(data);
