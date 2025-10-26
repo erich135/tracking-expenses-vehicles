@@ -166,6 +166,12 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
   };
 
   const handleConfirmSubmit = async () => {
+    // Ensure discount values are valid numbers
+    const cleanedCustomerItems = customerItems.map(item => ({
+      ...item,
+      discount: Number(item.discount) || 0
+    }));
+
     const entry = {
       job_number: jobDetails.jobNumber || null,
       invoice_number: jobDetails.invoiceNumber || null,
@@ -174,13 +180,13 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
       rep: jobDetails.rep?.rep_name || null,
       date: jobDetails.date || null,
       cash_customer_name: jobDetails.customer?.name === "Cash Sales" ? cashCustomerName : null,
-      customer_items: customerItems,
+      customer_items: cleanedCustomerItems,
       expense_items: expenseItems,
       total_customer: totals.customer,
       total_expenses: totals.expenses,
       profit: totals.profit,
       margin: totals.margin,
-      total_discount: totalDiscount,
+      total_discount: Number(totalDiscount) || 0,
     };
 
     let error;
@@ -364,7 +370,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
                       placeholder="0"
                       min="0"
                       max="100"
-                      value={item.discount}
+                      value={item.discount || 0}
                       onChange={(e) =>
                         handleItemChange('customer', index, 'discount', e.target.value)
                       }
@@ -476,7 +482,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
                   placeholder="0"
                   min="0"
                   max="100"
-                  value={totalDiscount}
+                  value={totalDiscount || 0}
                   onChange={(e) => setTotalDiscount(e.target.value)}
                   className="w-32"
                 />
