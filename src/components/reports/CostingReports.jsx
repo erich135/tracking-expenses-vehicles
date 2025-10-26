@@ -111,6 +111,8 @@ const CostingReports = () => {
   const [selectedExpenseItems, setSelectedExpenseItems] = useState([]);
   const [jobNumberFilter, setJobNumberFilter] = useState("");
   const [sortOption, setSortOption] = useState("rep_asc");
+  const [tableSortColumn, setTableSortColumn] = useState(null);
+  const [tableSortDirection, setTableSortDirection] = useState("asc");
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
@@ -699,22 +701,56 @@ const CostingReports = () => {
       };
     }
 
+    // Sort the data if a table sort column is selected
+    let sortedData = [...filteredData];
+    if (tableSortColumn) {
+      sortedData.sort((a, b) => {
+        let aVal = a[tableSortColumn];
+        let bVal = b[tableSortColumn];
+        
+        // Handle numeric columns
+        if (['total_customer', 'total_expenses', 'profit', 'margin'].includes(tableSortColumn)) {
+          aVal = parseFloat(aVal) || 0;
+          bVal = parseFloat(bVal) || 0;
+        }
+        
+        // Handle date column
+        if (tableSortColumn === 'date') {
+          aVal = new Date(aVal);
+          bVal = new Date(bVal);
+        }
+        
+        // String comparison
+        if (typeof aVal === 'string') {
+          aVal = aVal.toLowerCase();
+          bVal = (bVal || '').toLowerCase();
+        }
+        
+        if (tableSortDirection === 'asc') {
+          return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+        } else {
+          return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+        }
+      });
+    }
+
     return {
       headers: [
         { key: "date", label: "Date" },
         { key: "rep", label: "Rep" },
         { key: "customer", label: "Customer" },
         { key: "job_number", label: "Job #" },
+        { key: "invoice_number", label: "Invoice #" },
         { key: "job_description", label: "Job Type" },
         { key: "total_customer", label: "Sales (R)" },
         { key: "total_expenses", label: "Cost (R)" },
         { key: "profit", label: "Profit (R)" },
         { key: "margin", label: "Profit %" },
       ],
-      data: filteredData,
+      data: sortedData,
       graphNameKey: "job_number",
     };
-  }, [filteredData, filteredInvoiceData, selectedReport, sortOption]);
+  }, [filteredData, filteredInvoiceData, selectedReport, sortOption, tableSortColumn, tableSortDirection]);
 
   const companyTotals = useMemo(() => {
     const totals = filteredData.reduce(
@@ -769,6 +805,18 @@ const CostingReports = () => {
       profit: parseFloat(entry.profit || 0),
       margin: parseFloat(entry.margin || 0),
     }));
+  };
+
+  // Handle column header click for sorting
+  const handleColumnSort = (columnKey) => {
+    if (tableSortColumn === columnKey) {
+      // Toggle direction if same column
+      setTableSortDirection(tableSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending
+      setTableSortColumn(columnKey);
+      setTableSortDirection('asc');
+    }
   };
 
   return (
@@ -1099,9 +1147,20 @@ const CostingReports = () => {
                     {processedData.headers.map((h) => (
                       <TableHead 
                         key={h.key}
-                        className={h.key === "total" ? "font-bold bg-muted" : ""}
+                        className={cn(
+                          h.key === "total" ? "font-bold bg-muted" : "",
+                          selectedReport === "detailed_entries" ? "cursor-pointer hover:bg-muted/50 select-none" : ""
+                        )}
+                        onClick={() => selectedReport === "detailed_entries" && handleColumnSort(h.key)}
                       >
-                        {h.label}
+                        <div className="flex items-center gap-1">
+                          {h.label}
+                          {selectedReport === "detailed_entries" && tableSortColumn === h.key && (
+                            <span className="text-xs">
+                              {tableSortDirection === 'asc' ? '▲' : '▼'}
+                            </span>
+                          )}
+                        </div>
                       </TableHead>
                     ))}
                     {(selectedReport === "summary_by_rep" ||
