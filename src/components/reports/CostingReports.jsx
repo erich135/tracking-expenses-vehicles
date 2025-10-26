@@ -303,9 +303,13 @@ const CostingReports = () => {
   // -------- Apply filters to data
   const filteredData = useMemo(() => {
     return allEntries.filter((entry) => {
+      const entryDate = new Date(entry.date);
+      const startDate = fromDate ? new Date(fromDate) : null;
+      const endDate = toDate ? new Date(new Date(toDate).setHours(23, 59, 59, 999)) : null;
+      
       const inDateRange =
-        (!fromDate || new Date(entry.date) >= new Date(fromDate)) &&
-        (!toDate || new Date(entry.date) <= new Date(toDate));
+        (!startDate || entryDate >= startDate) &&
+        (!endDate || entryDate <= endDate);
 
       const inMarginRange =
         parseFloat(entry.margin || 0) >= marginRange[0] &&
@@ -351,9 +355,13 @@ const CostingReports = () => {
   // -------- Apply filters to invoice data
   const filteredInvoiceData = useMemo(() => {
     return invoiceEntries.filter((entry) => {
+      const entryDate = new Date(entry.date);
+      const startDate = fromDate ? new Date(fromDate) : null;
+      const endDate = toDate ? new Date(new Date(toDate).setHours(23, 59, 59, 999)) : null;
+      
       const inDateRange =
-        (!fromDate || new Date(entry.date) >= new Date(fromDate)) &&
-        (!toDate || new Date(entry.date) <= new Date(toDate));
+        (!startDate || entryDate >= startDate) &&
+        (!endDate || entryDate <= endDate);
 
       const searchMatch =
         jobNumberFilter === "" ||
