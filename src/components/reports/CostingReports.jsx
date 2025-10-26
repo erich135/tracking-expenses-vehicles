@@ -101,7 +101,8 @@ const CostingReports = () => {
   const [selectedReport, setSelectedReport] = useState("summary_by_rep");
   const [viewMode, setViewMode] = useState("table");
 
-  const [dateRange, setDateRange] = useState();
+  const [fromDate, setFromDate] = useState();
+  const [toDate, setToDate] = useState();
   const [marginRange, setMarginRange] = useState([0, 100]);
 
   const [selectedReps, setSelectedReps] = useState([]);
@@ -303,8 +304,8 @@ const CostingReports = () => {
   const filteredData = useMemo(() => {
     return allEntries.filter((entry) => {
       const inDateRange =
-        (!dateRange?.from || new Date(entry.date) >= new Date(dateRange.from)) &&
-        (!dateRange?.to || new Date(entry.date) <= new Date(dateRange.to));
+        (!fromDate || new Date(entry.date) >= new Date(fromDate)) &&
+        (!toDate || new Date(entry.date) <= new Date(toDate));
 
       const inMarginRange =
         parseFloat(entry.margin || 0) >= marginRange[0] &&
@@ -337,7 +338,8 @@ const CostingReports = () => {
     });
   }, [
     allEntries,
-    dateRange,
+    fromDate,
+    toDate,
     marginRange,
     jobNumberFilter,
     selectedReps,
@@ -350,8 +352,8 @@ const CostingReports = () => {
   const filteredInvoiceData = useMemo(() => {
     return invoiceEntries.filter((entry) => {
       const inDateRange =
-        (!dateRange?.from || new Date(entry.date) >= new Date(dateRange.from)) &&
-        (!dateRange?.to || new Date(entry.date) <= new Date(dateRange.to));
+        (!fromDate || new Date(entry.date) >= new Date(fromDate)) &&
+        (!toDate || new Date(entry.date) <= new Date(toDate));
 
       const searchMatch =
         jobNumberFilter === "" ||
@@ -361,7 +363,7 @@ const CostingReports = () => {
 
       return inDateRange && searchMatch;
     });
-  }, [invoiceEntries, dateRange, jobNumberFilter]);
+  }, [invoiceEntries, fromDate, toDate, jobNumberFilter]);
 
   const getMarginColor = (margin) => {
     if (margin >= 60) return "text-green-600";
@@ -830,32 +832,50 @@ const CostingReports = () => {
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
-                  !dateRange?.from && "text-muted-foreground"
+                  !fromDate && "text-muted-foreground"
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    `${format(dateRange.from, "LLL dd, y")} - ${format(
-                      dateRange.to,
-                      "LLL dd, y"
-                    )}`
-                  ) : (
-                    format(dateRange.from, "LLL dd, y")
-                  )
+                {fromDate ? (
+                  format(fromDate, "LLL dd, y")
                 ) : (
-                  <span>Pick a date</span>
+                  <span>From date</span>
                 )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
+                mode="single"
+                selected={fromDate}
+                onSelect={setFromDate}
                 initialFocus
-                mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !toDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {toDate ? (
+                  format(toDate, "LLL dd, y")
+                ) : (
+                  <span>To date</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={toDate}
+                onSelect={setToDate}
+                initialFocus
               />
             </PopoverContent>
           </Popover>
