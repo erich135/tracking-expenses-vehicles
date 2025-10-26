@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, FileDown, TableIcon, BarChartIcon } from "lucide-react";
+import { CalendarIcon, FileDown, TableIcon, BarChartIcon, X } from "lucide-react";
 import {
   ResponsiveContainer,
   PieChart,
@@ -294,11 +294,13 @@ const CostingReports = () => {
         (!dateRange?.from || new Date(entry.date) >= new Date(dateRange.from)) &&
         (!dateRange?.to || new Date(entry.date) <= new Date(dateRange.to));
 
-      const invoiceMatch =
+      const searchMatch =
         jobNumberFilter === "" ||
-        entry.invoice_number?.toLowerCase().includes(jobNumberFilter.toLowerCase());
+        entry.invoice_number?.toLowerCase().includes(jobNumberFilter.toLowerCase()) ||
+        entry.job_number?.toLowerCase().includes(jobNumberFilter.toLowerCase()) ||
+        entry.source?.toLowerCase().includes(jobNumberFilter.toLowerCase());
 
-      return inDateRange && invoiceMatch;
+      return inDateRange && searchMatch;
     });
   }, [invoiceEntries, dateRange, jobNumberFilter]);
 
@@ -736,11 +738,32 @@ const CostingReports = () => {
             </SelectContent>
           </Select>
 
-          <Input
-            placeholder="Filter by Job Number..."
-            value={jobNumberFilter}
-            onChange={(e) => setJobNumberFilter(e.target.value)}
-          />
+          {selectedReport === "invoices" ? (
+            <div className="flex gap-2 lg:col-span-2">
+              <Input
+                placeholder="Filter invoices..."
+                value={jobNumberFilter}
+                onChange={(e) => setJobNumberFilter(e.target.value)}
+                className="flex-1"
+              />
+              {jobNumberFilter && (
+                <Button
+                  variant="outline"
+                  onClick={() => setJobNumberFilter("")}
+                  className="flex items-center gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Clear
+                </Button>
+              )}
+            </div>
+          ) : (
+            <Input
+              placeholder="Filter by Job Number..."
+              value={jobNumberFilter}
+              onChange={(e) => setJobNumberFilter(e.target.value)}
+            />
+          )}
 
           <Popover>
             <PopoverTrigger asChild>
