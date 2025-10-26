@@ -141,19 +141,33 @@ const CostingReports = () => {
         .not("invoice_number", "is", null)
         .order("date", { ascending: false });
 
-      // Fetch from rental_incomes
+      // Fetch from rental_incomes (no job_number column exists)
       const { data: rentalInvoices, error: rentalError } = await supabase
         .from("rental_incomes")
-        .select("date, invoice_number, job_number, amount")
+        .select("date, invoice_number, amount")
         .not("invoice_number", "is", null)
+        .neq("invoice_number", "")
         .order("date", { ascending: false });
 
-      // Fetch from sla_incomes
+      // Fetch from sla_incomes (no job_number column exists)
       const { data: slaInvoices, error: slaError } = await supabase
         .from("sla_incomes")
-        .select("date, invoice_number, job_number, amount")
+        .select("date, invoice_number, amount")
         .not("invoice_number", "is", null)
+        .neq("invoice_number", "")
         .order("date", { ascending: false });
+
+      // Log any errors for debugging
+      if (costingError) console.error("Costing invoices error:", costingError);
+      if (rentalError) console.error("Rental invoices error:", rentalError);
+      if (slaError) console.error("SLA invoices error:", slaError);
+
+      // Log data counts for debugging
+      console.log("Invoice data fetched:", {
+        costing: costingInvoices?.length || 0,
+        rental: rentalInvoices?.length || 0,
+        sla: slaInvoices?.length || 0
+      });
 
       // Combine and normalize data
       const combined = [];
@@ -175,7 +189,7 @@ const CostingReports = () => {
           ...rentalInvoices.map((inv) => ({
             date: inv.date,
             invoice_number: inv.invoice_number,
-            job_number: inv.job_number,
+            job_number: null, // rental_incomes table doesn't have job_number
             sales_amount: parseFloat(inv.amount || 0),
             source: "Rental",
           }))
@@ -187,7 +201,7 @@ const CostingReports = () => {
           ...slaInvoices.map((inv) => ({
             date: inv.date,
             invoice_number: inv.invoice_number,
-            job_number: inv.job_number,
+            job_number: null, // sla_incomes table doesn't have job_number
             sales_amount: parseFloat(inv.amount || 0),
             source: "SLA",
           }))
@@ -297,7 +311,7 @@ const CostingReports = () => {
       const searchMatch =
         jobNumberFilter === "" ||
         entry.invoice_number?.toLowerCase().includes(jobNumberFilter.toLowerCase()) ||
-        entry.job_number?.toLowerCase().includes(jobNumberFilter.toLowerCase()) ||
+        (entry.job_number && entry.job_number.toLowerCase().includes(jobNumberFilter.toLowerCase())) ||
         entry.source?.toLowerCase().includes(jobNumberFilter.toLowerCase());
 
       return inDateRange && searchMatch;
@@ -1054,6 +1068,8 @@ const CostingReports = () => {
                                 }).format(row[h.key])
                               : h.key === "margin"
                               ? `${parseFloat(row[h.key]).toFixed(2)}%`
+                              : row[h.key] === null || row[h.key] === undefined
+                              ? "-"
                               : row[h.key]}
                           </TableCell>
                         ))}
