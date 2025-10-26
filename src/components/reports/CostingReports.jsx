@@ -137,21 +137,21 @@ const CostingReports = () => {
       // Fetch from costing_entries
       const { data: costingInvoices, error: costingError } = await supabase
         .from("costing_entries")
-        .select("date, invoice_number, total_customer")
+        .select("date, invoice_number, job_number, total_customer")
         .not("invoice_number", "is", null)
         .order("date", { ascending: false });
 
       // Fetch from rental_incomes
       const { data: rentalInvoices, error: rentalError } = await supabase
         .from("rental_incomes")
-        .select("date, invoice_number, amount")
+        .select("date, invoice_number, job_number, amount")
         .not("invoice_number", "is", null)
         .order("date", { ascending: false });
 
       // Fetch from sla_incomes
       const { data: slaInvoices, error: slaError } = await supabase
         .from("sla_incomes")
-        .select("date, invoice_number, amount")
+        .select("date, invoice_number, job_number, amount")
         .not("invoice_number", "is", null)
         .order("date", { ascending: false });
 
@@ -163,6 +163,7 @@ const CostingReports = () => {
           ...costingInvoices.map((inv) => ({
             date: inv.date,
             invoice_number: inv.invoice_number,
+            job_number: inv.job_number,
             sales_amount: parseFloat(inv.total_customer || 0),
             source: "Costing",
           }))
@@ -174,6 +175,7 @@ const CostingReports = () => {
           ...rentalInvoices.map((inv) => ({
             date: inv.date,
             invoice_number: inv.invoice_number,
+            job_number: inv.job_number,
             sales_amount: parseFloat(inv.amount || 0),
             source: "Rental",
           }))
@@ -185,6 +187,7 @@ const CostingReports = () => {
           ...slaInvoices.map((inv) => ({
             date: inv.date,
             invoice_number: inv.invoice_number,
+            job_number: inv.job_number,
             sales_amount: parseFloat(inv.amount || 0),
             source: "SLA",
           }))
@@ -615,6 +618,7 @@ const CostingReports = () => {
       return {
         headers: [
           { key: "date", label: "Date" },
+          { key: "job_number", label: "Job Number" },
           { key: "invoice_number", label: "Invoice Number" },
           { key: "sales_amount", label: "Sales Amount (R)" },
           { key: "source", label: "Source" },
