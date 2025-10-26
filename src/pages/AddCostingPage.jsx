@@ -37,11 +37,12 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
 
   const [cashCustomerName, setCashCustomerName] = useState('');
   const [customerItems, setCustomerItems] = useState([
-    { id: Date.now(), part: '', quantity: 1, price: 0 },
+    { id: Date.now(), part: '', quantity: 1, price: 0, discount: 0 },
   ]);
   const [expenseItems, setExpenseItems] = useState([
     { id: Date.now(), part: null, quantity: 1, price: 0 },
   ]);
+  const [totalDiscount, setTotalDiscount] = useState(0);
 
   const [totals, setTotals] = useState({
     customer: 0,
@@ -62,8 +63,9 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
       date: '',
     });
     setCashCustomerName('');
-    setCustomerItems([{ id: Date.now(), part: '', quantity: 1, price: 0 }]);
+    setCustomerItems([{ id: Date.now(), part: '', quantity: 1, price: 0, discount: 0 }]);
     setExpenseItems([{ id: Date.now(), part: null, quantity: 1, price: 0 }]);
+    setTotalDiscount(0);
   }, []);
   // Load data when editing
   useEffect(() => {
@@ -80,11 +82,12 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
       });
       setCashCustomerName(costingData.cash_customer_name || '');
       setCustomerItems(
-        costingData.customer_items || [{ id: Date.now(), part: '', quantity: 1, price: 0 }]
+        costingData.customer_items || [{ id: Date.now(), part: '', quantity: 1, price: 0, discount: 0 }]
       );
       setExpenseItems(
         costingData.expense_items || [{ id: Date.now(), part: null, quantity: 1, price: 0 }]
       );
+      setTotalDiscount(costingData.total_discount || 0);
     }
   }, [isEditMode, costingData]);
 
@@ -116,7 +119,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
     const setItems = type === 'customer' ? setCustomerItems : setExpenseItems;
     const newItem =
       type === 'customer'
-        ? { id: Date.now(), part: '', quantity: 1, price: 0 }
+        ? { id: Date.now(), part: '', quantity: 1, price: 0, discount: 0 }
         : { id: Date.now(), part: null, quantity: 1, price: 0 };
     setItems((prev) => [...prev, newItem]);
   };
@@ -127,10 +130,18 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
   };
 
   const calculateTotals = useCallback(() => {
-    const totalCustomer = customerItems.reduce(
-      (acc, item) => acc + Number(item.quantity) * Number(item.price),
-      0
-    );
+    // Calculate subtotal with individual item discounts
+    const subtotalCustomer = customerItems.reduce((acc, item) => {
+      const itemTotal = Number(item.quantity) * Number(item.price);
+      const itemDiscount = Number(item.discount) || 0;
+      const itemTotalAfterDiscount = itemTotal * (1 - itemDiscount / 100);
+      return acc + itemTotalAfterDiscount;
+    }, 0);
+    
+    // Apply total discount on top of subtotal
+    const totalDiscountPercent = Number(totalDiscount) || 0;
+    const totalCustomer = subtotalCustomer * (1 - totalDiscountPercent / 100);
+    
     const totalExpenses = expenseItems.reduce(
       (acc, item) => acc + Number(item.quantity) * Number(item.price),
       0
@@ -144,11 +155,11 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
       profit,
       margin,
     });
-  }, [customerItems, expenseItems]);
+  }, [customerItems, expenseItems, totalDiscount]);
 
   useEffect(() => {
     calculateTotals();
-  }, [customerItems, expenseItems, calculateTotals]);
+  }, [customerItems, expenseItems, totalDiscount, calculateTotals]);
 
   const handleInitiateSubmit = () => {
     setIsConfirming(true);
@@ -169,6 +180,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
       total_expenses: totals.expenses,
       profit: totals.profit,
       margin: totals.margin,
+      total_discount: totalDiscount,
     };
 
     let error;
@@ -313,7 +325,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
             <CardContent className="space-y-4">
               {customerItems.map((item, index) => (
                 <div key={item.id || index} className="grid grid-cols-12 gap-2 items-start">
-                  <div className="col-span-5 space-y-2">
+                  <div className="col-span-4 space-y-2">
                     <Label>Part Description</Label>
                     <Textarea
                       placeholder="E.g., Install Bouwa S315..."
@@ -323,7 +335,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
                       }
                     />
                   </div>
-                  <div className="col-span-3 space-y-2">
+                  <div className="col-span-2 space-y-2">
                     <Label>Quantity</Label>
                     <Input
                       type="number"
@@ -334,7 +346,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
                       }
                     />
                   </div>
-                  <div className="col-span-3 space-y-2">
+                  <div className="col-span-2 space-y-2">
                     <Label>Price (R)</Label>
                     <Input
                       type="number"
@@ -343,6 +355,28 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
                       onChange={(e) =>
                         handleItemChange('customer', index, 'price', e.target.value)
                       }
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Discount (%)</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                      value={item.discount}
+                      onChange={(e) =>
+                        handleItemChange('customer', index, 'discount', e.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Total (R)</Label>
+                    <Input
+                      type="text"
+                      disabled
+                      value={(Number(item.quantity) * Number(item.price) * (1 - Number(item.discount || 0) / 100)).toFixed(2)}
+                      className="bg-gray-100"
                     />
                   </div>
                   <div className="col-span-1 flex items-end h-full">
@@ -423,7 +457,7 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
 
         <Card>
           <CardFooter className="flex justify-between items-center p-6">
-            <div className="text-lg font-semibold">
+            <div className="text-lg font-semibold space-y-2">
               <div>
                 Total Customer: <span className="text-green-600">R{totals.customer.toFixed(2)}</span>
               </div>
@@ -433,6 +467,19 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
               <div className="mt-2 text-xl">
                 Profit: <span className="font-bold">R{totals.profit.toFixed(2)}</span> (Margin:{' '}
                 <span className="font-bold">{totals.margin.toFixed(2)}%</span>)
+              </div>
+              <div className="mt-4 flex items-center gap-4">
+                <Label htmlFor="total-discount" className="text-base">Additional Total Discount (%):</Label>
+                <Input
+                  id="total-discount"
+                  type="number"
+                  placeholder="0"
+                  min="0"
+                  max="100"
+                  value={totalDiscount}
+                  onChange={(e) => setTotalDiscount(e.target.value)}
+                  className="w-32"
+                />
               </div>
             </div>
             <Button size="lg" onClick={handleInitiateSubmit}>
