@@ -94,7 +94,47 @@ const renderCustomLabel = ({
 
 const CostingReports = () => {
   const [openChartModal, setOpenChartModal] = useState(false);
-  const COLORS = ["#4285F4", "#FBBC05", "#00C49F", "#9C27B0", "#03A9F4", "#8BC34A", "#FF7043", "#9575CD", "#4DB6AC", "#FFCA28"];
+  const COLORS = [
+    "#4285F4",
+    "#FBBC05",
+    "#00C49F",
+    "#9C27B0",
+    "#03A9F4",
+    "#8BC34A",
+    "#FF7043",
+    "#9575CD",
+    "#4DB6AC",
+    "#FFCA28",
+  ];
+
+  // Custom label renderer that uses the slice color so the label/tag matches the pie slice.
+  const renderLabelWithColor = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, name, index }) => {
+    if (percent < 0.005) return null;
+
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 1.6;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    const fill = COLORS[index % COLORS.length] || "#000";
+
+    return (
+      <text
+        x={x}
+        y={y}
+        fill={fill}
+        textAnchor={x > cx ? "start" : "end"}
+        dominantBaseline="central"
+        fontSize={9}
+        fontWeight="600"
+      >
+        {`${name}: ${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString("en-ZA", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })})`}
+      </text>
+    );
+  };
 
   const [allEntries, setAllEntries] = useState([]);
   const [invoiceEntries, setInvoiceEntries] = useState([]);
@@ -1329,11 +1369,11 @@ const CostingReports = () => {
                         ? "name"
                         : processedData.graphNameKey
                     }
-                    outerRadius={120}
-                    label={renderCustomLabel}
+                    outerRadius={100}
+                    label={renderLabelWithColor}
                     labelLine={false}
                   >
-                    {processedData.data.map((entry, index) => (
+                    {(selectedReport === "summary_by_rep" ? repBreakdown || [] : processedData.data).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
@@ -1386,7 +1426,7 @@ const CostingReports = () => {
                   dataKey="value"
                   nameKey="name"
                   outerRadius={80}
-                  label={renderCustomLabel}
+                  label={renderLabelWithColor}
                   labelLine={false}
                 >
                   <Cell fill="#4285F4" />
@@ -1424,8 +1464,8 @@ const CostingReports = () => {
                     data={processedData.data}
                     dataKey="profit"
                     nameKey={processedData.graphNameKey}
-                    outerRadius={150}
-                    label={renderCustomLabel}
+                    outerRadius={120}
+                    label={renderLabelWithColor}
                     labelLine={true}
                     paddingAngle={2}
                   >
