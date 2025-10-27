@@ -68,7 +68,7 @@ const renderCustomLabel = ({
   if (percent < 0.005) return null;
 
   const RADIAN = Math.PI / 180;
-  const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
+  const radius = innerRadius + (outerRadius - innerRadius) * 1.6;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -79,7 +79,7 @@ const renderCustomLabel = ({
       fill="#000"
       textAnchor={x > cx ? "start" : "end"}
       dominantBaseline="central"
-      fontSize={11}
+      fontSize={9}
     >
       {`${name}: ${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString(
         "en-ZA",
@@ -1312,7 +1312,7 @@ const CostingReports = () => {
           )}
 
           {viewMode === "graph" && processedData.data.length > 0 && (
-            <div className="h-[400px]">
+            <div className="h-[600px]">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
@@ -1329,7 +1329,7 @@ const CostingReports = () => {
                         ? "name"
                         : processedData.graphNameKey
                     }
-                    outerRadius={100}
+                    outerRadius={120}
                     label={renderCustomLabel}
                     labelLine={false}
                   >
@@ -1378,14 +1378,14 @@ const CostingReports = () => {
               Breakdown of sales, costs, and profit for this rep.
             </DialogDescription>
           </DialogHeader>
-          <div className="h-[300px] mt-4">
+          <div className="h-[400px] mt-4">
             <ResponsiveContainer>
               <PieChart>
                 <Pie
                   data={repBreakdown || []}
                   dataKey="value"
                   nameKey="name"
-                  outerRadius={100}
+                  outerRadius={80}
                   label={renderCustomLabel}
                   labelLine={false}
                 >
@@ -1424,7 +1424,7 @@ const CostingReports = () => {
                     data={processedData.data}
                     dataKey="profit"
                     nameKey={processedData.graphNameKey}
-                    outerRadius={230}
+                    outerRadius={150}
                     label={renderCustomLabel}
                     labelLine={true}
                     paddingAngle={2}
