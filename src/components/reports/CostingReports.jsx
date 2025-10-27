@@ -109,10 +109,10 @@ const CostingReports = () => {
 
   // Custom label renderer that uses the slice color so the label/tag matches the pie slice.
   const renderLabelWithColor = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, name, index }) => {
-    if (percent < 0.005) return null;
+    if (percent < 0.02) return null; // Hide labels for very small slices
 
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 1.6;
+    const radius = innerRadius + (outerRadius - innerRadius) * 2.2; // Increased from 1.6 to 2.2
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -125,7 +125,7 @@ const CostingReports = () => {
         fill={fill}
         textAnchor={x > cx ? "start" : "end"}
         dominantBaseline="central"
-        fontSize={9}
+        fontSize={8}
         fontWeight="600"
       >
         {`${name}: ${(percent * 100).toFixed(0)}% (R ${Number(value).toLocaleString("en-ZA", {
@@ -1369,7 +1369,7 @@ const CostingReports = () => {
                         ? "name"
                         : processedData.graphNameKey
                     }
-                    outerRadius={100}
+                    outerRadius={85}
                     label={renderLabelWithColor}
                     labelLine={false}
                   >
@@ -1464,7 +1464,7 @@ const CostingReports = () => {
                     data={processedData.data}
                     dataKey="profit"
                     nameKey={processedData.graphNameKey}
-                    outerRadius={120}
+                    outerRadius={100}
                     label={renderLabelWithColor}
                     labelLine={true}
                     paddingAngle={2}
