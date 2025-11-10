@@ -95,15 +95,19 @@ const ViewSLAEquipmentPage = () => {
   };
 
   const fetchCustomersForAutocomplete = async (searchTerm) => {
+    console.log('fetchCustomersForAutocomplete called with searchTerm:', searchTerm);
     const { data, error } = await supabase
       .from('customers')
       .select('id, name')
       .ilike('name', `%${searchTerm}%`)
       .limit(10);
+    console.log('Supabase response:', { data, error });
     if (error) {
+      console.error('Supabase error:', error);
       toast({ variant: 'destructive', title: 'Error fetching customers', description: error.message });
       return [];
     }
+    console.log('Returning data:', data);
     return data;
   };
 
@@ -285,6 +289,8 @@ Actions</TableHead>
               value={editFormData.customer_id}
               onChange={(value) => handleInputChange('customer_id', value)}
               fetcher={fetchCustomersForAutocomplete}
+              displayField="name"
+              placeholder="Select a customer..."
             />
 
             <Label>Location</Label>
@@ -362,6 +368,8 @@ Actions</TableHead>
               value={addFormData.customer_id}
               onChange={(value) => handleAddInputChange('customer_id', value)}
               fetcher={fetchCustomersForAutocomplete}
+              displayField="name"
+              placeholder="Select a customer..."
             />
 
             <Label>Location</Label>
