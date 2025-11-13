@@ -220,14 +220,12 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
     setIsConfirming(false);
   };
   const fetcher = async (table, searchColumn, searchTerm) => {
-    console.log(`Fetching from ${table} where ${searchColumn} contains "${searchTerm}"`);
     const { data, error } = await supabase
       .from(table)
       .select(`*`)
       .ilike(searchColumn, `%${searchTerm}%`)
       .limit(10);
     if (error) {
-      console.error(`Error fetching ${table}:`, error);
       toast({
         variant: 'destructive',
         title: `Error fetching ${table}`,
@@ -235,7 +233,6 @@ const AddCostingPage = ({ isEditMode = false, costingData, onSuccess }) => {
       });
       return [];
     }
-    console.log(`Results from ${table}:`, data);
     // Clean up any potential whitespace issues
     if (table === 'parts') {
       data.forEach(item => {
