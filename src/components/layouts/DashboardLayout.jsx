@@ -31,6 +31,8 @@ const navItems = [
       { name: 'View SLA Equipment', path: '/sla/equipment' },
       { name: 'Add SLA Expense', path: '/sla/add-expense' },
       { name: 'Add SLA Income', path: '/sla/add-income' },
+      { name: 'View SLA Expenses', path: '/sla/view-expenses' },
+      { name: 'View SLA Incomes', path: '/sla/view-incomes' },
     ],
     permission: 'sla'
   },

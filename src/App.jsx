@@ -31,6 +31,8 @@ import DataImportPage from '@/pages/DataImportPage';
 import AddSLAExpensePage from '@/pages/sla/AddSLAExpensePage';
 import AddSLAIncomePage from '@/pages/sla/AddSLAIncomePage';
 import ViewSLAEquipmentPage from '@/pages/sla/ViewSLAEquipmentPage';
+import ViewSLAExpensesPage from '@/pages/sla/ViewSLAExpensesPage';
+import ViewSLAIncomesPage from '@/pages/sla/ViewSLAIncomesPage';
 import AuditTrailPage from '@/pages/AuditTrailPage';
 import AdminPage from '@/pages/AdminPage';
 
@@ -303,6 +305,8 @@ function AppRoutes() {
             <Route path="sla/add-expense" element={<AddSLAExpensePage />} />
             <Route path="sla/add-income" element={<AddSLAIncomePage />} />
             <Route path="sla/equipment" element={<ViewSLAEquipmentPage />} />
+            <Route path="sla/view-expenses" element={<ViewSLAExpensesPage />} />
+            <Route path="sla/view-incomes" element={<ViewSLAIncomesPage />} />
             <Route path="sla/view" element={<ViewSLAEquipmentPage />} />
           </>
         )}

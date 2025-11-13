@@ -17,8 +17,6 @@ export function Autocomplete({
   const [loading, setLoading] = useState(false);
   const isMounted = useRef(false);
 
-  console.log('Autocomplete rendered with:', { value, displayField, options });
-
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -36,9 +34,7 @@ export function Autocomplete({
 
   const fetchData = useCallback(async (search) => {
     setLoading(true);
-    console.log('Fetching data for:', search);
     const data = await fetcher(search);
-    console.log('Fetched data:', data);
     if (isMounted.current) {
       setOptions(data || []);
       setLoading(false);
@@ -93,8 +89,6 @@ export function Autocomplete({
                     type="button"
                     className="w-full text-left px-2 py-2 text-sm hover:bg-gray-100 flex items-center"
                     onClick={() => {
-                      console.log('BUTTON CLICKED:', option);
-                      console.log('Calling onChange with:', option);
                       onChange(option);
                       setInputValue(option[displayField] || '');
                       setOpen(false);
