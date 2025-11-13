@@ -2,12 +2,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 
 export function Autocomplete({
   value,
@@ -22,6 +16,8 @@ export function Autocomplete({
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const isMounted = useRef(false);
+
+  console.log('Autocomplete rendered with:', { value, displayField, options });
 
   useEffect(() => {
     isMounted.current = true;
@@ -40,7 +36,9 @@ export function Autocomplete({
 
   const fetchData = useCallback(async (search) => {
     setLoading(true);
+    console.log('Fetching data for:', search);
     const data = await fetcher(search);
+    console.log('Fetched data:', data);
     if (isMounted.current) {
       setOptions(data || []);
       setLoading(false);
@@ -58,29 +56,29 @@ export function Autocomplete({
   const displayValue = (value && value[displayField]) ? value[displayField] : placeholder;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between font-normal"
-        >
-          <span className="truncate">{displayValue}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <div className="border rounded-md bg-background">
-          <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex items-center"
+      >
+        <span className="truncate">{displayValue}</span>
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </button>
+      
+      {open && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 border rounded-md bg-background shadow-lg">
+          <div className="p-2">
             <input
+              type="text"
               placeholder={placeholder}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full px-2 py-1 text-sm border rounded"
+              autoFocus
             />
           </div>
-          <div className="max-h-60 overflow-auto p-1">
+          <div className="max-h-60 overflow-auto">
             {loading && (
               <div className="py-2 px-2 text-sm text-muted-foreground">Loading...</div>
             )}
@@ -89,12 +87,14 @@ export function Autocomplete({
             )}
             {!loading && options.length > 0 && (
               <div>
-                {options.map((option) => (
-                  <div
-                    key={option[valueField]}
-                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                {options.map((option, index) => (
+                  <button
+                    key={option[valueField] || index}
+                    type="button"
+                    className="w-full text-left px-2 py-2 text-sm hover:bg-gray-100 flex items-center"
                     onClick={() => {
-                      console.log('Option clicked:', option);
+                      console.log('BUTTON CLICKED:', option);
+                      console.log('Calling onChange with:', option);
                       onChange(option);
                       setInputValue(option[displayField] || '');
                       setOpen(false);
@@ -109,13 +109,13 @@ export function Autocomplete({
                       )}
                     />
                     {option[displayField]}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </div>
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   );
 }
