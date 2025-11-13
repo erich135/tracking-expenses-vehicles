@@ -315,63 +315,65 @@ const ViewSLAExpensesPage = () => {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit SLA Expense</DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Date</Label>
-                <Input
-                  type="date"
-                  value={editFormData.date || ''}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, date: e.target.value }))}
-                  required
-                />
+          <form onSubmit={handleEditSubmit} className="flex flex-col h-full">
+            <div className="flex-shrink-0 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={editFormData.date || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, date: e.target.value }))}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>SLA Unit</Label>
+                  <Autocomplete
+                    value={editFormData.sla_unit_id}
+                    onChange={(value) => setEditFormData(prev => ({ ...prev, sla_unit_id: value }))}
+                    fetcher={async (searchTerm) => {
+                      const { data, error } = await supabase
+                        .from('sla_units')
+                        .select('id, unit_number, make, model')
+                        .or(`unit_number.ilike.%${searchTerm}%,make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`)
+                        .limit(10);
+                      if (error) return [];
+                      return data.map(d => ({ ...d, name: `${d.unit_number} - ${d.make} ${d.model}` }));
+                    }}
+                    displayField="name"
+                    placeholder="Select SLA unit..."
+                    required
+                  />
+                </div>
               </div>
-              
+
               <div className="space-y-2">
-                <Label>SLA Unit</Label>
+                <Label>Supplier</Label>
                 <Autocomplete
-                  value={editFormData.sla_unit_id}
-                  onChange={(value) => setEditFormData(prev => ({ ...prev, sla_unit_id: value }))}
+                  value={editFormData.supplier_id}
+                  onChange={(value) => setEditFormData(prev => ({ ...prev, supplier_id: value }))}
                   fetcher={async (searchTerm) => {
                     const { data, error } = await supabase
-                      .from('sla_units')
-                      .select('id, unit_number, make, model')
-                      .or(`unit_number.ilike.%${searchTerm}%,make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`)
+                      .from('suppliers')
+                      .select('id, name')
+                      .ilike('name', `%${searchTerm}%`)
                       .limit(10);
-                    if (error) return [];
-                    return data.map(d => ({ ...d, name: `${d.unit_number} - ${d.make} ${d.model}` }));
+                    return error ? [] : data;
                   }}
                   displayField="name"
-                  placeholder="Select SLA unit..."
-                  required
+                  placeholder="Select supplier..."
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Supplier</Label>
-              <Autocomplete
-                value={editFormData.supplier_id}
-                onChange={(value) => setEditFormData(prev => ({ ...prev, supplier_id: value }))}
-                fetcher={async (searchTerm) => {
-                  const { data, error } = await supabase
-                    .from('suppliers')
-                    .select('id, name')
-                    .ilike('name', `%${searchTerm}%`)
-                    .limit(10);
-                  return error ? [] : data;
-                }}
-                displayField="name"
-                placeholder="Select supplier..."
-              />
-            </div>
-
-            <div className="space-y-4">
+            <div className="flex-1 overflow-hidden flex flex-col space-y-4 mt-4">
               <div className="flex justify-between items-center">
                 <Label className="text-lg font-semibold">Expense Items</Label>
                 <Button
@@ -390,90 +392,92 @@ const ViewSLAExpensesPage = () => {
                 </Button>
               </div>
               
-              {(editFormData.items || []).map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 border rounded">
-                  <div className="col-span-5">
-                    <Label>Part</Label>
-                    <Autocomplete
-                      value={item.part}
-                      onChange={(value) => {
-                        const newItems = [...(editFormData.items || [])];
-                        newItems[index].part = value;
-                        if (value) {
-                          newItems[index].description = value.name;
-                          newItems[index].unit_price = value.price || 0;
-                        }
-                        setEditFormData(prev => ({ ...prev, items: newItems }));
-                      }}
-                      fetcher={async (searchTerm) => {
-                        const { data, error } = await supabase
-                          .from('parts')
-                          .select('id, name, price')
-                          .ilike('name', `%${searchTerm}%`)
-                          .limit(10);
-                        if (error) return [];
-                        // Clean up any potential whitespace issues
-                        if (data) {
-                          data.forEach(item => {
-                            if (item.name) item.name = item.name.trim();
-                          });
-                        }
-                        return data || [];
-                      }}
-                      displayField="name"
-                      placeholder="Type to search parts..."
-                    />
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                {(editFormData.items || []).map((item, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 border rounded">
+                    <div className="col-span-5">
+                      <Label>Part</Label>
+                      <Autocomplete
+                        value={item.part}
+                        onChange={(value) => {
+                          const newItems = [...(editFormData.items || [])];
+                          newItems[index].part = value;
+                          if (value) {
+                            newItems[index].description = value.name;
+                            newItems[index].unit_price = value.price || 0;
+                          }
+                          setEditFormData(prev => ({ ...prev, items: newItems }));
+                        }}
+                        fetcher={async (searchTerm) => {
+                          const { data, error } = await supabase
+                            .from('parts')
+                            .select('id, name, price')
+                            .ilike('name', `%${searchTerm}%`)
+                            .limit(10);
+                          if (error) return [];
+                          // Clean up any potential whitespace issues
+                          if (data) {
+                            data.forEach(item => {
+                              if (item.name) item.name = item.name.trim();
+                            });
+                          }
+                          return data || [];
+                        }}
+                        displayField="name"
+                        placeholder="Type to search parts..."
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label>Qty</Label>
+                      <Input
+                        type="number"
+                        placeholder="Qty"
+                        value={item.quantity}
+                        onChange={(e) => {
+                          const newItems = [...(editFormData.items || [])];
+                          newItems[index].quantity = Number(e.target.value) || 0;
+                          setEditFormData(prev => ({ ...prev, items: newItems }));
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label>Price</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Price"
+                        value={item.unit_price}
+                        onChange={(e) => {
+                          const newItems = [...(editFormData.items || [])];
+                          newItems[index].unit_price = Number(e.target.value) || 0;
+                          setEditFormData(prev => ({ ...prev, items: newItems }));
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label>Total</Label>
+                      <strong>R {((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</strong>
+                    </div>
+                    <div className="col-span-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const newItems = (editFormData.items || []).filter((_, i) => i !== index);
+                          setEditFormData(prev => ({ ...prev, items: newItems }));
+                        }}
+                        className="mt-6"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <Label>Qty</Label>
-                    <Input
-                      type="number"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(e) => {
-                        const newItems = [...(editFormData.items || [])];
-                        newItems[index].quantity = Number(e.target.value) || 0;
-                        setEditFormData(prev => ({ ...prev, items: newItems }));
-                      }}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Price</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Price"
-                      value={item.unit_price}
-                      onChange={(e) => {
-                        const newItems = [...(editFormData.items || [])];
-                        newItems[index].unit_price = Number(e.target.value) || 0;
-                        setEditFormData(prev => ({ ...prev, items: newItems }));
-                      }}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label>Total</Label>
-                    <strong>R {((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</strong>
-                  </div>
-                  <div className="col-span-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        const newItems = (editFormData.items || []).filter((_, i) => i !== index);
-                        setEditFormData(prev => ({ ...prev, items: newItems }));
-                      }}
-                      className="mt-6"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-shrink-0 mt-4">
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </Button>
