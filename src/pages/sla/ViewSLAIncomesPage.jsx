@@ -9,14 +9,19 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Edit, Trash2, Search, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Autocomplete } from '@/components/ui/autocomplete';
 
 const ViewSLAIncomesPage = () => {
   const [incomes, setIncomes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIncome, setSelectedIncome] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
+  const [editFormData, setEditFormData] = useState({});
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -66,6 +71,51 @@ const ViewSLAIncomesPage = () => {
   const handleDeleteClick = (income) => {
     setSelectedIncome(income);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleEditClick = (income) => {
+    setSelectedIncome(income);
+    setEditFormData({
+      date: income.date?.split('T')[0] || '',
+      sla_unit_id: income.sla_unit ? {
+        id: income.sla_unit_id,
+        name: `${income.sla_unit.unit_number} - ${income.sla_unit.make} ${income.sla_unit.model}`
+      } : null,
+      customer_id: income.customer ? {
+        id: income.customer_id,
+        name: income.customer.name
+      } : null,
+      invoice_number: income.invoice_number || '',
+      amount: income.amount || 0,
+      notes: income.notes || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const { error } = await supabase
+        .from('sla_incomes')
+        .update({
+          date: editFormData.date,
+          sla_unit_id: editFormData.sla_unit_id?.id,
+          customer_id: editFormData.customer_id?.id,
+          invoice_number: editFormData.invoice_number,
+          amount: Number(editFormData.amount),
+          notes: editFormData.notes
+        })
+        .eq('id', selectedIncome.id);
+
+      if (error) throw error;
+
+      toast({ title: 'Success', description: 'SLA income updated successfully' });
+      setIsEditDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error updating income', description: error.message });
+    }
   };
 
   const handleDelete = async () => {
@@ -156,6 +206,14 @@ const ViewSLAIncomesPage = () => {
                       <Button 
                         variant="ghost" 
                         size="icon" 
+                        title="Edit"
+                        onClick={() => handleEditClick(income)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
                         title="Delete"
                         onClick={() => handleDeleteClick(income)}
                       >
@@ -185,6 +243,106 @@ const ViewSLAIncomesPage = () => {
               Delete
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit SLA Income</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={editFormData.date || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, date: e.target.value }))}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editFormData.amount || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, amount: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>SLA Unit</Label>
+              <Autocomplete
+                value={editFormData.sla_unit_id}
+                onChange={(value) => setEditFormData(prev => ({ ...prev, sla_unit_id: value }))}
+                fetcher={async (searchTerm) => {
+                  const { data, error } = await supabase
+                    .from('sla_units')
+                    .select('id, unit_number, make, model')
+                    .or(`unit_number.ilike.%${searchTerm}%,make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`)
+                    .limit(10);
+                  if (error) return [];
+                  return data.map(d => ({ ...d, name: `${d.unit_number} - ${d.make} ${d.model}` }));
+                }}
+                displayField="name"
+                placeholder="Select SLA unit..."
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Customer</Label>
+              <Autocomplete
+                value={editFormData.customer_id}
+                onChange={(value) => setEditFormData(prev => ({ ...prev, customer_id: value }))}
+                fetcher={async (searchTerm) => {
+                  const { data, error } = await supabase
+                    .from('customers')
+                    .select('id, name')
+                    .ilike('name', `%${searchTerm}%`)
+                    .limit(10);
+                  return error ? [] : data;
+                }}
+                displayField="name"
+                placeholder="Select customer..."
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Invoice Number</Label>
+              <Input
+                value={editFormData.invoice_number || ''}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, invoice_number: e.target.value }))}
+                placeholder="e.g., INV-12345"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={editFormData.notes || ''}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Additional notes..."
+              />
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>

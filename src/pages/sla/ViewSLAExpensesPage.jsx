@@ -7,16 +7,21 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Edit, Trash2, Search, X } from 'lucide-react';
+import { Edit, Trash2, Search, X, Plus } from 'lucide-react';
 import { format } from 'date-fns';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Autocomplete } from '@/components/ui/autocomplete';
 
 const ViewSLAExpensesPage = () => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedExpense, setSelectedExpense] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [filterText, setFilterText] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
+  const [editFormData, setEditFormData] = useState({});
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -66,6 +71,76 @@ const ViewSLAExpensesPage = () => {
   const handleDeleteClick = (expense) => {
     setSelectedExpense(expense);
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleEditClick = (expense) => {
+    setSelectedExpense(expense);
+    setEditFormData({
+      date: expense.date?.split('T')[0] || '',
+      sla_unit_id: expense.sla_unit ? {
+        id: expense.sla_unit_id,
+        name: `${expense.sla_unit.unit_number} - ${expense.sla_unit.make} ${expense.sla_unit.model}`
+      } : null,
+      supplier_id: expense.supplier ? {
+        id: expense.supplier_id,
+        name: expense.supplier.name
+      } : null,
+      items: expense.sla_expense_items?.map(item => ({
+        id: item.id,
+        part_id: item.part_id,
+        description: item.description || '',
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0
+      })) || []
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      // Update main expense record
+      const { error: expenseError } = await supabase
+        .from('sla_expenses')
+        .update({
+          date: editFormData.date,
+          sla_unit_id: editFormData.sla_unit_id?.id,
+          supplier_id: editFormData.supplier_id?.id || null
+        })
+        .eq('id', selectedExpense.id);
+
+      if (expenseError) throw expenseError;
+
+      // Delete existing items
+      await supabase
+        .from('sla_expense_items')
+        .delete()
+        .eq('sla_expense_id', selectedExpense.id);
+
+      // Insert updated items
+      if (editFormData.items?.length > 0) {
+        const itemsToInsert = editFormData.items.map(item => ({
+          sla_expense_id: selectedExpense.id,
+          part_id: item.part_id || null,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price)
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('sla_expense_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) throw itemsError;
+      }
+
+      toast({ title: 'Success', description: 'SLA expense updated successfully' });
+      setIsEditDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error updating expense', description: error.message });
+    }
   };
 
   const handleDelete = async () => {
@@ -171,6 +246,14 @@ const ViewSLAExpensesPage = () => {
                       <Button 
                         variant="ghost" 
                         size="icon" 
+                        title="Edit"
+                        onClick={() => handleEditClick(expense)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
                         title="Delete"
                         onClick={() => handleDeleteClick(expense)}
                       >
@@ -200,6 +283,154 @@ const ViewSLAExpensesPage = () => {
               Delete
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Edit SLA Expense</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={editFormData.date || ''}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, date: e.target.value }))}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>SLA Unit</Label>
+                <Autocomplete
+                  value={editFormData.sla_unit_id}
+                  onChange={(value) => setEditFormData(prev => ({ ...prev, sla_unit_id: value }))}
+                  fetcher={async (searchTerm) => {
+                    const { data, error } = await supabase
+                      .from('sla_units')
+                      .select('id, unit_number, make, model')
+                      .or(`unit_number.ilike.%${searchTerm}%,make.ilike.%${searchTerm}%,model.ilike.%${searchTerm}%`)
+                      .limit(10);
+                    if (error) return [];
+                    return data.map(d => ({ ...d, name: `${d.unit_number} - ${d.make} ${d.model}` }));
+                  }}
+                  displayField="name"
+                  placeholder="Select SLA unit..."
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Supplier</Label>
+              <Autocomplete
+                value={editFormData.supplier_id}
+                onChange={(value) => setEditFormData(prev => ({ ...prev, supplier_id: value }))}
+                fetcher={async (searchTerm) => {
+                  const { data, error } = await supabase
+                    .from('suppliers')
+                    .select('id, name')
+                    .ilike('name', `%${searchTerm}%`)
+                    .limit(10);
+                  return error ? [] : data;
+                }}
+                displayField="name"
+                placeholder="Select supplier..."
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <Label className="text-lg font-semibold">Expense Items</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditFormData(prev => ({
+                      ...prev,
+                      items: [...(prev.items || []), { description: '', quantity: 1, unit_price: 0 }]
+                    }));
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Item
+                </Button>
+              </div>
+              
+              {(editFormData.items || []).map((item, index) => (
+                <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 border rounded">
+                  <div className="col-span-5">
+                    <Textarea
+                      placeholder="Description"
+                      value={item.description}
+                      onChange={(e) => {
+                        const newItems = [...(editFormData.items || [])];
+                        newItems[index].description = e.target.value;
+                        setEditFormData(prev => ({ ...prev, items: newItems }));
+                      }}
+                      rows={1}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      type="number"
+                      placeholder="Qty"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const newItems = [...(editFormData.items || [])];
+                        newItems[index].quantity = Number(e.target.value) || 0;
+                        setEditFormData(prev => ({ ...prev, items: newItems }));
+                      }}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Price"
+                      value={item.unit_price}
+                      onChange={(e) => {
+                        const newItems = [...(editFormData.items || [])];
+                        newItems[index].unit_price = Number(e.target.value) || 0;
+                        setEditFormData(prev => ({ ...prev, items: newItems }));
+                      }}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <strong>R {((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</strong>
+                  </div>
+                  <div className="col-span-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const newItems = (editFormData.items || []).filter((_, i) => i !== index);
+                        setEditFormData(prev => ({ ...prev, items: newItems }));
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>
