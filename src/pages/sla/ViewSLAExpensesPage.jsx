@@ -73,8 +73,41 @@ const ViewSLAExpensesPage = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleEditClick = (expense) => {
+  const handleEditClick = async (expense) => {
     setSelectedExpense(expense);
+    
+    // Fetch parts data for existing expense items
+    let itemsWithParts = [];
+    if (expense.sla_expense_items?.length > 0) {
+      const partIds = expense.sla_expense_items
+        .filter(item => item.part_id)
+        .map(item => item.part_id);
+      
+      let partsData = [];
+      if (partIds.length > 0) {
+        const { data, error } = await supabase
+          .from('parts')
+          .select('id, name, price')
+          .in('id', partIds);
+        if (!error) partsData = data || [];
+      }
+      
+      itemsWithParts = expense.sla_expense_items.map(item => {
+        const partData = partsData.find(p => p.id === item.part_id);
+        return {
+          id: item.id,
+          part: partData ? { 
+            id: partData.id, 
+            name: partData.name,
+            price: partData.price 
+          } : null,
+          description: item.description || '',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0
+        };
+      });
+    }
+    
     setEditFormData({
       date: expense.date?.split('T')[0] || '',
       sla_unit_id: expense.sla_unit ? {
@@ -85,13 +118,7 @@ const ViewSLAExpensesPage = () => {
         id: expense.supplier_id,
         name: expense.supplier.name
       } : null,
-      items: expense.sla_expense_items?.map(item => ({
-        id: item.id,
-        part_id: item.part_id,
-        description: item.description || '',
-        quantity: item.quantity || 1,
-        unit_price: item.unit_price || 0
-      })) || []
+      items: itemsWithParts
     });
     setIsEditDialogOpen(true);
   };
@@ -122,8 +149,8 @@ const ViewSLAExpensesPage = () => {
       if (editFormData.items?.length > 0) {
         const itemsToInsert = editFormData.items.map(item => ({
           sla_expense_id: selectedExpense.id,
-          part_id: item.part_id || null,
-          description: item.description,
+          part_id: item.part?.id || null,
+          description: item.part?.name || item.description,
           quantity: Number(item.quantity),
           unit_price: Number(item.unit_price)
         }));
@@ -354,7 +381,7 @@ const ViewSLAExpensesPage = () => {
                   onClick={() => {
                     setEditFormData(prev => ({
                       ...prev,
-                      items: [...(prev.items || []), { description: '', quantity: 1, unit_price: 0 }]
+                      items: [...(prev.items || []), { part: null, description: '', quantity: 1, unit_price: 0 }]
                     }));
                   }}
                 >
@@ -366,18 +393,39 @@ const ViewSLAExpensesPage = () => {
               {(editFormData.items || []).map((item, index) => (
                 <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 border rounded">
                   <div className="col-span-5">
-                    <Textarea
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) => {
+                    <Label>Part</Label>
+                    <Autocomplete
+                      value={item.part}
+                      onChange={(value) => {
                         const newItems = [...(editFormData.items || [])];
-                        newItems[index].description = e.target.value;
+                        newItems[index].part = value;
+                        if (value) {
+                          newItems[index].description = value.name;
+                          newItems[index].unit_price = value.price || 0;
+                        }
                         setEditFormData(prev => ({ ...prev, items: newItems }));
                       }}
-                      rows={1}
+                      fetcher={async (searchTerm) => {
+                        const { data, error } = await supabase
+                          .from('parts')
+                          .select('id, name, price')
+                          .ilike('name', `%${searchTerm}%`)
+                          .limit(10);
+                        if (error) return [];
+                        // Clean up any potential whitespace issues
+                        if (data) {
+                          data.forEach(item => {
+                            if (item.name) item.name = item.name.trim();
+                          });
+                        }
+                        return data || [];
+                      }}
+                      displayField="name"
+                      placeholder="Type to search parts..."
                     />
                   </div>
                   <div className="col-span-2">
+                    <Label>Qty</Label>
                     <Input
                       type="number"
                       placeholder="Qty"
@@ -390,6 +438,7 @@ const ViewSLAExpensesPage = () => {
                     />
                   </div>
                   <div className="col-span-2">
+                    <Label>Price</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -403,6 +452,7 @@ const ViewSLAExpensesPage = () => {
                     />
                   </div>
                   <div className="col-span-2">
+                    <Label>Total</Label>
                     <strong>R {((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</strong>
                   </div>
                   <div className="col-span-1">
@@ -414,6 +464,7 @@ const ViewSLAExpensesPage = () => {
                         const newItems = (editFormData.items || []).filter((_, i) => i !== index);
                         setEditFormData(prev => ({ ...prev, items: newItems }));
                       }}
+                      className="mt-6"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

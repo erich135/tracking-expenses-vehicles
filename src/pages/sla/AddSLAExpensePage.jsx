@@ -69,9 +69,22 @@ const AddSLAExpensePage = () => {
     };
     
     const fetchParts = async (searchTerm) => {
-        const { data, error } = await supabase.from('parts').select('id, name, price').ilike('name', `%${searchTerm}%`).limit(10);
-        if (error) { toast({ variant: "destructive", title: "Error fetching parts" }); return []; }
-        return data;
+        const { data, error } = await supabase
+            .from('parts')
+            .select('id, name, price')
+            .ilike('name', `%${searchTerm}%`)
+            .limit(10);
+        if (error) { 
+            toast({ variant: "destructive", title: "Error fetching parts" }); 
+            return []; 
+        }
+        // Clean up any potential whitespace issues
+        if (data) {
+            data.forEach(item => {
+                if (item.name) item.name = item.name.trim();
+            });
+        }
+        return data || [];
     };
 
     const handleSubmit = async (e) => {
