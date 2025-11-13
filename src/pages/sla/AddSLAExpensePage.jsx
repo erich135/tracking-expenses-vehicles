@@ -14,7 +14,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Calendar as CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const AddSLAExpensePage = () => {
     const { user } = useAuth();
@@ -150,33 +149,77 @@ const AddSLAExpensePage = () => {
                         
                         <div>
                             <Label className="text-lg font-semibold">Expense Items</Label>
-                            <Table>
-                                <TableHeader><TableRow><TableHead className="w-2/5">Item/Part</TableHead><TableHead className="table-head-bold">
-Description</TableHead><TableHead className="table-head-bold">
-Qty</TableHead><TableHead className="table-head-bold">
-Unit Price</TableHead><TableHead className="table-head-bold">
-Total</TableHead><TableHead className="table-head-bold">
-</TableHead></TableRow></TableHeader>
-                                <TableBody>
+                            <Card>
+                                <CardContent className="space-y-4 pt-6">
                                     {expenseItems.map((item, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell><Autocomplete value={item.part} onChange={(v) => handleItemChange(index, 'part', v)} fetcher={fetchParts} displayField="name" valueField="id" placeholder="Select part..." /></TableCell>
-                                            <TableCell><Input value={item.description} onChange={(e) => handleItemChange(index, 'description', e.target.value)} placeholder="Manual Description" /></TableCell>
-                                            <TableCell><Input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
-                                            <TableCell><Input type="number" step="0.01" value={item.unit_price} onChange={(e) => handleItemChange(index, 'unit_price', parseFloat(e.target.value) || 0)} className="w-24"/></TableCell>
-                                            <TableCell>R {(item.quantity * item.unit_price).toFixed(2)}</TableCell>
-                                            <TableCell><Button type="button" variant="ghost" size="icon" onClick={() => removeItem(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-                                        </TableRow>
+                                        <div key={index} className="grid grid-cols-12 gap-2 items-start">
+                                            <div className="col-span-5 space-y-2">
+                                                <Label>Part</Label>
+                                                <Autocomplete 
+                                                    value={item.part} 
+                                                    onChange={(value) => handleItemChange(index, 'part', value)} 
+                                                    fetcher={fetchParts} 
+                                                    displayField="name" 
+                                                    placeholder="Type to search parts..." 
+                                                />
+                                            </div>
+                                            <div className="col-span-3 space-y-2">
+                                                <Label>Quantity</Label>
+                                                <Input 
+                                                    type="number" 
+                                                    placeholder="0"
+                                                    value={item.quantity} 
+                                                    onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value) || 0)} 
+                                                />
+                                            </div>
+                                            <div className="col-span-3 space-y-2">
+                                                <Label>Price (R)</Label>
+                                                <Input 
+                                                    type="number" 
+                                                    step="0.01" 
+                                                    placeholder="0.00"
+                                                    value={item.unit_price} 
+                                                    onChange={(e) => handleItemChange(index, 'unit_price', parseFloat(e.target.value) || 0)} 
+                                                />
+                                            </div>
+                                            <div className="col-span-1 flex items-end h-full">
+                                                <Button 
+                                                    type="button" 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    onClick={() => removeItem(index)}
+                                                >
+                                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                                </Button>
+                                            </div>
+                                        </div>
                                     ))}
-                                </TableBody>
-                            </Table>
-                             <Button type="button" variant="outline" size="sm" onClick={addItem} className="mt-2"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={addItem}
+                                    >
+                                        <PlusCircle className="mr-2 h-4 w-4" /> 
+                                        Add Expense Item
+                                    </Button>
+                                </CardContent>
+                            </Card>
                         </div>
 
                     </CardContent>
-                    <CardFooter className="flex justify-between items-center">
-                        <span className="text-xl font-bold">Total: R {totalAmount.toFixed(2)}</span>
-                        <Button type="submit">Add Expense</Button>
+                </Card>
+                
+                <Card>
+                    <CardFooter className="flex justify-between items-center p-6">
+                        <div className="text-lg font-semibold">
+                            <div className="text-xl">
+                                Total Expenses: <span className="text-red-600">R {totalAmount.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <Button type="submit" size="lg">
+                            Add SLA Expense
+                        </Button>
                     </CardFooter>
                 </Card>
             </form>
