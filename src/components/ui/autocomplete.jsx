@@ -63,6 +63,26 @@ export function Autocomplete({
     return () => clearTimeout(debounceTimer);
   }, [inputValue, open, fetchData]);
 
+  const handleSelect = (currentValue) => {
+    console.log('handleSelect called with:', currentValue);
+    console.log('Available options:', options);
+    console.log('Looking for option with displayField:', displayField);
+    
+    const selectedOption = options.find(
+      (option) => {
+        const optionValue = (option[displayField] || '').toLowerCase();
+        const searchValue = (currentValue || '').toLowerCase();
+        console.log('Comparing:', optionValue, 'with:', searchValue);
+        return optionValue === searchValue;
+      }
+    );
+    
+    console.log('Selected option:', selectedOption);
+    onChange(selectedOption || null);
+    setInputValue(selectedOption ? selectedOption[displayField] : '');
+    setOpen(false);
+  };
+
   const displayValue = (value && value[displayField]) ? value[displayField] : placeholder;
 
   return (
@@ -93,11 +113,7 @@ export function Autocomplete({
                 <CommandItem
                   key={option[valueField]}
                   value={option[displayField]}
-                  onSelect={() => {
-                    onChange(option);
-                    setInputValue(option[displayField] || '');
-                    setOpen(false);
-                  }}
+                  onSelect={handleSelect}
                 >
                   <Check
                     className={cn(
