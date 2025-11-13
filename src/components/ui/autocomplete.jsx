@@ -4,14 +4,6 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -63,26 +55,6 @@ export function Autocomplete({
     return () => clearTimeout(debounceTimer);
   }, [inputValue, open, fetchData]);
 
-  const handleSelect = (currentValue) => {
-    console.log('handleSelect called with:', currentValue);
-    console.log('Available options:', options);
-    console.log('Looking for option with displayField:', displayField);
-    
-    const selectedOption = options.find(
-      (option) => {
-        const optionValue = (option[displayField] || '').toLowerCase();
-        const searchValue = (currentValue || '').toLowerCase();
-        console.log('Comparing:', optionValue, 'with:', searchValue);
-        return optionValue === searchValue;
-      }
-    );
-    
-    console.log('Selected option:', selectedOption);
-    onChange(selectedOption || null);
-    setInputValue(selectedOption ? selectedOption[displayField] : '');
-    setOpen(false);
-  };
-
   const displayValue = (value && value[displayField]) ? value[displayField] : placeholder;
 
   return (
@@ -99,36 +71,50 @@ export function Autocomplete({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={placeholder}
-            value={inputValue}
-            onValueChange={setInputValue}
-          />
-          <CommandList>
-            {loading && <CommandEmpty>Loading...</CommandEmpty>}
-            {!loading && options.length === 0 && <CommandEmpty>No results found.</CommandEmpty>}
-            <CommandGroup>
-              {options.map((option, index) => (
-                <CommandItem
-                  key={option[valueField]}
-                  value={option[displayField]}
-                  onSelect={handleSelect}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value && value[valueField] === option[valueField]
-                        ? 'opacity-100'
-                        : 'opacity-0'
-                    )}
-                  />
-                  {option[displayField]}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+        <div className="border rounded-md bg-background">
+          <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
+            <input
+              placeholder={placeholder}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+          <div className="max-h-60 overflow-auto p-1">
+            {loading && (
+              <div className="py-2 px-2 text-sm text-muted-foreground">Loading...</div>
+            )}
+            {!loading && options.length === 0 && (
+              <div className="py-2 px-2 text-sm text-muted-foreground">No results found.</div>
+            )}
+            {!loading && options.length > 0 && (
+              <div>
+                {options.map((option) => (
+                  <div
+                    key={option[valueField]}
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                    onClick={() => {
+                      console.log('Option clicked:', option);
+                      onChange(option);
+                      setInputValue(option[displayField] || '');
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        value && value[valueField] === option[valueField]
+                          ? 'opacity-100'
+                          : 'opacity-0'
+                      )}
+                    />
+                    {option[displayField]}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </PopoverContent>
     </Popover>
   );
