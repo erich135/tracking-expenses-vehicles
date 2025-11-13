@@ -63,13 +63,42 @@ export function Autocomplete({
     return () => clearTimeout(debounceTimer);
   }, [inputValue, open, fetchData]);
 
-  const handleSelect = (currentValue) => {
-    const selectedOption = options.find(
-      (option) => (option[displayField] || '').toLowerCase() === (currentValue || '').toLowerCase()
-    );
-    onChange(selectedOption || null);
-    setInputValue(selectedOption ? selectedOption[displayField] : '');
-    setOpen(false);
+  const handleSelect = (selectedOptionJson) => {
+    try {
+      // Try to parse if it's JSON, otherwise treat as display field value
+      let selectedOption;
+      if (selectedOptionJson.startsWith('{')) {
+        selectedOption = JSON.parse(selectedOptionJson);
+      } else {
+        // Fallback to original logic
+        selectedOption = options.find(
+          (option) => (option[displayField] || '').toLowerCase() === (selectedOptionJson || '').toLowerCase()
+        );
+        
+        // If not found, try to find by partial match or other fields
+        if (!selectedOption) {
+          selectedOption = options.find(
+            (option) => 
+              (option[displayField] || '').toLowerCase().includes((selectedOptionJson || '').toLowerCase()) ||
+              (option.name || '').toLowerCase().includes((selectedOptionJson || '').toLowerCase()) ||
+              (option.id || '').toString().toLowerCase() === (selectedOptionJson || '').toLowerCase()
+          );
+        }
+      }
+      
+      onChange(selectedOption || null);
+      setInputValue(selectedOption ? selectedOption[displayField] : '');
+      setOpen(false);
+    } catch (e) {
+      console.error('Error parsing selected option:', e);
+      // Fallback to original logic
+      const selectedOption = options.find(
+        (option) => (option[displayField] || '').toLowerCase() === (selectedOptionJson || '').toLowerCase()
+      );
+      onChange(selectedOption || null);
+      setInputValue(selectedOption ? selectedOption[displayField] : '');
+      setOpen(false);
+    }
   };
 
   const displayValue = (value && value[displayField]) ? value[displayField] : placeholder;
@@ -101,7 +130,7 @@ export function Autocomplete({
               {options.map((option) => (
                 <CommandItem
                   key={option[valueField]}
-                  value={option[displayField]}
+                  value={JSON.stringify(option)}
                   onSelect={handleSelect}
                 >
                   <Check
