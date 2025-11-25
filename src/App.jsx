@@ -110,14 +110,12 @@ function AppRoutes() {
         element={!session ? <RegisterPage /> : <Navigate to="/" replace />}
       />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
-      <Route path="/settings/audit" element={<AuditTrailPage />} />
-
 
       {/* Main app routes */}
       <Route
         path="/"
         element={
-          session || location.pathname === '/update-password' ? (
+          session ? (
             <DashboardLayout />
           ) : (
             <Navigate to="/login" replace />
@@ -291,6 +289,10 @@ function AppRoutes() {
         <Route
           path="settings/import"
           element={<AdminRoute element={<DataImportPage />} />}
+        />
+        <Route
+          path="settings/audit"
+          element={<AdminRoute element={<AuditTrailPage />} />}
         />
 
           {/* Admin page (admin only) */}
