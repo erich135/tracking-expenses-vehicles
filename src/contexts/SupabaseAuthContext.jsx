@@ -99,6 +99,10 @@ export const AuthProvider = ({ children }) => {
   const resetPassword = async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/update-password`,
+      // Note: Email link expiry is controlled in Supabase Dashboard under Authentication > Email Templates
+      // The OTP expiry setting is in Authentication > Settings (default is often 60 seconds)
+      // To increase it, go to: Supabase Dashboard > Authentication > Settings > Email Auth > 
+      // "Email OTP Expiry" and set it to 1200 seconds (20 minutes)
     });
     return { error };
   };

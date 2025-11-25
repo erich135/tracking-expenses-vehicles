@@ -64,6 +64,28 @@ const UpdatePasswordPage = () => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = hashParams.get('access_token');
     const refreshToken = hashParams.get('refresh_token');
+    const errorCode = hashParams.get('error_code');
+    const errorDescription = hashParams.get('error_description');
+
+    // Check if there's an error in the URL (e.g., expired link)
+    if (errorCode) {
+      let errorMessage = 'This password reset link is invalid or has expired.';
+      
+      if (errorCode === 'otp_expired') {
+        errorMessage = 'This password reset link has expired. Please request a new one.';
+      } else if (errorDescription) {
+        errorMessage = errorDescription.replace(/\+/g, ' ');
+      }
+
+      toast({
+        variant: 'destructive',
+        title: 'Link Expired',
+        description: errorMessage,
+      });
+      setValidToken(false);
+      setTokenChecked(true);
+      return;
+    }
 
     if (accessToken) {
       supabase.auth
@@ -77,7 +99,7 @@ const UpdatePasswordPage = () => {
             toast({
               variant: 'destructive',
               title: 'Invalid Reset Link',
-              description: 'This password reset link is invalid or has expired.',
+              description: 'This password reset link is invalid or has expired. Please request a new one.',
             });
             setValidToken(false);
           } else {
@@ -109,12 +131,15 @@ const UpdatePasswordPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-900">
         <Card className="w-full max-w-sm">
           <CardHeader>
-            <CardTitle className="text-2xl">Invalid Link</CardTitle>
+            <CardTitle className="text-2xl">Link Expired</CardTitle>
             <CardDescription>
-              This password reset link is invalid or has expired.
+              This password reset link has expired. Password reset links are valid for a limited time for security reasons.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Please return to the login page and click "Forgot password?" to request a new reset link.
+            </p>
             <Button onClick={() => navigate('/login')} className="w-full">
               Return to Login
             </Button>
