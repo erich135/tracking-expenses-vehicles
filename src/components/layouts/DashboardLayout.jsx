@@ -9,44 +9,77 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const navItems = [
   { name: 'Home', icon: HomeIcon, path: '/', exact: true },
-  { name: 'Costing', icon: FileText, sublinks: [{ name: 'Add New', path: '/costing/add' }, { name: 'View Entries', path: '/costing/view' }], permission: 'costing' },
-  { name: 'Vehicle Expenses', icon: Car, sublinks: [{ name: 'Add Expense', path: '/vehicle-expenses/add' }, { name: 'View Expenses', path: '/vehicle-expenses/view' }, { name: 'Manage Vehicles', path: '/vehicles/manage' }], permission: 'vehicle_expenses' },
-  { name: 'Workshop', icon: Wrench, sublinks: [{ name: 'Add New Job', path: '/workshop-jobs/add' }, { name: 'View Jobs', path: '/workshop-jobs/view' }], permission: 'workshop_jobs' },
+  { 
+    name: 'Costing', 
+    icon: FileText, 
+    permission: 'costing',
+    sublinks: [
+      { name: 'Add New', path: '/costing/add', permission: 'costing_add' }, 
+      { name: 'View Entries', path: '/costing/view', permission: 'costing_view' }
+    ] 
+  },
+  { 
+    name: 'Vehicle Expenses', 
+    icon: Car, 
+    permission: 'vehicle_expenses',
+    sublinks: [
+      { name: 'Add Expense', path: '/vehicle-expenses/add', permission: 'vehicle_expenses_add' }, 
+      { name: 'View Expenses', path: '/vehicle-expenses/view', permission: 'vehicle_expenses_view' }, 
+      { name: 'Manage Vehicles', path: '/vehicles/manage', permission: 'vehicle_expenses_manage' }
+    ] 
+  },
+  { 
+    name: 'Workshop', 
+    icon: Wrench, 
+    permission: 'workshop_jobs',
+    sublinks: [
+      { name: 'Add New Job', path: '/workshop-jobs/add', permission: 'workshop_jobs_add' }, 
+      { name: 'View Jobs', path: '/workshop-jobs/view', permission: 'workshop_jobs_view' }
+    ] 
+  },
   {
     name: 'Rental',
     icon: Building,
+    permission: 'rental',
     sublinks: [
-      { name: 'View Machines', path: '/rental/view' },
-      { name: 'Add Income', path: '/rental/income/add' },
-      { name: 'Add Expense', path: '/rental/expense/add' },
-      { name: 'View Income', path: '/rental/income/view' },
-      { name: 'View Expenses', path: '/rental/expense/view' },
+      { name: 'View Machines', path: '/rental/view', permission: 'rental_view_machines' },
+      { name: 'Add Income', path: '/rental/income/add', permission: 'rental_add_income' },
+      { name: 'Add Expense', path: '/rental/expense/add', permission: 'rental_add_expense' },
+      { name: 'View Income', path: '/rental/income/view', permission: 'rental_view_income' },
+      { name: 'View Expenses', path: '/rental/expense/view', permission: 'rental_view_expenses' },
     ],
-    permission: 'rental'
   },
   {
     name: 'SLA',
     icon: Building,
+    permission: 'sla',
     sublinks: [
-      { name: 'View SLA Equipment', path: '/sla/equipment' },
-      { name: 'Add SLA Expense', path: '/sla/add-expense' },
-      { name: 'Add SLA Income', path: '/sla/add-income' },
-      { name: 'View SLA Expenses', path: '/sla/view-expenses' },
-      { name: 'View SLA Incomes', path: '/sla/view-incomes' },
+      { name: 'View SLA Equipment', path: '/sla/equipment', permission: 'sla_equipment' },
+      { name: 'Add SLA Expense', path: '/sla/add-expense', permission: 'sla_add_expense' },
+      { name: 'Add SLA Income', path: '/sla/add-income', permission: 'sla_add_income' },
+      { name: 'View SLA Expenses', path: '/sla/view-expenses', permission: 'sla_view_expenses' },
+      { name: 'View SLA Incomes', path: '/sla/view-incomes', permission: 'sla_view_incomes' },
     ],
-    permission: 'sla'
   },
-  { name: 'Reports', icon: BarChart2, sublinks: [
-    { name: 'All Reports', path: '/reports' },
-    { name: 'Monthly Report', path: '/reports/monthly' },
-  ], permission: 'reports' },
+  { 
+    name: 'Reports', 
+    icon: BarChart2, 
+    permission: 'reports',
+    sublinks: [
+      { name: 'All Reports', path: '/reports', permission: 'reports_all' },
+      { name: 'Monthly Report', path: '/reports/monthly', permission: 'reports_monthly' },
+    ] 
+  },
   {
-    name: 'Maintenance', icon: Database, sublinks: [
-      { name: 'Customers', path: '/maintenance/customers' },
-      { name: 'Suppliers', path: '/maintenance/suppliers' },
-      { name: 'Technicians', path: '/maintenance/technicians' },
-      { name: 'Parts', path: '/maintenance/parts' },
-    ], permission: 'maintenance'
+    name: 'Maintenance', 
+    icon: Database, 
+    permission: 'maintenance',
+    sublinks: [
+      { name: 'Customers', path: '/maintenance/customers', permission: 'maintenance_customers' },
+      { name: 'Suppliers', path: '/maintenance/suppliers', permission: 'maintenance_suppliers' },
+      { name: 'Technicians', path: '/maintenance/technicians', permission: 'maintenance_technicians' },
+      { name: 'Parts', path: '/maintenance/parts', permission: 'maintenance_parts' },
+    ] 
   },
   {
     name: 'Settings',
@@ -74,15 +107,31 @@ const Sidebar = ({ isCollapsed, toggleCollapse }) => {
     if (item.adminOnly) return userProfile?.is_admin;
     if (!item.permission) return true;
     if (userProfile?.is_admin) return true;
-    return (userProfile?.permissions || []).includes(item.permission);
+    const userPerms = userProfile?.permissions || [];
+    // Check for exact permission match OR parent group permission
+    const parentPerm = item.permission.split('_').slice(0, -1).join('_') || item.permission;
+    return userPerms.includes(item.permission) || userPerms.includes(parentPerm);
   };
 
   const visibleNavItems = navItems
-    .filter(hasPermission)
+    .filter(item => {
+      // For items with sublinks, check if at least one sublink is visible
+      if (item.sublinks) {
+        const hasParentPerm = hasPermission(item);
+        const hasAnySubPerm = item.sublinks.some(sub => hasPermission(sub));
+        return hasParentPerm || hasAnySubPerm;
+      }
+      return hasPermission(item);
+    })
     .map(item => ({
       ...item,
       sublinks: item.sublinks
-        ? item.sublinks.filter(hasPermission)
+        ? item.sublinks.filter(sub => {
+            // Show sublink if user has parent permission OR specific sub-permission
+            const hasParentPerm = hasPermission(item);
+            const hasSubPerm = hasPermission(sub);
+            return hasParentPerm || hasSubPerm;
+          })
         : undefined,
     }));
 

@@ -23,7 +23,9 @@ import {
   XCircle,
   Clock,
   Shield,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -35,15 +37,94 @@ import {
   DialogDescription 
 } from '@/components/ui/dialog';
 
-const permissionOptions = [
-  { id: 'costing', label: 'Costing', description: 'Access to vehicle costing module' },
-  { id: 'vehicle_expenses', label: 'Vehicle Expenses', description: 'Manage vehicle expenses' },
-  { id: 'workshop_jobs', label: 'Workshop', description: 'Access workshop jobs' },
-  { id: 'rental', label: 'Rental', description: 'Rental management' },
-  { id: 'reports', label: 'Reports', description: 'View and generate reports' },
-  { id: 'maintenance', label: 'Maintenance', description: 'Maintenance scheduling' },
-  { id: 'sla', label: 'SLA', description: 'SLA tracking and management' },
+// Granular permission structure with sub-permissions
+const permissionGroups = [
+  { 
+    id: 'costing', 
+    label: 'Costing', 
+    description: 'Vehicle costing module',
+    subPermissions: [
+      { id: 'costing_add', label: 'Add New' },
+      { id: 'costing_view', label: 'View Entries' },
+    ]
+  },
+  { 
+    id: 'vehicle_expenses', 
+    label: 'Vehicle Expenses', 
+    description: 'Manage vehicle expenses',
+    subPermissions: [
+      { id: 'vehicle_expenses_add', label: 'Add Expense' },
+      { id: 'vehicle_expenses_view', label: 'View Expenses' },
+      { id: 'vehicle_expenses_manage', label: 'Manage Vehicles' },
+    ]
+  },
+  { 
+    id: 'workshop_jobs', 
+    label: 'Workshop', 
+    description: 'Workshop jobs management',
+    subPermissions: [
+      { id: 'workshop_jobs_add', label: 'Add New Job' },
+      { id: 'workshop_jobs_view', label: 'View Jobs' },
+    ]
+  },
+  { 
+    id: 'rental', 
+    label: 'Rental', 
+    description: 'Rental management',
+    subPermissions: [
+      { id: 'rental_view_machines', label: 'View Machines' },
+      { id: 'rental_add_income', label: 'Add Income' },
+      { id: 'rental_add_expense', label: 'Add Expense' },
+      { id: 'rental_view_income', label: 'View Income' },
+      { id: 'rental_view_expenses', label: 'View Expenses' },
+    ]
+  },
+  { 
+    id: 'sla', 
+    label: 'SLA', 
+    description: 'SLA tracking and management',
+    subPermissions: [
+      { id: 'sla_equipment', label: 'View Equipment' },
+      { id: 'sla_add_expense', label: 'Add Expense' },
+      { id: 'sla_add_income', label: 'Add Income' },
+      { id: 'sla_view_expenses', label: 'View Expenses' },
+      { id: 'sla_view_incomes', label: 'View Incomes' },
+    ]
+  },
+  { 
+    id: 'reports', 
+    label: 'Reports', 
+    description: 'View and generate reports',
+    subPermissions: [
+      { id: 'reports_all', label: 'All Reports' },
+      { id: 'reports_monthly', label: 'Monthly Report' },
+    ]
+  },
+  { 
+    id: 'maintenance', 
+    label: 'Maintenance', 
+    description: 'Maintenance data management',
+    subPermissions: [
+      { id: 'maintenance_customers', label: 'Customers' },
+      { id: 'maintenance_suppliers', label: 'Suppliers' },
+      { id: 'maintenance_technicians', label: 'Technicians' },
+      { id: 'maintenance_parts', label: 'Parts' },
+    ]
+  },
 ];
+
+// Flatten for backward compatibility
+const permissionOptions = permissionGroups.map(g => ({ id: g.id, label: g.label, description: g.description }));
+
+// Get all permission IDs (both group-level and sub-permissions)
+const getAllPermissionIds = () => {
+  const ids = [];
+  permissionGroups.forEach(group => {
+    ids.push(group.id);
+    group.subPermissions.forEach(sub => ids.push(sub.id));
+  });
+  return ids;
+};
 
 const AdminPage = () => {
   const [approvedUsers, setApprovedUsers] = useState([]);
@@ -53,6 +134,8 @@ const AdminPage = () => {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [resendingTo, setResendingTo] = useState(null);
+  const [expandedGroups, setExpandedGroups] = useState({});
+  const [expandedInviteGroups, setExpandedInviteGroups] = useState({});
   
   // Invite form state
   const [inviteForm, setInviteForm] = useState({
@@ -91,13 +174,46 @@ const AdminPage = () => {
     setInviteForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleInvitePermissionChange = (permissionId, isChecked) => {
-    setInviteForm(prev => ({
-      ...prev,
-      permissions: isChecked 
-        ? [...prev.permissions, permissionId]
-        : prev.permissions.filter(p => p !== permissionId)
-    }));
+  const handleInvitePermissionChange = (permissionId, isChecked, isGroup = false, groupId = null) => {
+    setInviteForm(prev => {
+      let newPermissions = [...prev.permissions];
+      
+      if (isGroup) {
+        // Toggle entire group
+        const group = permissionGroups.find(g => g.id === permissionId);
+        if (group) {
+          const subIds = group.subPermissions.map(s => s.id);
+          if (isChecked) {
+            // Add group and all sub-permissions
+            if (!newPermissions.includes(permissionId)) newPermissions.push(permissionId);
+            subIds.forEach(id => {
+              if (!newPermissions.includes(id)) newPermissions.push(id);
+            });
+          } else {
+            // Remove group and all sub-permissions
+            newPermissions = newPermissions.filter(p => p !== permissionId && !subIds.includes(p));
+          }
+        }
+      } else if (groupId) {
+        // Toggle individual sub-permission
+        const group = permissionGroups.find(g => g.id === groupId);
+        if (isChecked) {
+          if (!newPermissions.includes(permissionId)) newPermissions.push(permissionId);
+          // Check if all sub-permissions are now selected, if so add group
+          const subIds = group.subPermissions.map(s => s.id);
+          const allSelected = subIds.every(id => id === permissionId || newPermissions.includes(id));
+          if (allSelected && !newPermissions.includes(groupId)) {
+            newPermissions.push(groupId);
+          }
+        } else {
+          newPermissions = newPermissions.filter(p => p !== permissionId);
+          // Remove group-level permission if a sub is unchecked
+          newPermissions = newPermissions.filter(p => p !== groupId);
+        }
+      }
+      
+      return { ...prev, permissions: newPermissions };
+    });
   };
 
   // Handle user invitation
@@ -120,7 +236,7 @@ const AdminPage = () => {
       firstName: inviteForm.firstName.trim(),
       lastName: inviteForm.lastName.trim(),
       isAdmin: inviteForm.isAdmin,
-      permissions: inviteForm.isAdmin ? permissionOptions.map(p => p.id) : inviteForm.permissions,
+      permissions: inviteForm.isAdmin ? getAllPermissionIds() : inviteForm.permissions,
     });
 
     if (result.error) {
@@ -186,18 +302,53 @@ const AdminPage = () => {
     setUserToDelete(null);
   };
 
-  const handlePermissionChange = async (userId, permissionId, isChecked) => {
+  const handlePermissionChange = async (userId, permissionId, isChecked, isGroup = false, groupId = null) => {
     const user = approvedUsers.find((u) => u.id === userId);
     if (!user) return;
 
-    let updatedPermissions = user.permissions || [];
+    let updatedPermissions = [...(user.permissions || [])];
 
-    if (isChecked) {
-      if (!updatedPermissions.includes(permissionId)) {
-        updatedPermissions.push(permissionId);
+    if (isGroup) {
+      // Toggle entire group
+      const group = permissionGroups.find(g => g.id === permissionId);
+      if (group) {
+        const subIds = group.subPermissions.map(s => s.id);
+        if (isChecked) {
+          // Add group and all sub-permissions
+          if (!updatedPermissions.includes(permissionId)) updatedPermissions.push(permissionId);
+          subIds.forEach(id => {
+            if (!updatedPermissions.includes(id)) updatedPermissions.push(id);
+          });
+        } else {
+          // Remove group and all sub-permissions
+          updatedPermissions = updatedPermissions.filter(p => p !== permissionId && !subIds.includes(p));
+        }
+      }
+    } else if (groupId) {
+      // Toggle individual sub-permission
+      const group = permissionGroups.find(g => g.id === groupId);
+      if (isChecked) {
+        if (!updatedPermissions.includes(permissionId)) updatedPermissions.push(permissionId);
+        // Check if all sub-permissions are now selected, if so add group
+        const subIds = group.subPermissions.map(s => s.id);
+        const allSelected = subIds.every(id => id === permissionId || updatedPermissions.includes(id));
+        if (allSelected && !updatedPermissions.includes(groupId)) {
+          updatedPermissions.push(groupId);
+        }
+      } else {
+        updatedPermissions = updatedPermissions.filter(p => p !== permissionId);
+        // Remove group-level permission if a sub is unchecked
+        updatedPermissions = updatedPermissions.filter(p => p !== groupId);
       }
     } else {
-      updatedPermissions = updatedPermissions.filter((p) => p !== permissionId);
+      // Legacy simple toggle
+      if (isChecked) {
+        if (!updatedPermissions.includes(permissionId)) {
+          updatedPermissions.push(permissionId);
+        }
+      } else {
+        updatedPermissions = updatedPermissions.filter((p) => p !== permissionId);
+      }
     }
 
     updateUser(userId, { permissions: updatedPermissions });
@@ -412,21 +563,74 @@ const AdminPage = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-wrap gap-2 max-w-md">
-                            {permissionOptions.map((perm) => (
-                              <label key={perm.id} className="flex items-center space-x-1 text-sm">
-                                <Checkbox
-                                  checked={(user.permissions || []).includes(perm.id)}
-                                  onCheckedChange={(checked) =>
-                                    handlePermissionChange(user.id, perm.id, !!checked)
-                                  }
-                                  disabled={!!user.is_admin}
-                                />
-                                <span className={user.is_admin ? 'text-muted-foreground' : ''}>
-                                  {perm.label}
-                                </span>
-                              </label>
-                            ))}
+                          <div className="space-y-2 max-w-xl">
+                            {permissionGroups.map((group) => {
+                              const isExpanded = expandedGroups[`${user.id}-${group.id}`];
+                              const hasGroupPerm = (user.permissions || []).includes(group.id);
+                              const subIds = group.subPermissions.map(s => s.id);
+                              const selectedSubs = subIds.filter(id => (user.permissions || []).includes(id));
+                              const allSubsSelected = selectedSubs.length === subIds.length;
+                              const someSubsSelected = selectedSubs.length > 0 && !allSubsSelected;
+                              
+                              return (
+                                <div key={group.id} className="border rounded-md p-2 bg-muted/30">
+                                  <div className="flex items-center justify-between">
+                                    <label className="flex items-center space-x-2 text-sm cursor-pointer flex-1">
+                                      <Checkbox
+                                        checked={hasGroupPerm || allSubsSelected}
+                                        ref={(el) => {
+                                          if (el) el.indeterminate = someSubsSelected;
+                                        }}
+                                        onCheckedChange={(checked) =>
+                                          handlePermissionChange(user.id, group.id, !!checked, true)
+                                        }
+                                        disabled={!!user.is_admin}
+                                      />
+                                      <span className={`font-medium ${user.is_admin ? 'text-muted-foreground' : ''}`}>
+                                        {group.label}
+                                      </span>
+                                      {selectedSubs.length > 0 && (
+                                        <span className="text-xs text-muted-foreground">
+                                          ({selectedSubs.length}/{subIds.length})
+                                        </span>
+                                      )}
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedGroups(prev => ({
+                                        ...prev,
+                                        [`${user.id}-${group.id}`]: !isExpanded
+                                      }))}
+                                      className="p-1 hover:bg-muted rounded"
+                                    >
+                                      {isExpanded ? (
+                                        <ChevronDown className="w-4 h-4" />
+                                      ) : (
+                                        <ChevronRight className="w-4 h-4" />
+                                      )}
+                                    </button>
+                                  </div>
+                                  {isExpanded && (
+                                    <div className="mt-2 ml-6 space-y-1 border-l-2 border-muted pl-3">
+                                      {group.subPermissions.map((sub) => (
+                                        <label key={sub.id} className="flex items-center space-x-2 text-sm cursor-pointer">
+                                          <Checkbox
+                                            checked={(user.permissions || []).includes(sub.id)}
+                                            onCheckedChange={(checked) =>
+                                              handlePermissionChange(user.id, sub.id, !!checked, false, group.id)
+                                            }
+                                            disabled={!!user.is_admin}
+                                          />
+                                          <span className={user.is_admin ? 'text-muted-foreground' : ''}>
+                                            {sub.label}
+                                          </span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                           {user.is_admin && (
                             <p className="text-xs text-muted-foreground mt-1">
@@ -541,18 +745,68 @@ const AdminPage = () => {
               {!inviteForm.isAdmin && (
                 <div className="space-y-3">
                   <Label>Permissions</Label>
-                  <div className="grid grid-cols-2 gap-2 p-3 border rounded-lg bg-muted/50">
-                    {permissionOptions.map((perm) => (
-                      <label key={perm.id} className="flex items-center space-x-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={inviteForm.permissions.includes(perm.id)}
-                          onCheckedChange={(checked) => handleInvitePermissionChange(perm.id, !!checked)}
-                        />
-                        <div>
-                          <span className="font-medium">{perm.label}</span>
+                  <div className="space-y-2 p-3 border rounded-lg bg-muted/50 max-h-64 overflow-y-auto">
+                    {permissionGroups.map((group) => {
+                      const isExpanded = expandedInviteGroups[group.id];
+                      const hasGroupPerm = inviteForm.permissions.includes(group.id);
+                      const subIds = group.subPermissions.map(s => s.id);
+                      const selectedSubs = subIds.filter(id => inviteForm.permissions.includes(id));
+                      const allSubsSelected = selectedSubs.length === subIds.length;
+                      const someSubsSelected = selectedSubs.length > 0 && !allSubsSelected;
+                      
+                      return (
+                        <div key={group.id} className="border rounded-md p-2 bg-background">
+                          <div className="flex items-center justify-between">
+                            <label className="flex items-center space-x-2 text-sm cursor-pointer flex-1">
+                              <Checkbox
+                                checked={hasGroupPerm || allSubsSelected}
+                                ref={(el) => {
+                                  if (el) el.indeterminate = someSubsSelected;
+                                }}
+                                onCheckedChange={(checked) =>
+                                  handleInvitePermissionChange(group.id, !!checked, true)
+                                }
+                              />
+                              <span className="font-medium">{group.label}</span>
+                              {selectedSubs.length > 0 && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({selectedSubs.length}/{subIds.length})
+                                </span>
+                              )}
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => setExpandedInviteGroups(prev => ({
+                                ...prev,
+                                [group.id]: !isExpanded
+                              }))}
+                              className="p-1 hover:bg-muted rounded"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                          {isExpanded && (
+                            <div className="mt-2 ml-6 space-y-1 border-l-2 border-muted pl-3">
+                              {group.subPermissions.map((sub) => (
+                                <label key={sub.id} className="flex items-center space-x-2 text-sm cursor-pointer">
+                                  <Checkbox
+                                    checked={inviteForm.permissions.includes(sub.id)}
+                                    onCheckedChange={(checked) =>
+                                      handleInvitePermissionChange(sub.id, !!checked, false, group.id)
+                                    }
+                                  />
+                                  <span>{sub.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </label>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
