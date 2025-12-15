@@ -191,44 +191,44 @@ const MonthlyReportPage = () => {
       
       <div className="grid grid-cols-2 gap-8">
         <div>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-blue-900 hover:bg-blue-900">
-                <TableHead className="!text-white font-bold py-3 text-sm">Job Type</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Sales (R)</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Cost (R)</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Profit (R)</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Margin %</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'left', border: '1px solid #ccc' }}>Job Type</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Sales (R)</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Cost (R)</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Profit (R)</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Margin %</th>
+              </tr>
+            </thead>
+            <tbody>
               {Object.entries(jobTypeSummary)
                 .sort((a, b) => b[1].sales - a[1].sales)
                 .map(([jobType, data], idx) => {
                   const margin = data.sales > 0 ? (data.profit / data.sales) * 100 : 0;
                   return (
-                    <TableRow key={jobType} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
-                      <TableCell className="font-medium">{jobType}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(data.sales)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(data.cost)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(data.profit)}</TableCell>
-                      <TableCell className={cn('text-right font-bold', getMarginColor(margin))}>
+                    <tr key={jobType} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                      <td className="font-medium py-2 px-4 border">{jobType}</td>
+                      <td className="text-right py-2 px-4 border">{formatCurrency(data.sales)}</td>
+                      <td className="text-right py-2 px-4 border">{formatCurrency(data.cost)}</td>
+                      <td className="text-right py-2 px-4 border">{formatCurrency(data.profit)}</td>
+                      <td className={cn('text-right font-bold py-2 px-4 border', getMarginColor(margin))}>
                         {formatPercent(margin)}
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   );
                 })}
-              <TableRow className="bg-blue-100 font-bold">
-                <TableCell>TOTAL</TableCell>
-                <TableCell className="text-right">{formatCurrency(totalSales)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totalCost)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totalProfit)}</TableCell>
-                <TableCell className={cn('text-right', getMarginColor(totalSales > 0 ? (totalProfit / totalSales) * 100 : 0))}>
+              <tr className="bg-blue-100 font-bold">
+                <td className="py-2 px-4 border">TOTAL</td>
+                <td className="text-right py-2 px-4 border">{formatCurrency(totalSales)}</td>
+                <td className="text-right py-2 px-4 border">{formatCurrency(totalCost)}</td>
+                <td className="text-right py-2 px-4 border">{formatCurrency(totalProfit)}</td>
+                <td className={cn('text-right py-2 px-4 border', getMarginColor(totalSales > 0 ? (totalProfit / totalSales) * 100 : 0))}>
                   {totalSales > 0 ? formatPercent((totalProfit / totalSales) * 100) : '0%'}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         
         <div className="flex flex-col items-center">
@@ -266,47 +266,47 @@ const MonthlyReportPage = () => {
       
       <div className="grid grid-cols-2 gap-8">
         <div>
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-blue-900 hover:bg-blue-900">
-                <TableHead className="!text-white font-bold py-3 text-sm">Rep</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Sales (R)</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Cost (R)</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Profit (R)</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Margin %</TableHead>
-                <TableHead className="!text-white font-bold text-right py-3 text-sm">Jobs</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'left', border: '1px solid #ccc' }}>Rep</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Sales (R)</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Cost (R)</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Profit (R)</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Margin %</th>
+                <th style={{ backgroundColor: '#1e3a5f', color: 'white', fontWeight: 'bold', padding: '12px 16px', textAlign: 'right', border: '1px solid #ccc' }}>Jobs</th>
+              </tr>
+            </thead>
+            <tbody>
               {Object.entries(repSummary)
                 .sort((a, b) => b[1].sales - a[1].sales)
                 .map(([rep, data], idx) => {
                   const margin = data.sales > 0 ? (data.profit / data.sales) * 100 : 0;
                   return (
-                    <TableRow key={rep} className={idx % 2 === 0 ? 'bg-gray-50' : ''}>
-                      <TableCell className="font-medium">{rep}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(data.sales)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(data.cost)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(data.profit)}</TableCell>
-                      <TableCell className={cn('text-right font-bold', getMarginColor(margin))}>
+                    <tr key={rep} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                      <td className="font-medium py-2 px-4 border">{rep}</td>
+                      <td className="text-right py-2 px-4 border">{formatCurrency(data.sales)}</td>
+                      <td className="text-right py-2 px-4 border">{formatCurrency(data.cost)}</td>
+                      <td className="text-right py-2 px-4 border">{formatCurrency(data.profit)}</td>
+                      <td className={cn('text-right font-bold py-2 px-4 border', getMarginColor(margin))}>
                         {formatPercent(margin)}
-                      </TableCell>
-                      <TableCell className="text-right">{data.count}</TableCell>
-                    </TableRow>
+                      </td>
+                      <td className="text-right py-2 px-4 border">{data.count}</td>
+                    </tr>
                   );
                 })}
-              <TableRow className="bg-blue-100 font-bold">
-                <TableCell>TOTAL</TableCell>
-                <TableCell className="text-right">{formatCurrency(totalSales)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totalCost)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(totalProfit)}</TableCell>
-                <TableCell className={cn('text-right', getMarginColor(totalSales > 0 ? (totalProfit / totalSales) * 100 : 0))}>
+              <tr className="bg-blue-100 font-bold">
+                <td className="py-2 px-4 border">TOTAL</td>
+                <td className="text-right py-2 px-4 border">{formatCurrency(totalSales)}</td>
+                <td className="text-right py-2 px-4 border">{formatCurrency(totalCost)}</td>
+                <td className="text-right py-2 px-4 border">{formatCurrency(totalProfit)}</td>
+                <td className={cn('text-right py-2 px-4 border', getMarginColor(totalSales > 0 ? (totalProfit / totalSales) * 100 : 0))}>
                   {totalSales > 0 ? formatPercent((totalProfit / totalSales) * 100) : '0%'}
-                </TableCell>
-                <TableCell className="text-right">{totalJobs}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+                </td>
+                <td className="text-right py-2 px-4 border">{totalJobs}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
         
         <div className="flex flex-col items-center">
