@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, FileDown, TableIcon, BarChartIcon, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CalendarIcon, FileDown, TableIcon, BarChartIcon, X, FileText } from "lucide-react";
 import {
   ResponsiveContainer,
   PieChart,
@@ -53,7 +54,8 @@ import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import AddCostingPage from "@/pages/AddCostingPage";
 import MultiSelect from "@/components/ui/multi-select.jsx";
-import { downloadAsCsv, downloadAsPdf } from "@/lib/exportUtils";
+import { downloadAsCsv, downloadAsPdf, generateMonthlyReport } from "@/lib/exportUtils";
+import { useToast } from "@/components/ui/use-toast";
 
 const renderCustomLabel = ({
   cx,
@@ -93,6 +95,8 @@ const renderCustomLabel = ({
 };
 
 const CostingReports = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [openChartModal, setOpenChartModal] = useState(false);
   const COLORS = [
     "#4285F4",
@@ -160,6 +164,12 @@ const CostingReports = () => {
   const [selectedRep, setSelectedRep] = useState(null);
   const [isBranchDetailDialogOpen, setIsBranchDetailDialogOpen] = useState(false);
   const [selectedBranchDetails, setSelectedBranchDetails] = useState(null);
+  
+  // Monthly report dialog state
+  const [isMonthlyReportDialogOpen, setIsMonthlyReportDialogOpen] = useState(false);
+  const [selectedReportMonth, setSelectedReportMonth] = useState(new Date().getMonth());
+  const [selectedReportYear, setSelectedReportYear] = useState(new Date().getFullYear());
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // -------- Data fetch
   const fetchData = async () => {
@@ -1098,6 +1108,15 @@ const CostingReports = () => {
                   <FileDown className="w-4 h-4 mr-2" />
                   CSV
                 </Button>
+                
+                <Button
+                  variant="default"
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => navigate('/reports/monthly')}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Monthly Report
+                </Button>
               </div>
             </div>
 
@@ -1565,6 +1584,167 @@ const CostingReports = () => {
             ) : (
               <p className="text-center text-muted-foreground py-8">No transactions found for this branch.</p>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Monthly Report Generator Dialog */}
+      <Dialog open={isMonthlyReportDialogOpen} onOpenChange={setIsMonthlyReportDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">
+              📊 Generate Monthly Report
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Select the month and year for your management report. The report will include all costing data with professional formatting.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Month Selector */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Select Month</Label>
+              <Select
+                value={selectedReportMonth.toString()}
+                onValueChange={(value) => setSelectedReportMonth(parseInt(value))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    { value: 0, label: 'January' },
+                    { value: 1, label: 'February' },
+                    { value: 2, label: 'March' },
+                    { value: 3, label: 'April' },
+                    { value: 4, label: 'May' },
+                    { value: 5, label: 'June' },
+                    { value: 6, label: 'July' },
+                    { value: 7, label: 'August' },
+                    { value: 8, label: 'September' },
+                    { value: 9, label: 'October' },
+                    { value: 10, label: 'November' },
+                    { value: 11, label: 'December' },
+                  ].map((month) => (
+                    <SelectItem key={month.value} value={month.value.toString()}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Year Selector */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Select Year</Label>
+              <Select
+                value={selectedReportYear.toString()}
+                onValueChange={(value) => setSelectedReportYear(parseInt(value))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2023, 2024, 2025, 2026].map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Preview Info */}
+            <div className="bg-muted p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-2">Report will include:</p>
+              <ul className="text-sm space-y-1">
+                <li>✓ Summary by Job Type (with profit margins)</li>
+                <li>✓ Sales by Rep & Job Type pivot table</li>
+                <li>✓ Sales Area distribution data</li>
+                <li>✓ Job Type composition data</li>
+                <li>✓ Rep Performance summary</li>
+              </ul>
+              <p className="text-xs text-muted-foreground mt-3">
+                File: <span className="font-mono">{new Date(selectedReportYear, selectedReportMonth).toLocaleDateString('en-US', { month: 'long' })}_reports_{selectedReportYear}.xlsx</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsMonthlyReportDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700"
+              disabled={isGeneratingReport}
+              onClick={async () => {
+                setIsGeneratingReport(true);
+                
+                try {
+                  // Calculate date range for selected month
+                  const startDate = new Date(selectedReportYear, selectedReportMonth, 1);
+                  const endDate = new Date(selectedReportYear, selectedReportMonth + 1, 0); // Last day of month
+                  
+                  // Filter data for the selected month
+                  const monthlyData = allEntries.filter(entry => {
+                    const entryDate = new Date(entry.date);
+                    return entryDate >= startDate && entryDate <= endDate;
+                  });
+
+                  if (monthlyData.length === 0) {
+                    toast({
+                      variant: "destructive",
+                      title: "No Data Found",
+                      description: `No costing entries found for ${new Date(selectedReportYear, selectedReportMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}.`
+                    });
+                    setIsGeneratingReport(false);
+                    return;
+                  }
+
+                  const monthName = new Date(selectedReportYear, selectedReportMonth).toLocaleDateString('en-US', { month: 'long' });
+                  
+                  const result = await generateMonthlyReport(
+                    monthlyData,
+                    startDate,
+                    endDate,
+                    monthName
+                  );
+
+                  if (result.success) {
+                    toast({
+                      title: "✅ Report Generated Successfully!",
+                      description: `"${result.fileName}" has been downloaded with ${monthlyData.length} entries.`,
+                    });
+                    setIsMonthlyReportDialogOpen(false);
+                  }
+                } catch (error) {
+                  console.error('Monthly report generation error:', error);
+                  toast({
+                    variant: "destructive",
+                    title: "Report Generation Failed",
+                    description: error.message
+                  });
+                } finally {
+                  setIsGeneratingReport(false);
+                }
+              }}
+            >
+              {isGeneratingReport ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <FileDown className="w-4 h-4 mr-2" />
+                  Generate Report
+                </>
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

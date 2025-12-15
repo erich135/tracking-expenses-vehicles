@@ -36,7 +36,10 @@ const navItems = [
     ],
     permission: 'sla'
   },
-  { name: 'Reports', icon: BarChart2, path: '/reports', permission: 'reports' },
+  { name: 'Reports', icon: BarChart2, sublinks: [
+    { name: 'All Reports', path: '/reports' },
+    { name: 'Monthly Report', path: '/reports/monthly' },
+  ], permission: 'reports' },
   {
     name: 'Maintenance', icon: Database, sublinks: [
       { name: 'Customers', path: '/maintenance/customers' },

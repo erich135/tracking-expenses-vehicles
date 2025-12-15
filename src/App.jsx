@@ -14,6 +14,7 @@ import AddVehicleExpensePage from '@/pages/AddVehicleExpensePage';
 import ViewVehicleExpensesPage from '@/pages/ViewVehicleExpensesPage';
 import ManageVehiclesPage from '@/pages/ManageVehiclesPage';
 import ReportsPage from '@/pages/ReportsPage';
+import MonthlyReportPage from '@/pages/MonthlyReportPage';
 import SettingsPage from '@/pages/SettingsPage';
 import LoginPage from '@/pages/LoginPage';
 import RegisterPage from '@/pages/RegisterPage';
@@ -266,6 +267,15 @@ function AppRoutes() {
             <ProtectedRoute
               requiredPermission="reports"
               element={<ReportsPage />}
+            />
+          }
+        />
+        <Route
+          path="reports/monthly"
+          element={
+            <ProtectedRoute
+              requiredPermission="costing"
+              element={<MonthlyReportPage />}
             />
           }
         />
