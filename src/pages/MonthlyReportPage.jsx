@@ -193,12 +193,12 @@ const MonthlyReportPage = () => {
         <div>
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-900">
-                <TableHead className="text-white font-bold">Job Type</TableHead>
-                <TableHead className="text-white font-bold text-right">Sales (R)</TableHead>
-                <TableHead className="text-white font-bold text-right">Cost (R)</TableHead>
-                <TableHead className="text-white font-bold text-right">Profit (R)</TableHead>
-                <TableHead className="text-white font-bold text-right">Margin %</TableHead>
+              <TableRow className="bg-blue-900 hover:bg-blue-900">
+                <TableHead className="!text-white font-bold py-3 text-sm">Job Type</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Sales (R)</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Cost (R)</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Profit (R)</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Margin %</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -268,13 +268,13 @@ const MonthlyReportPage = () => {
         <div>
           <Table>
             <TableHeader>
-              <TableRow className="bg-blue-900">
-                <TableHead className="text-white font-bold">Rep</TableHead>
-                <TableHead className="text-white font-bold text-right">Sales (R)</TableHead>
-                <TableHead className="text-white font-bold text-right">Cost (R)</TableHead>
-                <TableHead className="text-white font-bold text-right">Profit (R)</TableHead>
-                <TableHead className="text-white font-bold text-right">Margin %</TableHead>
-                <TableHead className="text-white font-bold text-right">Jobs</TableHead>
+              <TableRow className="bg-blue-900 hover:bg-blue-900">
+                <TableHead className="!text-white font-bold py-3 text-sm">Rep</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Sales (R)</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Cost (R)</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Profit (R)</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Margin %</TableHead>
+                <TableHead className="!text-white font-bold text-right py-3 text-sm">Jobs</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
