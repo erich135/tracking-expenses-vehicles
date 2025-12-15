@@ -7,6 +7,7 @@ import DashboardLayout from '@/components/layouts/DashboardLayout';
 
 // Pages
 import UpdatePasswordPage from '@/pages/UpdatePasswordPage';
+import SetPasswordPage from '@/pages/SetPasswordPage';
 import HomePage from '@/pages/HomePage';
 import AddCostingPage from '@/pages/AddCostingPage';
 import ViewCostingsPage from '@/pages/ViewCostingsPage';
@@ -17,7 +18,6 @@ import ReportsPage from '@/pages/ReportsPage';
 import MonthlyReportPage from '@/pages/MonthlyReportPage';
 import SettingsPage from '@/pages/SettingsPage';
 import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
 import AddWorkshopJobPage from '@/pages/AddWorkshopJobPage';
 import ViewWorkshopJobsPage from '@/pages/ViewWorkshopJobsPage';
 import MaintenancePage from '@/pages/MaintenancePage';
@@ -107,8 +107,8 @@ function AppRoutes() {
         element={!session ? <LoginPage /> : <Navigate to="/" replace />}
       />
       <Route
-        path="/register"
-        element={!session ? <RegisterPage /> : <Navigate to="/" replace />}
+        path="/set-password"
+        element={<SetPasswordPage />}
       />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
 
