@@ -16,14 +16,6 @@ import { cn } from '@/lib/utils';
 const COLORS = ['#4285F4', '#FBBC05', '#34A853', '#EA4335', '#9C27B0', '#03A9F4', '#8BC34A', '#FF7043', '#9575CD', '#4DB6AC', '#FFCA28', '#E91E63', '#795548', '#607D8B'];
 
 const MonthlyReportPage = () => {
-    // Job type filter state
-    const allJobTypes = Array.from(new Set([
-      ...costingData.map(e => e.job_description || 'Other'),
-      'Rental',
-      'SLA',
-    ])).filter(Boolean);
-    const jobTypeOptions = allJobTypes.map(jt => ({ value: jt, label: jt }));
-    const [selectedJobTypes, setSelectedJobTypes] = useState(allJobTypes);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [costingData, setCostingData] = useState([]);
@@ -31,7 +23,21 @@ const MonthlyReportPage = () => {
   const [slaData, setSlaData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedJobTypes, setSelectedJobTypes] = useState([]);
   const reportRef = useRef(null);
+
+  // Job type filter state - computed from data
+  const allJobTypes = Array.from(new Set([
+    ...costingData.map(e => e.job_description || 'Other'),
+    'Rental',
+    'SLA',
+  ])).filter(Boolean);
+  const jobTypeOptions = allJobTypes.map(jt => ({ value: jt, label: jt }));
+
+  // Select all job types by default whenever data changes
+  useEffect(() => {
+    setSelectedJobTypes(allJobTypes);
+  }, [allJobTypes.join(',')]);
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -101,7 +107,7 @@ const MonthlyReportPage = () => {
       cost: 0,
       profit: parseFloat(e.amount || 0),
       job_type: 'Rental',
-      rep: e.rep || 'Unknown',
+      rep: e.rep || 'SLA/Rental',
     })),
     ...slaData.map(e => ({
       ...e,
@@ -110,7 +116,7 @@ const MonthlyReportPage = () => {
       cost: 0,
       profit: parseFloat(e.amount || 0),
       job_type: 'SLA',
-      rep: e.rep || 'Unknown',
+      rep: e.rep || 'SLA/Rental',
     })),
   ];
 
