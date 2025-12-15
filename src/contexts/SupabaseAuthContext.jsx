@@ -132,22 +132,24 @@ export const AuthProvider = ({ children }) => {
   // ✅ Invite user - creates entry in approved_users and sends invitation email
   const inviteUser = async ({ email, firstName, lastName, isAdmin = false, permissions = [] }) => {
     try {
+      const emailLower = email.toLowerCase();
+      
       // First check if user already exists in approved_users
       const { data: existingUser } = await supabase
         .from('approved_users')
         .select('id, email, password_set')
-        .eq('email', email.toLowerCase())
+        .eq('email', emailLower)
         .single();
 
       if (existingUser) {
         return { error: { message: 'User with this email already exists' } };
       }
 
-      // Create user entry in approved_users table
+      // Create user entry in approved_users table FIRST
       const { data: newUser, error: insertError } = await supabase
         .from('approved_users')
         .insert({
-          email: email.toLowerCase(),
+          email: emailLower,
           first_name: firstName,
           last_name: lastName,
           is_admin: isAdmin,
@@ -163,32 +165,38 @@ export const AuthProvider = ({ children }) => {
         return { error: insertError };
       }
 
-      // Use Supabase's built-in invite functionality
-      // This sends an email with a magic link to set password
-      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email.toLowerCase(), {
-        redirectTo: `${window.location.origin}/set-password`,
-        data: {
-          first_name: firstName,
-          last_name: lastName,
+      // Generate a random temporary password (user will reset it)
+      const tempPassword = crypto.randomUUID() + 'Aa1!';
+      
+      // Create the user in Supabase Auth with temporary password
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: emailLower,
+        password: tempPassword,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+          emailRedirectTo: `${window.location.origin}/set-password`,
         }
       });
 
-      // If admin invite fails, try using the password reset flow as fallback
-      // (works when admin API is not available)
-      if (inviteError) {
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.toLowerCase(), {
-          redirectTo: `${window.location.origin}/set-password`,
-        });
-        
-        if (resetError) {
-          // User entry created but email failed - still return success
-          // Admin can resend invitation later
-          console.warn('Could not send invitation email:', resetError.message);
-          return { 
-            data: newUser, 
-            warning: 'User created but invitation email could not be sent. Please resend invitation.' 
-          };
-        }
+      if (signUpError) {
+        console.warn('SignUp error:', signUpError.message);
+        // If signup fails but approved_user was created, still try password reset
+      }
+
+      // Now send password reset email so user can set their own password
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(emailLower, {
+        redirectTo: `${window.location.origin}/set-password`,
+      });
+      
+      if (resetError) {
+        console.warn('Could not send invitation email:', resetError.message);
+        return { 
+          data: newUser, 
+          warning: 'User created but invitation email could not be sent. Please resend invitation.' 
+        };
       }
 
       return { data: newUser };
