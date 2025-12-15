@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import { format } from 'date-fns';
 import {
@@ -10,8 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MultiSelect from '@/components/ui/multi-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Printer, Download, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Printer, Download, ChevronLeft, ChevronRight, FileText, CalendarIcon, TableIcon, BarChartIcon, FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { downloadAsCsv, downloadAsPdf } from '@/lib/exportUtils';
 
 const COLORS = ['#4285F4', '#FBBC05', '#34A853', '#EA4335', '#9C27B0', '#03A9F4', '#8BC34A', '#FF7043', '#9575CD', '#4DB6AC', '#FFCA28', '#E91E63', '#795548', '#607D8B'];
 
@@ -25,6 +31,19 @@ const MonthlyReportPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJobTypes, setSelectedJobTypes] = useState([]);
   const reportRef = useRef(null);
+
+  // Detailed Costing Entries filters state
+  const [detailedFromDate, setDetailedFromDate] = useState();
+  const [detailedToDate, setDetailedToDate] = useState();
+  const [detailedMarginRange, setDetailedMarginRange] = useState([0, 100]);
+  const [detailedSelectedReps, setDetailedSelectedReps] = useState([]);
+  const [detailedSelectedCustomers, setDetailedSelectedCustomers] = useState([]);
+  const [detailedSelectedJobDescriptions, setDetailedSelectedJobDescriptions] = useState([]);
+  const [detailedJobNumberFilter, setDetailedJobNumberFilter] = useState("");
+  const [detailedSortOption, setDetailedSortOption] = useState("rep_asc");
+  const [detailedTableSortColumn, setDetailedTableSortColumn] = useState(null);
+  const [detailedTableSortDirection, setDetailedTableSortDirection] = useState("asc");
+  const [detailedViewMode, setDetailedViewMode] = useState("table");
 
   // Job type filter state - computed from data
   const allJobTypes = Array.from(new Set([
@@ -53,10 +72,12 @@ const MonthlyReportPage = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const startDate = new Date(selectedYear, selectedMonth, 1);
-    const endDate = new Date(selectedYear, selectedMonth + 1, 0);
-    const startStr = startDate.toISOString().split('T')[0];
-    const endStr = endDate.toISOString().split('T')[0];
+    // Format dates without timezone conversion to avoid UTC shift issues
+    const year = selectedYear;
+    const month = selectedMonth + 1; // Convert 0-indexed to 1-indexed
+    const startStr = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate(); // Last day of the month
+    const endStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
     // Fetch costing entries
     const { data: costing, error: costingError } = await supabase
@@ -95,7 +116,7 @@ const MonthlyReportPage = () => {
       ...e,
       source: 'Costing',
       sales: parseFloat(e.total_customer || 0),
-      cost: parseFloat(e.total_cost || 0),
+      cost: parseFloat(e.total_expenses || 0),
       profit: parseFloat(e.profit || 0),
       job_type: e.job_description || 'Other',
       rep: e.rep || 'Unknown',
@@ -154,6 +175,178 @@ const MonthlyReportPage = () => {
   const totalCost = Object.values(jobTypeSummary).reduce((sum, v) => sum + v.cost, 0);
   const totalProfit = Object.values(jobTypeSummary).reduce((sum, v) => sum + v.profit, 0);
   const totalJobs = costingData.length;
+
+  // -------- Detailed Costing Entries Report Logic --------
+  // Use the same allEntries data (already filtered by selectedJobTypes) for consistency
+  // Map allEntries to include fields needed for detailed view
+  const detailedAllEntries = useMemo(() => {
+    return allEntries.map(entry => ({
+      ...entry,
+      // Normalize fields for detailed table display
+      job_description: entry.job_type || 'Other',
+      total_customer: entry.sales || 0,
+      total_expenses: entry.cost || 0,
+      profit: entry.profit || 0,
+      margin: entry.sales > 0 ? ((entry.profit / entry.sales) * 100) : 0,
+      customer: entry.customer || entry.equipment_name || entry.unit_name || '-',
+      job_number: entry.job_number || '-',
+      invoice_number: entry.invoice_number || '-',
+    }));
+  }, [allEntries]);
+
+  // Filter dropdown options for detailed entries (from combined data)
+  const detailedRepOptions = useMemo(() => {
+    const unique = [...new Set(detailedAllEntries.map((e) => e.rep))].filter(Boolean);
+    return unique.map((v) => ({ label: v, value: v }));
+  }, [detailedAllEntries]);
+
+  const detailedCustomerOptions = useMemo(() => {
+    const unique = [...new Set(detailedAllEntries.map((e) => e.customer))].filter(Boolean);
+    return unique.map((v) => ({ label: v, value: v }));
+  }, [detailedAllEntries]);
+
+  const detailedJobDescriptionOptions = useMemo(() => {
+    const unique = [...new Set(detailedAllEntries.map((e) => e.job_description))].filter(Boolean);
+    return unique.map((v) => ({ label: v, value: v }));
+  }, [detailedAllEntries]);
+
+  // Apply filters to detailed combined data
+  const detailedFilteredData = useMemo(() => {
+    const result = detailedAllEntries.filter((entry) => {
+      // Date filter - only apply if dates are selected
+      // Use string comparison for dates to avoid timezone issues
+      let inDateRange = true;
+      if (detailedFromDate || detailedToDate) {
+        const entryDateStr = entry.date ? String(entry.date).split('T')[0] : '';
+        const startDateStr = detailedFromDate ? format(detailedFromDate, 'yyyy-MM-dd') : null;
+        const endDateStr = detailedToDate ? format(detailedToDate, 'yyyy-MM-dd') : null;
+        
+        inDateRange =
+          (!startDateStr || entryDateStr >= startDateStr) &&
+          (!endDateStr || entryDateStr <= endDateStr);
+      }
+
+      // Margin filter - allow full range, only filter if slider is not at default
+      const entryMargin = parseFloat(entry.margin || 0);
+      const inMarginRange =
+        (detailedMarginRange[0] === 0 && detailedMarginRange[1] === 100) || // Default = no filter
+        (entryMargin >= detailedMarginRange[0] && entryMargin <= detailedMarginRange[1]);
+
+      const jobMatch =
+        detailedJobNumberFilter === "" ||
+        (entry.job_number && entry.job_number.toLowerCase().includes(detailedJobNumberFilter.toLowerCase()));
+
+      const repMatch = detailedSelectedReps.length === 0 || detailedSelectedReps.includes(entry.rep);
+      const customerMatch =
+        detailedSelectedCustomers.length === 0 || detailedSelectedCustomers.includes(entry.customer);
+      const jobDescMatch =
+        detailedSelectedJobDescriptions.length === 0 ||
+        detailedSelectedJobDescriptions.includes(entry.job_description);
+
+      return (
+        inDateRange &&
+        inMarginRange &&
+        jobMatch &&
+        repMatch &&
+        customerMatch &&
+        jobDescMatch
+      );
+    });
+    
+    return result;
+  }, [
+    detailedAllEntries,
+    detailedFromDate,
+    detailedToDate,
+    detailedMarginRange,
+    detailedJobNumberFilter,
+    detailedSelectedReps,
+    detailedSelectedCustomers,
+    detailedSelectedJobDescriptions,
+  ]);
+
+  // Calculate totals for detailed entries
+  const detailedTotals = useMemo(() => {
+    const totals = detailedFilteredData.reduce(
+      (acc, entry) => {
+        const s = parseFloat(entry.total_customer || 0);
+        const c = parseFloat(entry.total_expenses || 0);
+        const p = parseFloat(entry.profit || 0);
+        acc.sales += s;
+        acc.cost += c;
+        acc.profit += p;
+        if (s > 0) {
+          acc.marginSum += (p / s) * 100;
+          acc.marginCount += 1;
+        }
+        return acc;
+      },
+      { sales: 0, cost: 0, profit: 0, marginSum: 0, marginCount: 0 }
+    );
+
+    return {
+      sales: totals.sales,
+      cost: totals.cost,
+      profit: totals.profit,
+      margin: totals.marginCount > 0 ? parseFloat((totals.marginSum / totals.marginCount).toFixed(2)) : 0,
+    };
+  }, [detailedFilteredData]);
+
+  // Process and sort detailed data
+  const detailedProcessedData = useMemo(() => {
+    let sortedData = [...detailedFilteredData];
+    
+    // Apply sort option
+    if (detailedSortOption === "rep_asc") sortedData.sort((a, b) => (a.rep || '').localeCompare(b.rep || ''));
+    else if (detailedSortOption === "rep_desc") sortedData.sort((a, b) => (b.rep || '').localeCompare(a.rep || ''));
+    else if (detailedSortOption === "profit_asc") sortedData.sort((a, b) => parseFloat(a.profit || 0) - parseFloat(b.profit || 0));
+    else if (detailedSortOption === "profit_desc") sortedData.sort((a, b) => parseFloat(b.profit || 0) - parseFloat(a.profit || 0));
+
+    if (detailedTableSortColumn) {
+      sortedData.sort((a, b) => {
+        let aVal = a[detailedTableSortColumn];
+        let bVal = b[detailedTableSortColumn];
+        
+        if (['total_customer', 'total_expenses', 'profit', 'margin'].includes(detailedTableSortColumn)) {
+          aVal = parseFloat(aVal) || 0;
+          bVal = parseFloat(bVal) || 0;
+        }
+        
+        if (detailedTableSortColumn === 'date') {
+          aVal = new Date(aVal);
+          bVal = new Date(bVal);
+        }
+        
+        if (typeof aVal === 'string') {
+          aVal = aVal.toLowerCase();
+          bVal = (bVal || '').toLowerCase();
+        }
+        
+        if (detailedTableSortDirection === 'asc') {
+          return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+        } else {
+          return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+        }
+      });
+    }
+
+    return sortedData;
+  }, [detailedFilteredData, detailedSortOption, detailedTableSortColumn, detailedTableSortDirection]);
+
+  const handleDetailedColumnSort = (columnKey) => {
+    if (detailedTableSortColumn === columnKey) {
+      setDetailedTableSortDirection(detailedTableSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setDetailedTableSortColumn(columnKey);
+      setDetailedTableSortDirection('asc');
+    }
+  };
+
+  const getDetailedMarginColor = (margin) => {
+    if (margin >= 60) return "text-green-600";
+    if (margin >= 40) return "text-yellow-600";
+    return "text-red-600";
+  };
 
   // Prepare chart data
   const jobTypePieData = Object.entries(jobTypeSummary)
@@ -552,8 +745,343 @@ const MonthlyReportPage = () => {
     </div>
   );
 
+  // Detailed Costing Entries Page Component
+  const DetailedCostingEntriesPage = () => {
+    const detailedHeaders = [
+      { key: "date", label: "Date" },
+      { key: "rep", label: "Rep" },
+      { key: "customer", label: "Customer" },
+      { key: "job_number", label: "Job #" },
+      { key: "invoice_number", label: "Invoice #" },
+      { key: "job_description", label: "Job Type" },
+      { key: "total_customer", label: "Sales (R)" },
+      { key: "total_expenses", label: "Cost (R)" },
+      { key: "profit", label: "Profit (R)" },
+      { key: "margin", label: "Profit %" },
+    ];
+
+    return (
+      <div className="report-page bg-white min-h-[800px] p-8 rounded-lg shadow-lg">
+        <div className="flex justify-between items-center mb-6 border-b pb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Detailed Costing Entries</h2>
+          </div>
+          <span className="text-sm text-gray-500">{months[selectedMonth]} {selectedYear}</span>
+        </div>
+
+        {/* Filters Section */}
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Filters</CardTitle>
+          </CardHeader>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4">
+            <Select value={detailedSortOption} onValueChange={setDetailedSortOption}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="rep_asc">Rep Code A-Z</SelectItem>
+                <SelectItem value="rep_desc">Rep Code Z-A</SelectItem>
+                <SelectItem value="profit_asc">Profit (Lowest First)</SelectItem>
+                <SelectItem value="profit_desc">Profit (Highest First)</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Input
+              placeholder="Filter by Job Number..."
+              value={detailedJobNumberFilter}
+              onChange={(e) => setDetailedJobNumberFilter(e.target.value)}
+            />
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !detailedFromDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {detailedFromDate ? (
+                    format(detailedFromDate, "LLL dd, y")
+                  ) : (
+                    <span>From date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={detailedFromDate}
+                  onSelect={setDetailedFromDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !detailedToDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {detailedToDate ? (
+                    format(detailedToDate, "LLL dd, y")
+                  ) : (
+                    <span>To date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={detailedToDate}
+                  onSelect={setDetailedToDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+
+            <div className="space-y-2 lg:col-span-1">
+              <Label>
+                Filter by Margin (%): {detailedMarginRange[0]}% - {detailedMarginRange[1]}%
+              </Label>
+              <Slider
+                value={detailedMarginRange}
+                onValueChange={setDetailedMarginRange}
+                min={0}
+                max={100}
+                step={1}
+              />
+            </div>
+
+            <MultiSelect
+              options={detailedRepOptions}
+              selected={detailedSelectedReps}
+              onChange={setDetailedSelectedReps}
+              placeholder="Filter by Rep..."
+            />
+            <MultiSelect
+              options={detailedCustomerOptions}
+              selected={detailedSelectedCustomers}
+              onChange={setDetailedSelectedCustomers}
+              placeholder="Filter by Customer..."
+            />
+            <MultiSelect
+              options={detailedJobDescriptionOptions}
+              selected={detailedSelectedJobDescriptions}
+              onChange={setDetailedSelectedJobDescriptions}
+              placeholder="Filter by Job Type..."
+            />
+          </div>
+        </Card>
+
+        {/* Summary Totals */}
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-lg">Detailed Costing Entries</CardTitle>
+                <p className="text-sm text-muted-foreground">Viewing as {detailedViewMode}</p>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant={detailedViewMode === "table" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDetailedViewMode("table")}
+                >
+                  <TableIcon className="w-4 h-4 mr-2" />
+                  Table
+                </Button>
+                <Button
+                  variant={detailedViewMode === "graph" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDetailedViewMode("graph")}
+                >
+                  <BarChartIcon className="w-4 h-4 mr-2" />
+                  Graph
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (detailedProcessedData.length === 0) {
+                      alert("No data available to export to PDF.");
+                      return;
+                    }
+                    const headers = detailedHeaders.map((h) => h.label);
+                    const dataRows = detailedProcessedData.map((row) =>
+                      detailedHeaders.map((h) => row[h.key])
+                    );
+                    downloadAsPdf("Detailed Costing Entries", headers, dataRows);
+                  }}
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (detailedProcessedData.length === 0) {
+                      alert("No data available to export to CSV.");
+                      return;
+                    }
+                    const headers = detailedHeaders.map((h) => h.label);
+                    const dataRows = detailedProcessedData.map((row) =>
+                      detailedHeaders.map((h) => {
+                        const value = row[h.key];
+                        if (value === null || value === undefined) return '';
+                        if (typeof value === 'number') return value.toFixed(2);
+                        return String(value);
+                      })
+                    );
+                    downloadAsCsv("Detailed Costing Entries", headers, dataRows);
+                  }}
+                >
+                  <FileDown className="w-4 h-4 mr-2" />
+                  CSV
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+              <div>
+                <Label className="text-muted-foreground text-sm">Sales (R)</Label>
+                <div className="text-base font-medium">
+                  {new Intl.NumberFormat("en-ZA", {
+                    style: "currency",
+                    currency: "ZAR",
+                  }).format(detailedTotals.sales)}
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm">Cost (R)</Label>
+                <div className="text-base font-medium">
+                  {new Intl.NumberFormat("en-ZA", {
+                    style: "currency",
+                    currency: "ZAR",
+                  }).format(detailedTotals.cost)}
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm">Profit (R)</Label>
+                <div className="text-base font-medium">
+                  {new Intl.NumberFormat("en-ZA", {
+                    style: "currency",
+                    currency: "ZAR",
+                  }).format(detailedTotals.profit)}
+                </div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-sm">Profit %</Label>
+                <div className={`text-base font-medium ${getDetailedMarginColor(detailedTotals.margin)}`}>
+                  {detailedTotals.margin.toFixed(2)}%
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Data Table or Graph */}
+        {detailedViewMode === "table" ? (
+          <div className="overflow-auto max-h-[500px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {detailedHeaders.map((h) => (
+                    <TableHead
+                      key={h.key}
+                      className="cursor-pointer hover:bg-muted/50 select-none"
+                      onClick={() => handleDetailedColumnSort(h.key)}
+                    >
+                      <div className="flex items-center gap-1">
+                        {h.label}
+                        {detailedTableSortColumn === h.key && (
+                          <span className="text-xs">
+                            {detailedTableSortDirection === 'asc' ? '▲' : '▼'}
+                          </span>
+                        )}
+                      </div>
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {detailedProcessedData.map((row, index) => (
+                  <TableRow key={index}>
+                    {detailedHeaders.map((h) => (
+                      <TableCell
+                        key={h.key}
+                        className={cn(
+                          h.key === "margin" && getDetailedMarginColor(parseFloat(row[h.key]))
+                        )}
+                      >
+                        {["total_customer", "total_expenses", "profit"].includes(h.key)
+                          ? new Intl.NumberFormat("en-ZA", {
+                              style: "currency",
+                              currency: "ZAR",
+                            }).format(row[h.key])
+                          : h.key === "margin"
+                          ? `${parseFloat(row[h.key]).toFixed(2)}%`
+                          : row[h.key] === null || row[h.key] === undefined
+                          ? "-"
+                          : row[h.key]}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={Object.entries(
+                    detailedProcessedData.reduce((acc, entry) => {
+                      const jobType = entry.job_description || 'Other';
+                      if (!acc[jobType]) acc[jobType] = 0;
+                      acc[jobType] += parseFloat(entry.total_customer || 0);
+                      return acc;
+                    }, {})
+                  ).map(([name, value]) => ({ name, value }))}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => percent > 0.03 ? `${name}: ${(percent * 100).toFixed(0)}%` : ''}
+                  labelLine={true}
+                >
+                  {Object.keys(
+                    detailedProcessedData.reduce((acc, entry) => {
+                      const jobType = entry.job_description || 'Other';
+                      acc[jobType] = true;
+                      return acc;
+                    }, {})
+                  ).map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const pages = [
     { title: 'Cover', component: <CoverPage /> },
+    { title: 'Detailed Entries', component: <DetailedCostingEntriesPage /> },
     { title: 'Summary by Job Type', component: <SummaryByJobTypePage /> },
     { title: 'Sales by Rep', component: <SalesByRepPage /> },
     { title: 'Rep Breakdown', component: <RepPieChartsPage /> },

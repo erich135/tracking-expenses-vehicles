@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
+import { formatDateLocal } from './utils';
 
 /**
  * Download data as CSV file
@@ -43,7 +44,7 @@ export const downloadAsCsv = (filename, headers, data) => {
     const url = URL.createObjectURL(blob);
 
     link.setAttribute('href', url);
-    link.setAttribute('download', `${filename.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `${filename.replace(/\s+/g, '_')}_${formatDateLocal(new Date())}.csv`);
     link.style.visibility = 'hidden';
 
     document.body.appendChild(link);
@@ -105,7 +106,7 @@ export const downloadAsPdf = (title, headers, data) => {
     });
 
     // Save the PDF
-    doc.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`${title.replace(/\s+/g, '_')}_${formatDateLocal(new Date())}.pdf`);
   } catch (error) {
     console.error('PDF Export error:', error);
     throw new Error(`Failed to export PDF: ${error.message}`);
@@ -125,7 +126,7 @@ export const generateMonthlyReport = async (costingData, fromDate, toDate, month
     workbook.creator = 'FleetFlow';
     workbook.created = new Date();
     
-    const reportDate = new Date().toISOString().split('T')[0];
+    const reportDate = formatDateLocal(new Date());
     const month = monthName || new Date(fromDate).toLocaleDateString('en-US', { month: 'long' });
     const year = new Date(fromDate).getFullYear();
 

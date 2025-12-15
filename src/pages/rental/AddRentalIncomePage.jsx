@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
+import { getTodayLocal, formatDateLocal } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -19,7 +20,7 @@ export default function AddRentalIncomePage() {
   const [customerId, setCustomerId] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => getTodayLocal());
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -83,7 +84,7 @@ export default function AddRentalIncomePage() {
     }
 
     const share = total / selectedMachines.length;
-    const isoDate = date ? new Date(date).toISOString() : new Date().toISOString();
+    const isoDate = date || getTodayLocal();
 
     const rows = selectedMachines.map(m => ({
       rental_equipment_id: m.id,

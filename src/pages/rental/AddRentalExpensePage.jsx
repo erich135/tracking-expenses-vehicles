@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
+import { getTodayLocal } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ const AddRentalExpensePage = () => {
   const [filtered, setFiltered] = useState([]);
   const [unitId, setUnitId] = useState('');
   const [unitName, setUnitName] = useState('');
-  const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [expenseDate, setExpenseDate] = useState(() => getTodayLocal());
   const [enteredHours, setEnteredHours] = useState('');
   const [items, setItems] = useState([{ part: null, quantity: 1, price: 0 }]);
 

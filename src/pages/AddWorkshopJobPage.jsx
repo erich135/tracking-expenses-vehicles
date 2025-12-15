@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { supabase } from '@/lib/customSupabaseClient';
-import { format } from 'date-fns';
+import { formatDateLocal, toLocalISOString } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -171,19 +171,19 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
       area,
       equipment_detail: equipmentDetail,
       quote_amount: parseFloat(quoteAmount) || 0,
-      quote_date: quoteDate ? quoteDate.toISOString() : null,
-      po_date: poDate ? poDate.toISOString() : null,
-      delivery_date: deliveryDate ? deliveryDate.toISOString() : null,
+      quote_date: quoteDate ? formatDateLocal(quoteDate) : null,
+      po_date: poDate ? formatDateLocal(poDate) : null,
+      delivery_date: deliveryDate ? formatDateLocal(deliveryDate) : null,
       status,
       notes,
       cash_customer_name: cashCustomer || null,
       customer_id_int: selectedCustomer?.id || null,
-      updated_at: new Date().toISOString(),
+      updated_at: toLocalISOString(new Date()),
       technician_id: selectedTechnician?.id || null,
     };
 
     if (!isEditMode) {
-      payload.created_at = new Date().toISOString();
+      payload.created_at = toLocalISOString(new Date());
     }
 // ✅ Check for duplicate job number unless area is "Rental" or "Other"
 if (!["Rental", "Other"].includes(area)) {

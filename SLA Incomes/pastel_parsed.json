@@ -1,0 +1,1399 @@
+{
+  "invoices": [
+    {
+      "type": "Invoice",
+      "number": "IN116610",
+      "customerCode": "SAM011",
+      "customerName": "Samancor Chrome Ltd div Ferrometals",
+      "amount": 759315.25
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116612",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 3328.52
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116613",
+      "customerCode": "ANG012",
+      "customerName": "Modikwa Platinum Joint Venture",
+      "amount": 134429.36
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116614",
+      "customerCode": "ANG012",
+      "customerName": "Modikwa Platinum Joint Venture",
+      "amount": 134429.36
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116615",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 190000
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116618",
+      "customerCode": "SNB001",
+      "customerName": "SNB Chrome (Pty) Ltd",
+      "amount": 69300
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116619",
+      "customerCode": "SNB001",
+      "customerName": "SNB Chrome (Pty) Ltd",
+      "amount": 1930
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116620",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 9664.8
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116621",
+      "customerCode": "SEA001",
+      "customerName": "Sealed Air Africa (Pty) Ltd",
+      "amount": 475484.97
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116622",
+      "customerCode": "GOL006",
+      "customerName": "Golden Era Printers & Stationers Bops",
+      "amount": 58640.98
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116623",
+      "customerCode": "MAN001",
+      "customerName": "MAN Automotive (SA) (Pty) Ltd",
+      "amount": 75295
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116624",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 9094.45
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116625",
+      "customerCode": "BAR001",
+      "customerName": "Barloworld Equipment (Pty) Ltd",
+      "amount": 6705
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116626",
+      "customerCode": "GLO003",
+      "customerName": "Global Wheel (Pty) Ltd",
+      "amount": 13089
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116627",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 2608.7
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116628",
+      "customerCode": "TWI001",
+      "customerName": "Main Street 1310 Pty Ltd t/a Twinsaver",
+      "amount": 10016.8
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116629",
+      "customerCode": "TWI001",
+      "customerName": "Main Street 1310 Pty Ltd t/a Twinsaver",
+      "amount": 18870.55
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116630",
+      "customerCode": "MAR001",
+      "customerName": "Marula Platinum (Pty) Ltd",
+      "amount": 9598.62
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116631",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 7411.52
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116632",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 7200
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116633",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 27115
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116634",
+      "customerCode": "LIM001",
+      "customerName": "Lime Distributors (Pty) Ltd",
+      "amount": 16411.18
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116635",
+      "customerCode": "MAN001",
+      "customerName": "MAN Automotive (SA) (Pty) Ltd",
+      "amount": 5120
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116636",
+      "customerCode": "XST010",
+      "customerName": "Rhovan Pooling & Sharing Venture",
+      "amount": 9200
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116637",
+      "customerCode": "XST010",
+      "customerName": "Rhovan Pooling & Sharing Venture",
+      "amount": 4880
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116638",
+      "customerCode": "THA002",
+      "customerName": "Tharisa Minerals Proprietary Limited",
+      "amount": 8700
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116639",
+      "customerCode": "XST012",
+      "customerName": "Glencore Merafe Venture",
+      "amount": 9474.44
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116640",
+      "customerCode": "XST010",
+      "customerName": "Rhovan Pooling & Sharing Venture",
+      "amount": 7860
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116641",
+      "customerCode": "KHU001",
+      "customerName": "Khulasonke Rebuild (Pty) Ltd",
+      "amount": 19406.08
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116642",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 74236.07
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116643",
+      "customerCode": "LIM001",
+      "customerName": "Lime Distributors (Pty) Ltd",
+      "amount": 410922.46
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116644",
+      "customerCode": "SAM002",
+      "customerName": "Eastern Chrome Mines A Division of",
+      "amount": 92400
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116645",
+      "customerCode": "SEA001",
+      "customerName": "Sealed Air Africa (Pty) Ltd",
+      "amount": 601650
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116646",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 13970
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116647",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 356371
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116648",
+      "customerCode": "PRE002",
+      "customerName": "Premium Ideas",
+      "amount": 6184.64
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116649",
+      "customerCode": "KLI001",
+      "customerName": "Klinger (PTY) LTD",
+      "amount": 5522.21
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116650",
+      "customerCode": "ISA001",
+      "customerName": "Isando Foods (Pty) Ltd",
+      "amount": 3015
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116651",
+      "customerCode": "SEA001",
+      "customerName": "Sealed Air Africa (Pty) Ltd",
+      "amount": 22820.73
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116652",
+      "customerCode": "CAL001",
+      "customerName": "Calderys South Africa (Pty) Ltd",
+      "amount": 11663.76
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116653",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 8578.23
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116654",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 12731.01
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116655",
+      "customerCode": "AMR001",
+      "customerName": "Amrod Corporate Solutions (PTY) LTD",
+      "amount": 2761.3
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116656",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 5830
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116657",
+      "customerCode": "WOO001",
+      "customerName": "Woodlands Dairy (Pty) Ltd",
+      "amount": 17603.4
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116658",
+      "customerCode": "BUS002",
+      "customerName": "Southern Point Resources",
+      "amount": 111401.29
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116659",
+      "customerCode": "BUS002",
+      "customerName": "Southern Point Resources",
+      "amount": 79483.01
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116660",
+      "customerCode": "RHO001",
+      "customerName": "RFG Foods(PTY) LTD",
+      "amount": 6980.1
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116661",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 20773.5
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116662",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 10065
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116663",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 53150.29
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116664",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 20250
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116665",
+      "customerCode": "SAP001",
+      "customerName": "Sappi Southern Africa Limited",
+      "amount": 24851.4
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116666",
+      "customerCode": "WIR001",
+      "customerName": "Clear Creek Trading 167 (PTY) LTD t/a",
+      "amount": 4261.9
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116667",
+      "customerCode": "CKB001",
+      "customerName": "C & K Boilermaking",
+      "amount": 9240
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116668",
+      "customerCode": "PPC001",
+      "customerName": "PPC Cement SA (PTY) LTD",
+      "amount": 13120
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116669",
+      "customerCode": "PLA002",
+      "customerName": "Plantcor Mining & Plant Hire (Pty) Ltd",
+      "amount": 61027.62
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116670",
+      "customerCode": "KHU001",
+      "customerName": "Khulasonke Rebuild (Pty) Ltd",
+      "amount": 19406.08
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116671",
+      "customerCode": "KHU001",
+      "customerName": "Khulasonke Rebuild (Pty) Ltd",
+      "amount": 76139.56
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116672",
+      "customerCode": "KHU001",
+      "customerName": "Khulasonke Rebuild (Pty) Ltd",
+      "amount": 76139.56
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116673",
+      "customerCode": "NOR001",
+      "customerName": "Northam Platinum Ltd",
+      "amount": 22800.06
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116674",
+      "customerCode": "NOR003",
+      "customerName": "Eland Platinum (Pty) Ltd",
+      "amount": 694465.47
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116675",
+      "customerCode": "GAY002",
+      "customerName": "Stile It (Pty) Ltd",
+      "amount": 937458.66
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116676",
+      "customerCode": "NOR003",
+      "customerName": "Eland Platinum (Pty) Ltd",
+      "amount": 142495.9
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116677",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 4715.93
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116678",
+      "customerCode": "GLO003",
+      "customerName": "Global Wheel (Pty) Ltd",
+      "amount": 9240
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116679",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 95322.47
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116680",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 26467.63
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116681",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 62738.96
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116682",
+      "customerCode": "RHO001",
+      "customerName": "RFG Foods(PTY) LTD",
+      "amount": 7949.41
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116683",
+      "customerCode": "TRO001",
+      "customerName": "Tronox Mineral Sands (Pty) Ltd",
+      "amount": 10541.44
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116684",
+      "customerCode": "TWI001",
+      "customerName": "Main Street 1310 Pty Ltd t/a Twinsaver",
+      "amount": 16405.85
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116685",
+      "customerCode": "RHO001",
+      "customerName": "RFG Foods(PTY) LTD",
+      "amount": 17605.52
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116686",
+      "customerCode": "RHO001",
+      "customerName": "RFG Foods(PTY) LTD",
+      "amount": 16645.65
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116687",
+      "customerCode": "RHO001",
+      "customerName": "RFG Foods(PTY) LTD",
+      "amount": 16645.65
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116688",
+      "customerCode": "GAY004",
+      "customerName": "Gayatri Cans (PTY LTD",
+      "amount": 46664.77
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116689",
+      "customerCode": "WEL002",
+      "customerName": "Wellington Wines (Pty) Ltd",
+      "amount": 45147.91
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116690",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 7379.84
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116691",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 10939.18
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116692",
+      "customerCode": "TIA001",
+      "customerName": "TI Group Automotive Systems (SA) (Pty)",
+      "amount": 2638.58
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116693",
+      "customerCode": "SAP001",
+      "customerName": "Sappi Southern Africa Limited",
+      "amount": 66498.5
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116694",
+      "customerCode": "MTH001",
+      "customerName": "Mthembu Paper Mill (Pty) Ltd",
+      "amount": 68400.53
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116695",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 28397.69
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116696",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 96915.6
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116697",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 14400
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116698",
+      "customerCode": "GAY001",
+      "customerName": "Gayatri Cans (Pty) Ltd",
+      "amount": 5835
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116699",
+      "customerCode": "NEW003",
+      "customerName": "New Era Packaging BOPS (PTY) LTD",
+      "amount": 10051.25
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116700",
+      "customerCode": "KLI001",
+      "customerName": "Klinger (PTY) LTD",
+      "amount": 5438.44
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116701",
+      "customerCode": "KLI001",
+      "customerName": "Klinger (PTY) LTD",
+      "amount": 15103.68
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116702",
+      "customerCode": "PAR003",
+      "customerName": "Lactalis SA (PTY) LTD - Kyalami",
+      "amount": 4245
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116703",
+      "customerCode": "DEC001",
+      "customerName": "Deckel Sportslid (Pty) Ltd.",
+      "amount": 35963.24
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116704",
+      "customerCode": "GLO002",
+      "customerName": "Global Roofing Solutions (Pty) Ltd",
+      "amount": 19971.82
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116705",
+      "customerCode": "MAC003",
+      "customerName": "MacDonald's Transport Upington (Pty) Ltd",
+      "amount": 8881.79
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116706",
+      "customerCode": "BAR001",
+      "customerName": "Barloworld Equipment (Pty) Ltd",
+      "amount": 13933.6
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116707",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 4331.01
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116708",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 8779.38
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116709",
+      "customerCode": "LOR001",
+      "customerName": "Loreal",
+      "amount": 9961.35
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116710",
+      "customerCode": "DEC001",
+      "customerName": "Deckel Sportslid (Pty) Ltd.",
+      "amount": 3877.9
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116711",
+      "customerCode": "BAR001",
+      "customerName": "Barloworld Equipment (Pty) Ltd",
+      "amount": 35203.5
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116712",
+      "customerCode": "BAR001",
+      "customerName": "Barloworld Equipment (Pty) Ltd",
+      "amount": 56083.5
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116713",
+      "customerCode": "AST001",
+      "customerName": "Astral Operations LTD t/a Goldi  a Div",
+      "amount": 132478.96
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116714",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 11700
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116715",
+      "customerCode": "GOL004",
+      "customerName": "New Era Labels (BOPS) PTY LTD",
+      "amount": 377342
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116716",
+      "customerCode": "PPC001",
+      "customerName": "PPC Cement SA (PTY) LTD",
+      "amount": 16760.12
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116717",
+      "customerCode": "PLA002",
+      "customerName": "Plantcor Mining & Plant Hire (Pty) Ltd",
+      "amount": 80000.34
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116718",
+      "customerCode": "XST010",
+      "customerName": "Rhovan Pooling & Sharing Venture",
+      "amount": 18709
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116719",
+      "customerCode": "MIN001",
+      "customerName": "Minerals Operations Executive (PTY) LTD",
+      "amount": 10052
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116720",
+      "customerCode": "KEY001",
+      "customerName": "Keystone Milling Co (Pty) Ltd",
+      "amount": 6086.24
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116721",
+      "customerCode": "KEY001",
+      "customerName": "Keystone Milling Co (Pty) Ltd",
+      "amount": 9281.04
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116722",
+      "customerCode": "XST010",
+      "customerName": "Rhovan Pooling & Sharing Venture",
+      "amount": 17596
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116723",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 243406.66
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116724",
+      "customerCode": "VOL002",
+      "customerName": "Volvo Group Southern Africa (Pty) Ltd",
+      "amount": 9335.6
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116725",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 9548.1
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116726",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 75000
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116727",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 332997.33
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116728",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 12002.02
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116729",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 69286.65
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116730",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 22190
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116731",
+      "customerCode": "ACT002",
+      "customerName": "Actom (Pty) Ltd t/a John Thompson",
+      "amount": 76184.04
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116732",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 8720
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116733",
+      "customerCode": "ACT002",
+      "customerName": "Actom (Pty) Ltd t/a John Thompson",
+      "amount": 22522.9
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116734",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 5334.04
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116735",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 7187.5
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116736",
+      "customerCode": "ISA001",
+      "customerName": "Isando Foods (Pty) Ltd",
+      "amount": 10538
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116737",
+      "customerCode": "CHA001",
+      "customerName": "Champ Foods Manufacturing cc",
+      "amount": 12670.1
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116738",
+      "customerCode": "ENG002",
+      "customerName": "Engen Refinery A Division of Engen",
+      "amount": 115275.6
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116739",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 17100
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116740",
+      "customerCode": "SPR001",
+      "customerName": "Spress Rentals (Pty) Ltd",
+      "amount": 20959.6
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116741",
+      "customerCode": "PLA002",
+      "customerName": "Plantcor Mining & Plant Hire (Pty) Ltd",
+      "amount": 5340
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116742",
+      "customerCode": "PLA002",
+      "customerName": "Plantcor Mining & Plant Hire (Pty) Ltd",
+      "amount": 18917.8
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116743",
+      "customerCode": "WIR001",
+      "customerName": "Clear Creek Trading 167 (PTY) LTD t/a",
+      "amount": 544068.45
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116744",
+      "customerCode": "MAC003",
+      "customerName": "MacDonald's Transport Upington (Pty) Ltd",
+      "amount": 8689.66
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116745",
+      "customerCode": "PRE002",
+      "customerName": "Premium Ideas",
+      "amount": 16377.32
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116746",
+      "customerCode": "TIA001",
+      "customerName": "TI Group Automotive Systems (SA) (Pty)",
+      "amount": 21627.28
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116747",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 28817.87
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116748",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 27268.85
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116749",
+      "customerCode": "ILP001",
+      "customerName": "Ilpea South African Industries (Pty) Ltd",
+      "amount": 43076.58
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116750",
+      "customerCode": "WEL002",
+      "customerName": "Wellington Wines (Pty) Ltd",
+      "amount": 28079.41
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116751",
+      "customerCode": "WEL002",
+      "customerName": "Wellington Wines (Pty) Ltd",
+      "amount": 32603.81
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116752",
+      "customerCode": "ABB001",
+      "customerName": "Abbott Laboratories SA (PTY) LTD",
+      "amount": 23917.07
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116753",
+      "customerCode": "LAN002",
+      "customerName": "Landis + Gyr (PTY) LTD",
+      "amount": 20173.58
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116754",
+      "customerCode": "TIA001",
+      "customerName": "TI Group Automotive Systems (SA) (Pty)",
+      "amount": 19795.78
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116755",
+      "customerCode": "RAI001",
+      "customerName": "RCL Foods Consumer (Pty) Ltd",
+      "amount": 11673.42
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116756",
+      "customerCode": "RAI001",
+      "customerName": "RCL Foods Consumer (Pty) Ltd",
+      "amount": 7439.92
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116757",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 11995.14
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116758",
+      "customerCode": "NEW002",
+      "customerName": "Mogwele Waste (PTY) LTD t/a New Era",
+      "amount": 28683.47
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116759",
+      "customerCode": "GAY005",
+      "customerName": "New Era P.P Sacks (BOP) (Pty) Ltd t/a",
+      "amount": 28463.28
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116760",
+      "customerCode": "INT003",
+      "customerName": "InterCement SA (PTY) LTD",
+      "amount": 62188.05
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116761",
+      "customerCode": "SAP001",
+      "customerName": "Sappi Southern Africa Limited",
+      "amount": 60577.02
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116762",
+      "customerCode": "GOL003",
+      "customerName": "New Era Packaging BOPS (Pty) Ltd",
+      "amount": 20500
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116763",
+      "customerCode": "NEW003",
+      "customerName": "New Era Packaging BOPS (PTY) LTD",
+      "amount": 15006.41
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116764",
+      "customerCode": "GAY001",
+      "customerName": "Gayatri Cans (Pty) Ltd",
+      "amount": 25979.6
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116765",
+      "customerCode": "NEW003",
+      "customerName": "New Era Packaging BOPS (PTY) LTD",
+      "amount": 21461.13
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116766",
+      "customerCode": "GOL003",
+      "customerName": "New Era Packaging BOPS (Pty) Ltd",
+      "amount": 29239.25
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116767",
+      "customerCode": "ELE001",
+      "customerName": "Element Six (Production) (PTY) LTD",
+      "amount": 36269.02
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116768",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 188567.78
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116769",
+      "customerCode": "ISA001",
+      "customerName": "Isando Foods (Pty) Ltd",
+      "amount": 22294.77
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116770",
+      "customerCode": "ISA001",
+      "customerName": "Isando Foods (Pty) Ltd",
+      "amount": 9713.42
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116771",
+      "customerCode": "ISA001",
+      "customerName": "Isando Foods (Pty) Ltd",
+      "amount": 56077.03
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116772",
+      "customerCode": "GOL006",
+      "customerName": "Golden Era Printers & Stationers Bops",
+      "amount": 28671.08
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116773",
+      "customerCode": "GOL004",
+      "customerName": "New Era Labels (BOPS) PTY LTD",
+      "amount": 13599.75
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116774",
+      "customerCode": "GAY003",
+      "customerName": "Gayatri Paper Mills (PTY) LTD",
+      "amount": 49333.24
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116775",
+      "customerCode": "GAY001",
+      "customerName": "Gayatri Cans (Pty) Ltd",
+      "amount": 33781.03
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116776",
+      "customerCode": "GOL002",
+      "customerName": "Golden Era Printers & Stationers (Bops)",
+      "amount": 33781.03
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116777",
+      "customerCode": "ABB001",
+      "customerName": "Abbott Laboratories SA (PTY) LTD",
+      "amount": 11261.94
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116778",
+      "customerCode": "RHO001",
+      "customerName": "RFG Foods(PTY) LTD",
+      "amount": 53319.92
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116779",
+      "customerCode": "ABB001",
+      "customerName": "Abbott Laboratories SA (PTY) LTD",
+      "amount": 11250.06
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116780",
+      "customerCode": "MAN001",
+      "customerName": "MAN Automotive (SA) (Pty) Ltd",
+      "amount": 34222.07
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116781",
+      "customerCode": "PRE002",
+      "customerName": "Premium Ideas",
+      "amount": 22483.49
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116782",
+      "customerCode": "GAY001",
+      "customerName": "Gayatri Cans (Pty) Ltd",
+      "amount": 47781.41
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116783",
+      "customerCode": "GOL006",
+      "customerName": "Golden Era Printers & Stationers Bops",
+      "amount": 154291
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116784",
+      "customerCode": "GZI001",
+      "customerName": "GZ Industries SA (Pty) Ltd",
+      "amount": 83722.81
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116785",
+      "customerCode": "TIA001",
+      "customerName": "TI Group Automotive Systems (SA) (Pty)",
+      "amount": 15463.3
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116786",
+      "customerCode": "GOL002",
+      "customerName": "Golden Era Printers & Stationers (Bops)",
+      "amount": 34975.68
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116787",
+      "customerCode": "GAY001",
+      "customerName": "Gayatri Cans (Pty) Ltd",
+      "amount": 26256.91
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116788",
+      "customerCode": "MAC004",
+      "customerName": "Machinery Contractors (Pty) Ltd",
+      "amount": 10720.21
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116789",
+      "customerCode": "KIC001",
+      "customerName": "KIC SA (Pty) Ltd",
+      "amount": 110000
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116790",
+      "customerCode": "UKH001",
+      "customerName": "Ukhuni Business Furniture (Pty) Ltd",
+      "amount": 31984
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116791",
+      "customerCode": "UKH001",
+      "customerName": "Ukhuni Business Furniture (Pty) Ltd",
+      "amount": 21490
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116792",
+      "customerCode": "GAY000",
+      "customerName": "Indabingi Sithole (Pty) Ltd t/a Gayatri",
+      "amount": 436714
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116793",
+      "customerCode": "GAY001",
+      "customerName": "Gayatri Cans (Pty) Ltd",
+      "amount": 33781.03
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116794",
+      "customerCode": "GAY001",
+      "customerName": "Gayatri Cans (Pty) Ltd",
+      "amount": 26256.91
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116795",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 61506.4
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116796",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 22762.97
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116797",
+      "customerCode": "GRI001",
+      "customerName": "GRI Wind Steel South Africa (Pty) Ltd",
+      "amount": 60403.46
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116798",
+      "customerCode": "WEL002",
+      "customerName": "Wellington Wines (Pty) Ltd",
+      "amount": 25089.54
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116799",
+      "customerCode": "RHO001",
+      "customerName": "RFG Foods(PTY) LTD",
+      "amount": 78696.2
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116800",
+      "customerCode": "BAR001",
+      "customerName": "Barloworld Equipment (Pty) Ltd",
+      "amount": 2868.27
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116801",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 66048.9
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116802",
+      "customerCode": "ING001",
+      "customerName": "Ingrain SA (Pty) Ltd",
+      "amount": 44010.44
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116803",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": 43092.4
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116804",
+      "customerCode": "PAR008",
+      "customerName": "Lactalis SA (PTY) LTD - PE",
+      "amount": 30778.65
+    },
+    {
+      "type": "Invoice",
+      "number": "IN116805",
+      "customerCode": "EVE001",
+      "customerName": "Eveready (Pty) Ltd",
+      "amount": 21173.24
+    }
+  ],
+  "creditNotes": [
+    {
+      "type": "Credit Note",
+      "number": "IC100699",
+      "customerCode": "SNB001",
+      "customerName": "SNB Chrome (Pty) Ltd",
+      "amount": -71230
+    },
+    {
+      "type": "Credit Note",
+      "number": "IC100700",
+      "customerCode": "KEN001",
+      "customerName": "Kenra Holdings (Pty) Ltd",
+      "amount": -4420
+    },
+    {
+      "type": "Credit Note",
+      "number": "IC100701",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": -69286.65
+    },
+    {
+      "type": "Credit Note",
+      "number": "IC100702",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": -12002.02
+    },
+    {
+      "type": "Credit Note",
+      "number": "IC100703",
+      "customerCode": "CAS001",
+      "customerName": "Cash Sales",
+      "amount": -332997.33
+    }
+  ],
+  "summary": {
+    "invoiceCount": 193,
+    "invoiceTotal": 12050387.709999993,
+    "creditNoteCount": 5,
+    "creditNoteTotal": -489936,
+    "netTotal": 11560451.709999993
+  }
+}

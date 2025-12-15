@@ -16,7 +16,11 @@ const normalizeDateYYYYMMDD = (d) => {
   try {
     const dt = typeof d === 'string' ? new Date(d) : d;
     if (Number.isNaN(dt.getTime())) return String(d).slice(0, 10);
-    return dt.toISOString().slice(0, 10);
+    // Use local date formatting to avoid UTC timezone shift
+    const year = dt.getFullYear();
+    const month = String(dt.getMonth() + 1).padStart(2, '0');
+    const day = String(dt.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   } catch {
     return String(d).slice(0, 10);
   }

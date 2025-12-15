@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { supabase } from '@/lib/customSupabaseClient';
+import { toLocalISOString } from '@/lib/utils';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,11 +50,11 @@ export default function AuditTrailPage() {
     if (tableName !== 'ALL') query = query.eq('table_name', tableName);
     if (userEmail.trim()) query = query.ilike('user_email', `%${userEmail.trim()}%`);
     if (recordId.trim()) query = query.eq('record_id', recordId.trim());
-    if (fromDate) query = query.gte('created_at', new Date(fromDate).toISOString());
+    if (fromDate) query = query.gte('created_at', toLocalISOString(new Date(fromDate)));
     if (toDate) {
       const end = new Date(toDate);
       end.setHours(23, 59, 59, 999);
-      query = query.lte('created_at', end.toISOString());
+      query = query.lte('created_at', toLocalISOString(end));
     }
 
     const from = page * PAGE_SIZE;
