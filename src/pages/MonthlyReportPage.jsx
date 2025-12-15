@@ -18,6 +18,8 @@ const MonthlyReportPage = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [costingData, setCostingData] = useState([]);
+  const [rentalData, setRentalData] = useState([]);
+  const [slaData, setSlaData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const reportRef = useRef(null);
@@ -29,6 +31,7 @@ const MonthlyReportPage = () => {
 
   const years = [2023, 2024, 2025, 2026];
 
+
   useEffect(() => {
     fetchData();
   }, [selectedMonth, selectedYear]);
@@ -37,46 +40,96 @@ const MonthlyReportPage = () => {
     setLoading(true);
     const startDate = new Date(selectedYear, selectedMonth, 1);
     const endDate = new Date(selectedYear, selectedMonth + 1, 0);
+    const startStr = startDate.toISOString().split('T')[0];
+    const endStr = endDate.toISOString().split('T')[0];
 
-    const { data, error } = await supabase
+    // Fetch costing entries
+    const { data: costing, error: costingError } = await supabase
       .from('costing_entries')
       .select('*')
-      .gte('date', startDate.toISOString().split('T')[0])
-      .lte('date', endDate.toISOString().split('T')[0])
+      .gte('date', startStr)
+      .lte('date', endStr)
       .order('date', { ascending: false });
 
-    if (!error && data) {
-      setCostingData(data);
-    }
+    // Fetch rental incomes
+    const { data: rental, error: rentalError } = await supabase
+      .from('rental_incomes')
+      .select('*')
+      .gte('date', startStr)
+      .lte('date', endStr)
+      .order('date', { ascending: false });
+
+    // Fetch SLA incomes
+    const { data: sla, error: slaError } = await supabase
+      .from('sla_incomes')
+      .select('*')
+      .gte('date', startStr)
+      .lte('date', endStr)
+      .order('date', { ascending: false });
+
+    setCostingData(costing || []);
+    setRentalData(rental || []);
+    setSlaData(sla || []);
     setLoading(false);
   };
 
+
+  // Merge all data for unified reporting
+  const allEntries = [
+    ...costingData.map(e => ({
+      ...e,
+      source: 'Costing',
+      sales: parseFloat(e.total_customer || 0),
+      cost: parseFloat(e.total_cost || 0),
+      profit: parseFloat(e.profit || 0),
+      job_type: e.job_description || 'Other',
+      rep: e.rep || 'Unknown',
+    })),
+    ...rentalData.map(e => ({
+      ...e,
+      source: 'Rental',
+      sales: parseFloat(e.amount || 0),
+      cost: 0,
+      profit: parseFloat(e.amount || 0),
+      job_type: 'Rental',
+      rep: e.rep || 'Unknown',
+    })),
+    ...slaData.map(e => ({
+      ...e,
+      source: 'SLA',
+      sales: parseFloat(e.amount || 0),
+      cost: 0,
+      profit: parseFloat(e.amount || 0),
+      job_type: 'SLA',
+      rep: e.rep || 'Unknown',
+    })),
+  ];
+
   // Calculate summaries
   const jobTypeSummary = {};
-  costingData.forEach(entry => {
-    const jobType = entry.job_description || 'Other';
+  allEntries.forEach(entry => {
+    const jobType = entry.job_type || 'Other';
     if (!jobTypeSummary[jobType]) {
       jobTypeSummary[jobType] = { sales: 0, cost: 0, profit: 0, count: 0 };
     }
-    jobTypeSummary[jobType].sales += parseFloat(entry.total_customer || 0);
-    jobTypeSummary[jobType].cost += parseFloat(entry.total_cost || 0);
-    jobTypeSummary[jobType].profit += parseFloat(entry.profit || 0);
+    jobTypeSummary[jobType].sales += entry.sales;
+    jobTypeSummary[jobType].cost += entry.cost;
+    jobTypeSummary[jobType].profit += entry.profit;
     jobTypeSummary[jobType].count += 1;
   });
 
   const repSummary = {};
-  costingData.forEach(entry => {
+  allEntries.forEach(entry => {
     const rep = entry.rep || 'Unknown';
     if (!repSummary[rep]) {
       repSummary[rep] = { sales: 0, cost: 0, profit: 0, count: 0, jobTypes: {} };
     }
-    repSummary[rep].sales += parseFloat(entry.total_customer || 0);
-    repSummary[rep].cost += parseFloat(entry.total_cost || 0);
-    repSummary[rep].profit += parseFloat(entry.profit || 0);
+    repSummary[rep].sales += entry.sales;
+    repSummary[rep].cost += entry.cost;
+    repSummary[rep].profit += entry.profit;
     repSummary[rep].count += 1;
-    
-    const jt = entry.job_description || 'Other';
-    repSummary[rep].jobTypes[jt] = (repSummary[rep].jobTypes[jt] || 0) + parseFloat(entry.total_customer || 0);
+    const jt = entry.job_type || 'Other';
+    repSummary[rep].jobTypes[jt] = (repSummary[rep].jobTypes[jt] || 0) + entry.sales;
   });
 
   const totalSales = Object.values(jobTypeSummary).reduce((sum, v) => sum + v.sales, 0);
