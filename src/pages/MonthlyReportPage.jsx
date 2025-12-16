@@ -83,51 +83,41 @@ const MonthlyReportPage = () => {
     const lastDay = new Date(year, month, 0).getDate(); // Last day of the month
     const endStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
+    let useClientFallback = false;
+
     try {
-      if (session?.access_token) {
-        const res = await fetch('/api/reports-monthly', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ startDate: startStr, endDate: endStr }),
-        });
+      if (session?.access_token && !useClientFallback) {
+        try {
+          const res = await fetch('/api/reports-monthly', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ startDate: startStr, endDate: endStr }),
+          });
 
-        const payload = await res.json().catch(() => ({}));
-        
-        if (!res.ok) {
-          // If 401, session expired - try to refresh
-          if (res.status === 401) {
-            const { data, error } = await supabase.auth.refreshSession();
-            if (!error && data?.session?.access_token) {
-              // Retry with refreshed token
-              const retryRes = await fetch('/api/reports-monthly', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${data.session.access_token}`,
-                },
-                body: JSON.stringify({ startDate: startStr, endDate: endStr }),
-              });
-              const retryPayload = await retryRes.json().catch(() => ({}));
-              if (retryRes.ok) {
-                setCostingData(Array.isArray(retryPayload.costing) ? retryPayload.costing : []);
-                setRentalData(Array.isArray(retryPayload.rental) ? retryPayload.rental : []);
-                setSlaData(Array.isArray(retryPayload.sla) ? retryPayload.sla : []);
-                setLoading(false);
-                return;
-              }
-            }
+          const payload = await res.json().catch(() => ({}));
+          
+          if (!res.ok) {
+            // If API fails, fall back to client-side queries
+            console.warn('API fetch failed, falling back to client-side queries:', payload?.error);
+            useClientFallback = true;
+          } else {
+            setCostingData(Array.isArray(payload.costing) ? payload.costing : []);
+            setRentalData(Array.isArray(payload.rental) ? payload.rental : []);
+            setSlaData(Array.isArray(payload.sla) ? payload.sla : []);
+            setLoading(false);
+            return; // Success, exit early
           }
-          throw new Error(payload?.error || 'Failed to load monthly report');
+        } catch (apiError) {
+          console.warn('API error, using client fallback:', apiError);
+          useClientFallback = true;
         }
+      }
 
-        setCostingData(Array.isArray(payload.costing) ? payload.costing : []);
-        setRentalData(Array.isArray(payload.rental) ? payload.rental : []);
-        setSlaData(Array.isArray(payload.sla) ? payload.sla : []);
-      } else {
-        // Fallback to client-side queries if no session token is present
+      if (!session?.access_token || useClientFallback) {
+        // Fallback to client-side queries
         const [costingRes, rentalRes, slaRes] = await Promise.all([
           supabase
             .from('costing_entries')
