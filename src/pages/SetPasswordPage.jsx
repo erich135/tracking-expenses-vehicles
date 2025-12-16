@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { Lock, CheckCircle, AlertCircle, Mail, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import logo from '@/assets/logo/company-logo.png';
 
 /**
  * Set Password page component.
@@ -221,6 +222,9 @@ const SetPasswordPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-900 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
+          <div className="flex items-center justify-center mb-6">
+            <img src={logo} alt="Company Logo" className="h-16 w-auto" />
+          </div>
           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Lock className="w-8 h-8 text-primary" />
           </div>

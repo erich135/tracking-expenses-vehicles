@@ -95,7 +95,33 @@ const MonthlyReportPage = () => {
         });
 
         const payload = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(payload?.error || 'Failed to load monthly report');
+        
+        if (!res.ok) {
+          // If 401, session expired - try to refresh
+          if (res.status === 401) {
+            const { data, error } = await supabase.auth.refreshSession();
+            if (!error && data?.session?.access_token) {
+              // Retry with refreshed token
+              const retryRes = await fetch('/api/reports-monthly', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${data.session.access_token}`,
+                },
+                body: JSON.stringify({ startDate: startStr, endDate: endStr }),
+              });
+              const retryPayload = await retryRes.json().catch(() => ({}));
+              if (retryRes.ok) {
+                setCostingData(Array.isArray(retryPayload.costing) ? retryPayload.costing : []);
+                setRentalData(Array.isArray(retryPayload.rental) ? retryPayload.rental : []);
+                setSlaData(Array.isArray(retryPayload.sla) ? retryPayload.sla : []);
+                setLoading(false);
+                return;
+              }
+            }
+          }
+          throw new Error(payload?.error || 'Failed to load monthly report');
+        }
 
         setCostingData(Array.isArray(payload.costing) ? payload.costing : []);
         setRentalData(Array.isArray(payload.rental) ? payload.rental : []);
