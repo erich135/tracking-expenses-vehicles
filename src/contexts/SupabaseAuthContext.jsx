@@ -32,11 +32,19 @@ export const AuthProvider = ({ children }) => {
       // Initial attempt
       let { response, data } = await doFetch(session.access_token);
       if (response.status === 401) {
-        // Refresh and retry once
-        const { data: refresh } = await supabase.auth.refreshSession();
-        const newToken = refresh?.session?.access_token;
-        if (newToken) {
-          ({ response, data } = await doFetch(newToken));
+        // Try to fetch the latest session first
+        const fresh = await supabase.auth.getSession();
+        const latestToken = fresh?.data?.session?.access_token;
+        if (latestToken && latestToken !== session.access_token) {
+          ({ response, data } = await doFetch(latestToken));
+        }
+        // If still unauthorized, try explicit refresh
+        if (response.status === 401) {
+          const { data: refresh } = await supabase.auth.refreshSession();
+          const newToken = refresh?.session?.access_token;
+          if (newToken) {
+            ({ response, data } = await doFetch(newToken));
+          }
         }
       }
 

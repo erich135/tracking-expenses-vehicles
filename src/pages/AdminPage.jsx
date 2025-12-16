@@ -289,11 +289,39 @@ const AdminPage = () => {
     const { error } = await resendInvitation(user.email);
     
     if (error) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Failed to resend invitation', 
-        description: error.message 
-      });
+      // Best-effort fallback: try to generate a manual invite link
+      try {
+        const { actionLink } = await generateInviteLink(user.email);
+        if (actionLink) {
+          toast({
+            title: 'Email not sent - use manual link',
+            description: (
+              <div className="space-y-2">
+                <div className="bg-muted p-2 rounded text-xs break-all cursor-pointer" onClick={() => {
+                  navigator.clipboard.writeText(actionLink);
+                  toast({ title: 'Link copied!' });
+                }}>
+                  {actionLink}
+                </div>
+                <p className="text-xs text-muted-foreground">Click to copy</p>
+              </div>
+            ),
+            duration: 30000,
+          });
+        } else {
+          toast({ 
+            variant: 'destructive', 
+            title: 'Failed to resend invitation', 
+            description: error.message 
+          });
+        }
+      } catch (e) {
+        toast({ 
+          variant: 'destructive', 
+          title: 'Failed to resend invitation', 
+          description: error.message 
+        });
+      }
     } else {
       toast({ 
         title: 'Invitation resent', 
