@@ -12,6 +12,29 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const callInviteApi = async (path, payload) => {
+    try {
+      if (!session?.access_token) return { skipped: true };
+
+      const response = await fetch(path, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        return { error: { message: data?.error || 'Invite request failed' }, details: data };
+      }
+      return { data };
+    } catch (err) {
+      return { error: { message: err.message || 'Invite request failed' } };
+    }
+  };
+
   // ✅ Handle session and user setup
   const handleSession = useCallback(async (session) => {
     setSession(session);
@@ -165,6 +188,33 @@ export const AuthProvider = ({ children }) => {
         return { error: insertError };
       }
 
+      // Prefer server-side admin invite when available (more reliable when signups are disabled)
+      const redirectTo = `${window.location.origin}/set-password`;
+      const apiResult = await callInviteApi('/api/admin-invite', {
+        email: emailLower,
+        redirectTo,
+        firstName,
+        lastName,
+      });
+
+      if (apiResult?.data?.ok) {
+        const actionLink = apiResult.data.actionLink;
+        const warning = apiResult.data.emailSent
+          ? null
+          : (apiResult.data.warning || 'Invite email could not be sent automatically') +
+            (actionLink ? `\nManual link: ${actionLink}` : '');
+
+        if (!apiResult.data.emailSent) {
+          console.warn('[inviteUser] server-side invite did not send email:', apiResult.data.warning);
+        }
+
+        return warning ? { data: newUser, warning } : { data: newUser };
+      }
+
+      if (apiResult?.error) {
+        console.warn('[inviteUser] server-side invite failed:', apiResult.error.message);
+      }
+
       // Generate a random temporary password (user will reset it)
       const tempPassword = crypto.randomUUID() + 'Aa1!';
       
@@ -183,7 +233,16 @@ export const AuthProvider = ({ children }) => {
 
       if (signUpError) {
         console.warn('SignUp error:', signUpError.message);
-        // If signup fails but approved_user was created, still try password reset
+
+        // If signups are disabled, continuing would misleadingly report "sent".
+        const msg = (signUpError.message || '').toLowerCase();
+        if (msg.includes('signups') || msg.includes('signup') || msg.includes('not allowed') || msg.includes('disabled')) {
+          return {
+            data: newUser,
+            warning:
+              'User was added to approved users, but Supabase Auth signups appear disabled, so an invitation email cannot be sent from the browser. Configure the server-side invite endpoint (/api/admin-invite) or enable Auth signups in Supabase.',
+          };
+        }
       }
 
       // Now send password reset email so user can set their own password
@@ -207,6 +266,33 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ Resend invitation to a user
   const resendInvitation = async (email) => {
+    const redirectTo = `${window.location.origin}/set-password`;
+    const apiResult = await callInviteApi('/api/admin-resend-invite', {
+      email: email.toLowerCase(),
+      redirectTo,
+    });
+
+    if (apiResult?.data?.ok) {
+      // Update invitation_sent_at timestamp
+      await supabase
+        .from('approved_users')
+        .update({ invitation_sent_at: new Date().toISOString() })
+        .eq('email', email.toLowerCase());
+
+      if (apiResult.data.emailSent) {
+        return { error: null };
+      }
+
+      return {
+        error: {
+          message:
+            (apiResult.data.warning || 'Invite email could not be sent automatically') +
+            (apiResult.data.actionLink ? `\nManual link: ${apiResult.data.actionLink}` : ''),
+        },
+      };
+    }
+
+    // Fall back to client-side password reset email
     const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase(), {
       redirectTo: `${window.location.origin}/set-password`,
     });

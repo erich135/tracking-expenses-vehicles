@@ -53,9 +53,16 @@ const ProtectedRoute = ({ element, requiredPermission }) => {
   }
 
   // ✅ Super admin bypass OR required permission
+  // Also check for parent group permission (e.g., 'reports' grants access to 'reports_monthly')
+  const userPerms = userProfile?.permissions || [];
+  const parentPerm = requiredPermission.includes('_') 
+    ? requiredPermission.split('_').slice(0, -1).join('_') 
+    : null;
+  
   const hasPermission =
     userProfile?.is_admin ||
-    (userProfile?.permissions || []).includes(requiredPermission);
+    userPerms.includes(requiredPermission) ||
+    (parentPerm && userPerms.includes(parentPerm));
 
   if (!hasPermission) {
     return <Navigate to="/" replace />;
@@ -274,7 +281,7 @@ function AppRoutes() {
           path="reports/monthly"
           element={
             <ProtectedRoute
-              requiredPermission="costing"
+              requiredPermission="reports_monthly"
               element={<MonthlyReportPage />}
             />
           }

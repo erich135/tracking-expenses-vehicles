@@ -5,6 +5,8 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +30,8 @@ const MonthlyReportPage = () => {
   const [rentalData, setRentalData] = useState([]);
   const [slaData, setSlaData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { session } = useAuth();
+  const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedJobTypes, setSelectedJobTypes] = useState([]);
   const reportRef = useRef(null);
@@ -79,34 +83,79 @@ const MonthlyReportPage = () => {
     const lastDay = new Date(year, month, 0).getDate(); // Last day of the month
     const endStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
-    // Fetch costing entries
-    const { data: costing, error: costingError } = await supabase
-      .from('costing_entries')
-      .select('*')
-      .gte('date', startStr)
-      .lte('date', endStr)
-      .order('date', { ascending: false });
+    try {
+      if (session?.access_token) {
+        const res = await fetch('/api/reports-monthly', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ startDate: startStr, endDate: endStr }),
+        });
 
-    // Fetch rental incomes
-    const { data: rental, error: rentalError } = await supabase
-      .from('rental_incomes')
-      .select('*')
-      .gte('date', startStr)
-      .lte('date', endStr)
-      .order('date', { ascending: false });
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(payload?.error || 'Failed to load monthly report');
 
-    // Fetch SLA incomes
-    const { data: sla, error: slaError } = await supabase
-      .from('sla_incomes')
-      .select('*')
-      .gte('date', startStr)
-      .lte('date', endStr)
-      .order('date', { ascending: false });
+        setCostingData(Array.isArray(payload.costing) ? payload.costing : []);
+        setRentalData(Array.isArray(payload.rental) ? payload.rental : []);
+        setSlaData(Array.isArray(payload.sla) ? payload.sla : []);
+      } else {
+        // Fallback to client-side queries if no session token is present
+        const [costingRes, rentalRes, slaRes] = await Promise.all([
+          supabase
+            .from('costing_entries')
+            .select('*')
+            .gte('date', startStr)
+            .lte('date', endStr)
+            .order('date', { ascending: false }),
+          supabase
+            .from('rental_incomes')
+            .select('*')
+            .gte('date', startStr)
+            .lte('date', endStr)
+            .order('date', { ascending: false }),
+          supabase
+            .from('sla_incomes')
+            .select('*')
+            .gte('date', startStr)
+            .lte('date', endStr)
+            .order('date', { ascending: false }),
+        ]);
 
-    setCostingData(costing || []);
-    setRentalData(rental || []);
-    setSlaData(sla || []);
-    setLoading(false);
+        const costing = costingRes.data;
+        const rental = rentalRes.data;
+        const sla = slaRes.data;
+        const costingError = costingRes.error;
+        const rentalError = rentalRes.error;
+        const slaError = slaRes.error;
+
+        if (costingError || rentalError || slaError) {
+          const errMsg =
+            costingError?.message ||
+            rentalError?.message ||
+            slaError?.message ||
+            'Failed to fetch monthly data';
+          throw new Error(errMsg);
+        }
+
+        setCostingData(costing || []);
+        setRentalData(rental || []);
+        setSlaData(sla || []);
+      }
+    } catch (err) {
+      console.error('Monthly report fetch error:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to load monthly report',
+        description: err.message || 'Please try again.',
+      });
+      setCostingData([]);
+      setRentalData([]);
+      setSlaData([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
 
