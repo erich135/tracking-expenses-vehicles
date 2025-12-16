@@ -235,7 +235,7 @@ const SetPasswordPage = () => {
             </div>
           )}
           <CardDescription>
-            Create a secure password for your account
+            You've been invited to join TrueCost360 – your costing management platform.
           </CardDescription>
         </CardHeader>
         <CardContent>
