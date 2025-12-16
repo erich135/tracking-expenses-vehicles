@@ -19,6 +19,7 @@ import {
   UserPlus, 
   Mail, 
   RefreshCw,
+  Copy,
   CheckCircle,
   XCircle,
   Clock,
@@ -148,7 +149,8 @@ const AdminPage = () => {
 
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { inviteUser, resendInvitation } = useAuth();
+  const { inviteUser, resendInvitation, session } = useAuth();
+  const [copyingFor, setCopyingFor] = useState(null);
 
   const fetchApprovedUsers = useCallback(async () => {
     setLoading(true);
@@ -300,6 +302,34 @@ const AdminPage = () => {
       fetchApprovedUsers();
     }
     setResendingTo(null);
+  };
+
+  // Generate and copy a fresh invite link for a user
+  const handleCopyInviteLink = async (user) => {
+    try {
+      setCopyingFor(user.id);
+      const res = await fetch('/api/admin-generate-invite-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({
+          email: user.email,
+          redirectTo: `${window.location.origin}/set-password`,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.actionLink) {
+        throw new Error(data?.error || 'Failed to generate invite link');
+      }
+      await navigator.clipboard.writeText(data.actionLink);
+      toast({ title: 'Invite link copied', description: 'Paste into email or chat.' });
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Could not copy invite link', description: err.message });
+    } finally {
+      setCopyingFor(null);
+    }
   };
 
   const handleDeleteClick = (user) => {
@@ -672,20 +702,36 @@ const AdminPage = () => {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             {!user.password_set && user.is_active !== false && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleResendInvitation(user)}
-                                disabled={resendingTo === user.id}
-                                className="gap-1"
-                              >
-                                {resendingTo === user.id ? (
-                                  <RefreshCw className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Mail className="w-3 h-3" />
-                                )}
-                                Resend
-                              </Button>
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleResendInvitation(user)}
+                                  disabled={resendingTo === user.id}
+                                  className="gap-1"
+                                >
+                                  {resendingTo === user.id ? (
+                                    <RefreshCw className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Mail className="w-3 h-3" />
+                                  )}
+                                  Resend
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => handleCopyInviteLink(user)}
+                                  disabled={copyingFor === user.id}
+                                  className="gap-1"
+                                >
+                                  {copyingFor === user.id ? (
+                                    <RefreshCw className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Copy className="w-3 h-3" />
+                                  )}
+                                  Copy link
+                                </Button>
+                              </>
                             )}
                             <Button
                               variant="destructive"
