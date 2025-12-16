@@ -24,8 +24,11 @@ import { downloadAsCsv, downloadAsPdf } from '@/lib/exportUtils';
 const COLORS = ['#4285F4', '#FBBC05', '#34A853', '#EA4335', '#9C27B0', '#03A9F4', '#8BC34A', '#FF7043', '#9575CD', '#4DB6AC', '#FFCA28', '#E91E63', '#795548', '#607D8B'];
 
 const MonthlyReportPage = () => {
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // Default to previous month
+  const today = new Date();
+  const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1);
+  const [selectedMonth, setSelectedMonth] = useState(prevMonth.getMonth());
+  const [selectedYear, setSelectedYear] = useState(prevMonth.getFullYear());
   const [costingData, setCostingData] = useState([]);
   const [rentalData, setRentalData] = useState([]);
   const [slaData, setSlaData] = useState([]);
