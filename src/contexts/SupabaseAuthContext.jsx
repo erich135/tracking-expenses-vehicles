@@ -292,20 +292,13 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    // Fall back to client-side password reset email
-    const { error } = await supabase.auth.resetPasswordForEmail(email.toLowerCase(), {
-      redirectTo: `${window.location.origin}/set-password`,
-    });
-
-    if (!error) {
-      // Update invitation_sent_at timestamp
-      await supabase
-        .from('approved_users')
-        .update({ invitation_sent_at: new Date().toISOString() })
-        .eq('email', email.toLowerCase());
-    }
-
-    return { error };
+    // Do not send reset-password email for invites; surface manual-link guidance instead
+    return {
+      error: {
+        message:
+          'Could not send the invite automatically. Please use the manual link if provided, or try again shortly.',
+      },
+    };
   };
 
   // ✅ Check if user has a specific permission

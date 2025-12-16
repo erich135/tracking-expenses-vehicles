@@ -113,7 +113,7 @@ export default async function handler(req, res) {
   // If the user already exists in Auth, Supabase can't "invite" them.
   // Generate a recovery link as a fallback for manual delivery.
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-    type: 'recovery',
+    type: 'invite',
     email: emailLower,
     options: {
       redirectTo: redirect || undefined,

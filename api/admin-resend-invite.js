@@ -98,7 +98,7 @@ export default async function handler(req, res) {
   }
 
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
-    type: 'recovery',
+    type: 'invite',
     email: emailLower,
     options: { redirectTo: redirect || undefined },
   });
