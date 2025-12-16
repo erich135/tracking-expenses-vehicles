@@ -149,7 +149,7 @@ const AdminPage = () => {
 
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { inviteUser, resendInvitation, session } = useAuth();
+  const { inviteUser, resendInvitation, generateInviteLink } = useAuth();
   const [copyingFor, setCopyingFor] = useState(null);
 
   const fetchApprovedUsers = useCallback(async () => {
@@ -308,22 +308,9 @@ const AdminPage = () => {
   const handleCopyInviteLink = async (user) => {
     try {
       setCopyingFor(user.id);
-      const res = await fetch('/api/admin-generate-invite-link', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`,
-        },
-        body: JSON.stringify({
-          email: user.email,
-          redirectTo: `${window.location.origin}/set-password`,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data?.actionLink) {
-        throw new Error(data?.error || 'Failed to generate invite link');
-      }
-      await navigator.clipboard.writeText(data.actionLink);
+      const { actionLink, error } = await generateInviteLink(user.email);
+      if (error || !actionLink) throw new Error(error?.message || 'Failed to generate invite link');
+      await navigator.clipboard.writeText(actionLink);
       toast({ title: 'Invite link copied', description: 'Paste into email or chat.' });
     } catch (err) {
       toast({ variant: 'destructive', title: 'Could not copy invite link', description: err.message });

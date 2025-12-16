@@ -16,16 +16,30 @@ export const AuthProvider = ({ children }) => {
     try {
       if (!session?.access_token) return { skipped: true };
 
-      const response = await fetch(path, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const doFetch = async (token) => {
+        const response = await fetch(path, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json().catch(() => ({}));
+        return { response, data };
+      };
 
-      const data = await response.json().catch(() => ({}));
+      // Initial attempt
+      let { response, data } = await doFetch(session.access_token);
+      if (response.status === 401) {
+        // Refresh and retry once
+        const { data: refresh } = await supabase.auth.refreshSession();
+        const newToken = refresh?.session?.access_token;
+        if (newToken) {
+          ({ response, data } = await doFetch(newToken));
+        }
+      }
+
       if (!response.ok) {
         return { error: { message: data?.error || 'Invite request failed' }, details: data };
       }
@@ -33,6 +47,19 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       return { error: { message: err.message || 'Invite request failed' } };
     }
+  };
+
+  // Generate a manual invite link for a user (admin only)
+  const generateInviteLink = async (email) => {
+    const redirectTo = `${window.location.origin}/set-password`;
+    const apiResult = await callInviteApi('/api/admin-generate-invite-link', {
+      email: email.toLowerCase(),
+      redirectTo,
+    });
+    if (apiResult?.data?.ok && apiResult.data.actionLink) {
+      return { actionLink: apiResult.data.actionLink };
+    }
+    return { error: { message: apiResult?.error?.message || 'Failed to generate invite link' } };
   };
 
   // ✅ Handle session and user setup
@@ -323,6 +350,7 @@ export const AuthProvider = ({ children }) => {
       resetPassword,
       inviteUser,
       resendInvitation,
+      generateInviteLink,
       refreshUserProfile,
       hasPermission,
       isAdmin,
