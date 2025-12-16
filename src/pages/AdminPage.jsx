@@ -246,10 +246,34 @@ const AdminPage = () => {
         description: result.error.message 
       });
     } else {
-      toast({ 
-        title: 'User invited successfully!', 
-        description: result.warning || `An invitation email has been sent to ${inviteForm.email}` 
-      });
+      // Check if warning contains a manual link
+      const warningText = result.warning || '';
+      const linkMatch = warningText.match(/Manual link:\s*(https?:\/\/[^\s]+)/);
+      
+      if (linkMatch) {
+        const link = linkMatch[1];
+        toast({ 
+          title: '⚠️ Email not sent - use manual link', 
+          description: (
+            <div className="space-y-2">
+              <p>Email delivery failed. Copy and send this link manually:</p>
+              <div className="bg-muted p-2 rounded text-xs break-all cursor-pointer" onClick={() => {
+                navigator.clipboard.writeText(link);
+                toast({ title: 'Link copied!' });
+              }}>
+                {link}
+              </div>
+              <p className="text-xs text-muted-foreground">Click to copy</p>
+            </div>
+          ),
+          duration: 30000, // 30 seconds
+        });
+      } else {
+        toast({ 
+          title: 'User invited successfully!', 
+          description: result.warning || `An invitation email has been sent to ${inviteForm.email}` 
+        });
+      }
       setInviteForm({ email: '', firstName: '', lastName: '', isAdmin: false, permissions: [] });
       setIsInviteModalOpen(false);
       fetchApprovedUsers();

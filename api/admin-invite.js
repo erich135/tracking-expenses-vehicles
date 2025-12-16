@@ -86,6 +86,7 @@ export default async function handler(req, res) {
   }
 
   // Prefer native Supabase invite email.
+  console.log(`[admin-invite] Attempting to invite: ${emailLower}`);
   const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
     emailLower,
     {
@@ -98,6 +99,7 @@ export default async function handler(req, res) {
   );
 
   if (!inviteError) {
+    console.log(`[admin-invite] Email sent successfully to ${emailLower}, userId: ${inviteData?.user?.id}`);
     res.status(200).json({
       ok: true,
       emailSent: true,
@@ -105,6 +107,8 @@ export default async function handler(req, res) {
     });
     return;
   }
+
+  console.warn(`[admin-invite] Invite email failed: ${inviteError.message}`);
 
   // If the user already exists in Auth, Supabase can't "invite" them.
   // Generate a recovery link as a fallback for manual delivery.
