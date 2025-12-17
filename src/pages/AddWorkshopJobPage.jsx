@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { supabase } from '@/lib/customSupabaseClient';
 import { formatDateLocal, toLocalISOString } from '@/lib/utils';
+import { format } from 'date-fns';
 import {
   Select,
   SelectContent,
