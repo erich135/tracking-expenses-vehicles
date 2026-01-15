@@ -4,6 +4,79 @@ import ExcelJS from 'exceljs';
 import JSZip from 'jszip';
 import { formatDateLocal } from './utils';
 
+const DEFAULT_CHART_COLORS = [
+  '#4285F4', '#FBBC05', '#34A853', '#EA4335', '#9C27B0', '#03A9F4', '#8BC34A',
+  '#FF7043', '#9575CD', '#4DB6AC', '#FFCA28', '#E91E63', '#795548', '#607D8B'
+];
+
+const createPieChartPngDataUrl = async ({
+  title,
+  labels,
+  values,
+  colors = DEFAULT_CHART_COLORS,
+  width = 720,
+  height = 420,
+}) => {
+  if (typeof document === 'undefined') {
+    throw new Error('Chart export is only supported in the browser');
+  }
+
+  const Chart = (await import('chart.js/auto')).default;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('Unable to create canvas context for chart export');
+  }
+
+  const chart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [
+        {
+          data: values,
+          backgroundColor: labels.map((_, idx) => colors[idx % colors.length]),
+          borderColor: '#FFFFFF',
+          borderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: false,
+      animation: false,
+      plugins: {
+        title: {
+          display: Boolean(title),
+          text: title || '',
+          font: { size: 16, weight: 'bold' },
+        },
+        legend: {
+          position: 'right',
+          labels: { boxWidth: 12 },
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const label = ctx.label || '';
+              const val = Number(ctx.parsed || 0);
+              return `${label}: ${val.toLocaleString('en-ZA', { style: 'currency', currency: 'ZAR' })}`;
+            },
+          },
+        },
+      },
+    },
+  });
+
+  chart.update();
+  await new Promise((r) => setTimeout(r, 0));
+  const dataUrl = canvas.toDataURL('image/png');
+  chart.destroy();
+  return dataUrl;
+};
+
 /**
  * Download data as CSV file
  * @param {string} filename - Name of the file (without extension)
@@ -862,5 +935,755 @@ ${repDrawingRels}
   } catch (error) {
     console.error('Excel Export error:', error);
     throw new Error(`Failed to generate monthly report: ${error.message}`);
+  }
+};
+
+/**
+ * Generate comprehensive monthly report with 6 tabs for all data types (Costing, Rental, SLA)
+ * @param {Object} params - Parameters object
+ * @param {Array} params.costingData - Costing entries
+ * @param {Array} params.rentalData - Rental income entries
+ * @param {Array} params.slaData - SLA income entries
+ * @param {string} params.month - Month name (e.g., "December")
+ * @param {number} params.year - Year (e.g., 2025)
+ * @param {Array} params.selectedJobTypes - Filtered job types
+ */
+export const generateComprehensiveMonthlyReport = async ({
+  costingData,
+  rentalData,
+  slaData,
+  month,
+  year,
+  selectedJobTypes = []
+}) => {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'FleetFlow';
+    workbook.created = new Date();
+
+    // Color palette
+    const colors = {
+      primary: '4285F4',
+      secondary: '34A853',
+      warning: 'FBBC05',
+      danger: 'EA4335',
+      headerBg: '1F4E79',
+      headerText: 'FFFFFF',
+      totalRowBg: 'D9E2F3',
+      alternateBg: 'F2F2F2'
+    };
+
+    const currencyFormat = 'R#,##0.00';
+    const percentFormat = '0.00%';
+
+    // Merge all data sources
+    const allEntriesRaw = [
+      ...costingData.map(e => ({
+        ...e,
+        source: 'Costing',
+        sales: parseFloat(e.total_customer || 0),
+        cost: parseFloat(e.total_expenses || 0),
+        profit: parseFloat(e.profit || 0),
+        job_type: e.job_description || 'Other',
+        rep: e.rep || 'Unknown',
+        customer: e.customer || '-',
+        job_number: e.job_number || '-',
+        invoice_number: e.invoice_number || '-',
+        date: e.date || '',
+      })),
+      ...rentalData.map(e => ({
+        ...e,
+        source: 'Rental',
+        sales: parseFloat(e.amount || 0),
+        cost: 0,
+        profit: parseFloat(e.amount || 0),
+        job_type: 'Rental',
+        rep: e.rep || 'SLA/Rental',
+        customer: e.equipment_name || '-',
+        job_number: '-',
+        invoice_number: e.invoice_number || '-',
+        date: e.date || '',
+      })),
+      ...slaData.map(e => ({
+        ...e,
+        source: 'SLA',
+        sales: parseFloat(e.amount || 0),
+        cost: 0,
+        profit: parseFloat(e.amount || 0),
+        job_type: 'SLA',
+        rep: e.rep || 'SLA/Rental',
+        customer: e.unit_name || '-',
+        job_number: '-',
+        invoice_number: e.invoice_number || '-',
+        date: e.date || '',
+      })),
+    ];
+
+    // Filter by selected job types if provided
+    const allEntries = selectedJobTypes.length > 0
+      ? allEntriesRaw.filter(e => selectedJobTypes.includes(e.job_type))
+      : allEntriesRaw;
+
+    // Calculate summaries
+    const jobTypeSummary = {};
+    allEntries.forEach(entry => {
+      const jobType = entry.job_type || 'Other';
+      if (!jobTypeSummary[jobType]) {
+        jobTypeSummary[jobType] = { sales: 0, cost: 0, profit: 0, count: 0 };
+      }
+      jobTypeSummary[jobType].sales += entry.sales;
+      jobTypeSummary[jobType].cost += entry.cost;
+      jobTypeSummary[jobType].profit += entry.profit;
+      jobTypeSummary[jobType].count += 1;
+    });
+
+    const repSummary = {};
+    allEntries.forEach(entry => {
+      const rep = entry.rep || 'Unknown';
+      if (!repSummary[rep]) {
+        repSummary[rep] = { sales: 0, cost: 0, profit: 0, count: 0, jobTypes: {} };
+      }
+      repSummary[rep].sales += entry.sales;
+      repSummary[rep].cost += entry.cost;
+      repSummary[rep].profit += entry.profit;
+      repSummary[rep].count += 1;
+      const jt = entry.job_type || 'Other';
+      repSummary[rep].jobTypes[jt] = (repSummary[rep].jobTypes[jt] || 0) + entry.sales;
+    });
+
+    const totalSales = Object.values(jobTypeSummary).reduce((sum, v) => sum + v.sales, 0);
+    const totalCost = Object.values(jobTypeSummary).reduce((sum, v) => sum + v.cost, 0);
+    const totalProfit = Object.values(jobTypeSummary).reduce((sum, v) => sum + v.profit, 0);
+
+    // Helper function to style header row
+    const styleHeaderRow = (row) => {
+      row.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.headerBg } };
+        cell.font = { bold: true, color: { argb: colors.headerText } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    };
+
+    const styleTotalRow = (row) => {
+      row.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.totalRowBg } };
+        cell.font = { bold: true };
+        cell.border = {
+          top: { style: 'medium' },
+          bottom: { style: 'medium' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    };
+
+    // ============= Sheet 1: Cover Page =============
+    const ws1 = workbook.addWorksheet('Cover');
+    ws1.mergeCells('A2:E6');
+    const coverTitle = ws1.getCell('A2');
+    coverTitle.value = `Monthly Costing Report\n${month} ${year}`;
+    coverTitle.font = { size: 24, bold: true, color: { argb: colors.primary } };
+    coverTitle.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+    ws1.mergeCells('A8:E9');
+    const coverSystem = ws1.getCell('A8');
+    coverSystem.value = 'FleetFlow Management System';
+    coverSystem.font = { size: 14, italic: true };
+    coverSystem.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    ws1.mergeCells('A11:B11');
+    ws1.getCell('A11').value = 'Total Sales:';
+    ws1.getCell('A11').font = { bold: true };
+    ws1.getCell('C11').value = totalSales;
+    ws1.getCell('C11').numFmt = currencyFormat;
+    ws1.getCell('C11').font = { bold: true, color: { argb: colors.primary } };
+
+    ws1.mergeCells('A12:B12');
+    ws1.getCell('A12').value = 'Total Cost:';
+    ws1.getCell('A12').font = { bold: true };
+    ws1.getCell('C12').value = totalCost;
+    ws1.getCell('C12').numFmt = currencyFormat;
+    ws1.getCell('C12').font = { bold: true, color: { argb: colors.danger } };
+
+    ws1.mergeCells('A13:B13');
+    ws1.getCell('A13').value = 'Total Profit:';
+    ws1.getCell('A13').font = { bold: true };
+    ws1.getCell('C13').value = totalProfit;
+    ws1.getCell('C13').numFmt = currencyFormat;
+    ws1.getCell('C13').font = { bold: true, color: { argb: colors.secondary } };
+
+    ws1.mergeCells('A14:B14');
+    ws1.getCell('A14').value = 'Overall Margin:';
+    ws1.getCell('A14').font = { bold: true };
+    const overallMargin = totalSales > 0 ? totalProfit / totalSales : 0;
+    ws1.getCell('C14').value = overallMargin;
+    ws1.getCell('C14').numFmt = percentFormat;
+    ws1.getCell('C14').font = { bold: true };
+
+    ws1.mergeCells('A16:B16');
+    ws1.getCell('A16').value = 'Total Entries:';
+    ws1.getCell('A16').font = { bold: true };
+    ws1.getCell('C16').value = allEntries.length;
+    ws1.getCell('C16').font = { bold: true };
+
+    ws1.mergeCells('A18:E19');
+    const generatedText = ws1.getCell('A18');
+    generatedText.value = `Generated on ${new Date().toLocaleDateString('en-ZA')}\nat ${new Date().toLocaleTimeString('en-ZA')}`;
+    generatedText.font = { size: 10, color: { argb: '808080' } };
+    generatedText.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+    ws1.columns = [{ width: 15 }, { width: 15 }, { width: 20 }, { width: 15 }, { width: 15 }];
+
+    // ============= Sheet 2: Detailed Entries =============
+    const ws2 = workbook.addWorksheet('Detailed Entries');
+    ws2.mergeCells('A1:J1');
+    const detailTitle = ws2.getCell('A1');
+    detailTitle.value = `Detailed Entries - ${month} ${year}`;
+    detailTitle.font = { size: 16, bold: true, color: { argb: colors.headerBg } };
+    detailTitle.alignment = { horizontal: 'center' };
+
+    const detailHeaders = ['Date', 'Source', 'Rep', 'Customer', 'Job Type', 'Job #', 'Invoice #', 'Sales', 'Cost', 'Profit', 'Margin %'];
+    ws2.getRow(3).values = detailHeaders;
+    styleHeaderRow(ws2.getRow(3));
+
+    let rowIdx = 4;
+    allEntries.forEach((entry, idx) => {
+      const margin = entry.sales > 0 ? (entry.profit / entry.sales) * 100 : 0;
+      const row = ws2.getRow(rowIdx);
+      row.values = [
+        entry.date ? new Date(entry.date) : '',
+        entry.source,
+        entry.rep,
+        entry.customer,
+        entry.job_type,
+        entry.job_number,
+        entry.invoice_number,
+        entry.sales,
+        entry.cost,
+        entry.profit,
+        margin / 100
+      ];
+
+      if (idx % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.alternateBg } };
+        });
+      }
+
+      row.getCell(1).numFmt = 'yyyy-mm-dd';
+      row.getCell(8).numFmt = currencyFormat;
+      row.getCell(9).numFmt = currencyFormat;
+      row.getCell(10).numFmt = currencyFormat;
+      row.getCell(11).numFmt = percentFormat;
+
+      // Color margin
+      const marginCell = row.getCell(11);
+      if (margin < 30) {
+        marginCell.font = { bold: true, color: { argb: colors.danger } };
+      } else if (margin < 40) {
+        marginCell.font = { bold: true, color: { argb: 'DAA520' } };
+      } else {
+        marginCell.font = { bold: true, color: { argb: colors.secondary } };
+      }
+
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      rowIdx++;
+    });
+
+    // Totals
+    const detailTotal = ws2.getRow(rowIdx);
+    detailTotal.values = ['', '', '', '', '', '', 'TOTAL', totalSales, totalCost, totalProfit, overallMargin];
+    styleTotalRow(detailTotal);
+    detailTotal.getCell(8).numFmt = currencyFormat;
+    detailTotal.getCell(9).numFmt = currencyFormat;
+    detailTotal.getCell(10).numFmt = currencyFormat;
+    detailTotal.getCell(11).numFmt = percentFormat;
+
+    ws2.columns = [
+      { width: 12 }, { width: 10 }, { width: 12 }, { width: 20 }, { width: 15 },
+      { width: 12 }, { width: 12 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 10 }
+    ];
+
+    // ============= Sheet 3: Summary by Job Type =============
+    const ws3 = workbook.addWorksheet('Summary by Job Type');
+    ws3.mergeCells('A1:F1');
+    const summaryTitle = ws3.getCell('A1');
+    summaryTitle.value = `Summary by Job Type - ${month} ${year}`;
+    summaryTitle.font = { size: 16, bold: true, color: { argb: colors.headerBg } };
+    summaryTitle.alignment = { horizontal: 'center' };
+
+    ws3.getRow(3).values = ['Job Type', 'Sales', 'Cost', 'Profit', 'Margin %', 'Count'];
+    styleHeaderRow(ws3.getRow(3));
+
+    rowIdx = 4;
+    const jobTypeEntries = Object.entries(jobTypeSummary).sort((a, b) => b[1].sales - a[1].sales);
+
+    jobTypeEntries.forEach(([jobType, values], idx) => {
+      const margin = values.sales > 0 ? values.profit / values.sales : 0;
+      const row = ws3.getRow(rowIdx);
+      row.values = [jobType, values.sales, values.cost, values.profit, margin, values.count];
+
+      if (idx % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.alternateBg } };
+        });
+      }
+
+      row.getCell(2).numFmt = currencyFormat;
+      row.getCell(3).numFmt = currencyFormat;
+      row.getCell(4).numFmt = currencyFormat;
+      row.getCell(5).numFmt = percentFormat;
+
+      const marginCell = row.getCell(5);
+      if (margin < 0.30) {
+        marginCell.font = { bold: true, color: { argb: colors.danger } };
+      } else if (margin < 0.40) {
+        marginCell.font = { bold: true, color: { argb: 'DAA520' } };
+      } else {
+        marginCell.font = { bold: true, color: { argb: colors.secondary } };
+      }
+
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      rowIdx++;
+    });
+
+    const summaryTotal = ws3.getRow(rowIdx);
+    summaryTotal.values = ['TOTAL', totalSales, totalCost, totalProfit, overallMargin, allEntries.length];
+    styleTotalRow(summaryTotal);
+    summaryTotal.getCell(2).numFmt = currencyFormat;
+    summaryTotal.getCell(3).numFmt = currencyFormat;
+    summaryTotal.getCell(4).numFmt = currencyFormat;
+    summaryTotal.getCell(5).numFmt = percentFormat;
+
+    ws3.columns = [{ width: 25 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 12 }, { width: 10 }];
+
+    // ============= Sheet 4: Sales by Rep =============
+    const ws4 = workbook.addWorksheet('Sales by Rep');
+    ws4.mergeCells('A1:G1');
+    const repTitle = ws4.getCell('A1');
+    repTitle.value = `Sales by Rep - ${month} ${year}`;
+    repTitle.font = { size: 16, bold: true, color: { argb: colors.headerBg } };
+    repTitle.alignment = { horizontal: 'center' };
+
+    ws4.getRow(3).values = ['Rep', 'Sales', 'Cost', 'Profit', 'Margin %', 'Jobs', 'Avg Job Value'];
+    styleHeaderRow(ws4.getRow(3));
+
+    rowIdx = 4;
+    const repEntries = Object.entries(repSummary).sort((a, b) => b[1].sales - a[1].sales);
+
+    repEntries.forEach(([rep, values], idx) => {
+      const margin = values.sales > 0 ? values.profit / values.sales : 0;
+      const avgJob = values.count > 0 ? values.sales / values.count : 0;
+      const row = ws4.getRow(rowIdx);
+      row.values = [rep, values.sales, values.cost, values.profit, margin, values.count, avgJob];
+
+      if (idx % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.alternateBg } };
+        });
+      }
+
+      row.getCell(2).numFmt = currencyFormat;
+      row.getCell(3).numFmt = currencyFormat;
+      row.getCell(4).numFmt = currencyFormat;
+      row.getCell(5).numFmt = percentFormat;
+      row.getCell(7).numFmt = currencyFormat;
+
+      const marginCell = row.getCell(5);
+      if (margin < 0.30) {
+        marginCell.font = { bold: true, color: { argb: colors.danger } };
+      } else if (margin < 0.40) {
+        marginCell.font = { bold: true, color: { argb: 'DAA520' } };
+      } else {
+        marginCell.font = { bold: true, color: { argb: colors.secondary } };
+      }
+
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      rowIdx++;
+    });
+
+    const repTotal = ws4.getRow(rowIdx);
+    const avgJobOverall = allEntries.length > 0 ? totalSales / allEntries.length : 0;
+    repTotal.values = ['TOTAL', totalSales, totalCost, totalProfit, overallMargin, allEntries.length, avgJobOverall];
+    styleTotalRow(repTotal);
+    repTotal.getCell(2).numFmt = currencyFormat;
+    repTotal.getCell(3).numFmt = currencyFormat;
+    repTotal.getCell(4).numFmt = currencyFormat;
+    repTotal.getCell(5).numFmt = percentFormat;
+    repTotal.getCell(7).numFmt = currencyFormat;
+
+    ws4.columns = [{ width: 15 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 12 }, { width: 8 }, { width: 15 }];
+
+    // ============= Sheet 5: Rep Breakdown (Rep x Job Type Matrix) =============
+    const ws5 = workbook.addWorksheet('Rep Breakdown');
+    ws5.mergeCells('A1:H1');
+    const breakdownTitle = ws5.getCell('A1');
+    breakdownTitle.value = `Rep Breakdown by Job Type - ${month} ${year}`;
+    breakdownTitle.font = { size: 16, bold: true, color: { argb: colors.headerBg } };
+    breakdownTitle.alignment = { horizontal: 'center' };
+
+    const allJobTypes = [...new Set(allEntries.map(e => e.job_type))].sort();
+    const breakdownHeaders = ['Rep', ...allJobTypes, 'Total'];
+    ws5.getRow(3).values = breakdownHeaders;
+    styleHeaderRow(ws5.getRow(3));
+
+    rowIdx = 4;
+    const allReps = Object.keys(repSummary).sort();
+
+    allReps.forEach((rep, idx) => {
+      const rowData = [rep];
+      let repTotal = 0;
+
+      allJobTypes.forEach(jobType => {
+        const amount = repSummary[rep].jobTypes[jobType] || 0;
+        rowData.push(amount);
+        repTotal += amount;
+      });
+      rowData.push(repTotal);
+
+      const row = ws5.getRow(rowIdx);
+      row.values = rowData;
+
+      if (idx % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.alternateBg } };
+        });
+      }
+
+      for (let i = 2; i <= rowData.length; i++) {
+        row.getCell(i).numFmt = currencyFormat;
+        row.getCell(i).alignment = { horizontal: 'right' };
+      }
+
+      row.getCell(rowData.length).font = { bold: true };
+      row.getCell(rowData.length).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'E2EFDA' }
+      };
+
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      rowIdx++;
+    });
+
+    const breakdownTotalRow = ['TOTAL'];
+    let grandTotal = 0;
+    allJobTypes.forEach(jobType => {
+      const jobTypeTotal = jobTypeSummary[jobType]?.sales || 0;
+      breakdownTotalRow.push(jobTypeTotal);
+      grandTotal += jobTypeTotal;
+    });
+    breakdownTotalRow.push(grandTotal);
+
+    const breakdownTotal = ws5.getRow(rowIdx);
+    breakdownTotal.values = breakdownTotalRow;
+    styleTotalRow(breakdownTotal);
+    for (let i = 2; i <= breakdownTotalRow.length; i++) {
+      breakdownTotal.getCell(i).numFmt = currencyFormat;
+    }
+
+    ws5.columns = [{ width: 15 }, ...allJobTypes.map(() => ({ width: 14 })), { width: 16 }];
+
+    // ============= Sheet 6: Performance Comparison =============
+    const ws6 = workbook.addWorksheet('Performance');
+    ws6.mergeCells('A1:F1');
+    const perfTitle = ws6.getCell('A1');
+    perfTitle.value = `Performance Metrics - ${month} ${year}`;
+    perfTitle.font = { size: 16, bold: true, color: { argb: colors.headerBg } };
+    perfTitle.alignment = { horizontal: 'center' };
+
+    // Top performers by sales
+    ws6.mergeCells('A3:F3');
+    ws6.getCell('A3').value = 'Top Performers by Sales';
+    ws6.getCell('A3').font = { size: 14, bold: true };
+    ws6.getCell('A3').alignment = { horizontal: 'left' };
+
+    ws6.getRow(4).values = ['Rank', 'Rep', 'Sales', 'Profit', 'Margin %', 'Jobs'];
+    styleHeaderRow(ws6.getRow(4));
+
+    rowIdx = 5;
+    const topReps = repEntries.slice(0, 10);
+    topReps.forEach(([rep, values], idx) => {
+      const margin = values.sales > 0 ? values.profit / values.sales : 0;
+      const row = ws6.getRow(rowIdx);
+      row.values = [idx + 1, rep, values.sales, values.profit, margin, values.count];
+
+      row.getCell(3).numFmt = currencyFormat;
+      row.getCell(4).numFmt = currencyFormat;
+      row.getCell(5).numFmt = percentFormat;
+
+      if (idx < 3) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD700' } };
+          cell.font = { bold: true };
+        });
+      } else if (idx % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.alternateBg } };
+        });
+      }
+
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      rowIdx++;
+    });
+
+    rowIdx += 2;
+
+    // Top job types by profitability
+    ws6.mergeCells(`A${rowIdx}:F${rowIdx}`);
+    ws6.getCell(`A${rowIdx}`).value = 'Top Job Types by Profitability';
+    ws6.getCell(`A${rowIdx}`).font = { size: 14, bold: true };
+    ws6.getCell(`A${rowIdx}`).alignment = { horizontal: 'left' };
+
+    rowIdx++;
+    ws6.getRow(rowIdx).values = ['Rank', 'Job Type', 'Sales', 'Profit', 'Margin %', 'Count'];
+    styleHeaderRow(ws6.getRow(rowIdx));
+
+    rowIdx++;
+    const topJobTypes = jobTypeEntries.slice(0, 10);
+    topJobTypes.forEach(([jobType, values], idx) => {
+      const margin = values.sales > 0 ? values.profit / values.sales : 0;
+      const row = ws6.getRow(rowIdx);
+      row.values = [idx + 1, jobType, values.sales, values.profit, margin, values.count];
+
+      row.getCell(3).numFmt = currencyFormat;
+      row.getCell(4).numFmt = currencyFormat;
+      row.getCell(5).numFmt = percentFormat;
+
+      if (idx < 3) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD700' } };
+          cell.font = { bold: true };
+        });
+      } else if (idx % 2 === 1) {
+        row.eachCell((cell) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.alternateBg } };
+        });
+      }
+
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      rowIdx++;
+    });
+
+    ws6.columns = [{ width: 8 }, { width: 20 }, { width: 18 }, { width: 18 }, { width: 12 }, { width: 10 }];
+
+    // ============= Sheet 7: Charts (embedded images) =============
+    // Note: ExcelJS doesn't create native Excel charts; we embed PNG images instead.
+    const ws7 = workbook.addWorksheet('Charts');
+    ws7.mergeCells('A1:K1');
+    const chartsTitle = ws7.getCell('A1');
+    chartsTitle.value = `Charts - ${month} ${year}`;
+    chartsTitle.font = { size: 16, bold: true, color: { argb: colors.headerBg } };
+    chartsTitle.alignment = { horizontal: 'center' };
+
+    // Build chart data
+    const repChartData = repEntries
+      .map(([rep, values]) => ({ rep, sales: values.sales }))
+      .filter((r) => r.sales > 0);
+
+    const jobTypeChartData = jobTypeEntries
+      .map(([jobType, values]) => ({ jobType, sales: values.sales }))
+      .filter((j) => j.sales > 0);
+
+    // Embed: Sales by Rep pie
+    if (repChartData.length > 0) {
+      const repPieUrl = await createPieChartPngDataUrl({
+        title: 'Sales by Rep',
+        labels: repChartData.map((r) => r.rep),
+        values: repChartData.map((r) => r.sales),
+      });
+      const repImgId = workbook.addImage({ base64: repPieUrl, extension: 'png' });
+      ws7.addImage(repImgId, {
+        tl: { col: 0, row: 2 },
+        ext: { width: 520, height: 320 },
+      });
+    }
+
+    // Embed: Sales by Job Type pie
+    if (jobTypeChartData.length > 0) {
+      const jtPieUrl = await createPieChartPngDataUrl({
+        title: 'Sales by Job Type',
+        labels: jobTypeChartData.map((j) => j.jobType),
+        values: jobTypeChartData.map((j) => j.sales),
+      });
+      const jtImgId = workbook.addImage({ base64: jtPieUrl, extension: 'png' });
+      ws7.addImage(jtImgId, {
+        tl: { col: 7, row: 2 },
+        ext: { width: 520, height: 320 },
+      });
+    }
+
+    // Embed: Rep breakdown pies (up to 15 reps by sales)
+    const topRepBreakdowns = repEntries
+      .slice(0, 15)
+      .map(([rep, values]) => ({ rep, jobTypes: values.jobTypes || {} }))
+      .filter((r) => Object.keys(r.jobTypes).length > 0);
+
+    // Layout grid: 3 across
+    const repTileCols = 5;
+    const repTileRows = 22;
+    for (let i = 0; i < topRepBreakdowns.length; i++) {
+      const item = topRepBreakdowns[i];
+      const entries = Object.entries(item.jobTypes)
+        .map(([k, v]) => ({ k, v: Number(v || 0) }))
+        .filter((e) => e.v > 0)
+        .sort((a, b) => b.v - a.v);
+
+      if (entries.length === 0) continue;
+
+      const repBreakdownUrl = await createPieChartPngDataUrl({
+        title: item.rep,
+        labels: entries.map((e) => e.k),
+        values: entries.map((e) => e.v),
+        width: 520,
+        height: 340,
+      });
+      const imgId = workbook.addImage({ base64: repBreakdownUrl, extension: 'png' });
+
+      const gridRow = Math.floor(i / 3);
+      const gridCol = i % 3;
+      const tileStartCol = gridCol * repTileCols;
+      const tileStartRow = 20 + gridRow * repTileRows;
+      ws7.addImage(imgId, {
+        tl: { col: tileStartCol, row: tileStartRow },
+        ext: { width: 360, height: 240 },
+      });
+
+      // Table under the chart: top job types + (optional) Other
+      const total = entries.reduce((sum, e) => sum + e.v, 0);
+      const topN = 5;
+      const topEntries = entries.slice(0, topN);
+      const otherSum = entries.slice(topN).reduce((sum, e) => sum + e.v, 0);
+
+      const tableRows = [
+        ...topEntries,
+        ...(otherSum > 0 ? [{ k: 'Other', v: otherSum }] : []),
+      ];
+
+      const tableStart = tileStartRow + 16;
+
+      // Rep label
+      ws7.getCell(tableStart, tileStartCol + 1).value = item.rep;
+      ws7.getCell(tableStart, tileStartCol + 1).font = { bold: true };
+
+      // Header
+      const headerRow = ws7.getRow(tableStart + 1);
+      headerRow.getCell(tileStartCol + 1).value = 'Job Type';
+      headerRow.getCell(tileStartCol + 2).value = 'Sales';
+      headerRow.getCell(tileStartCol + 3).value = '%';
+      [tileStartCol + 1, tileStartCol + 2, tileStartCol + 3].forEach((col) => {
+        const cell = headerRow.getCell(col);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.headerBg } };
+        cell.font = { bold: true, color: { argb: colors.headerText }, size: 9 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' },
+        };
+      });
+
+      // Body
+      for (let r = 0; r < Math.min(tableRows.length, 6); r++) {
+        const row = ws7.getRow(tableStart + 2 + r);
+        const entry = tableRows[r];
+        row.getCell(tileStartCol + 1).value = entry.k;
+        row.getCell(tileStartCol + 2).value = entry.v;
+        row.getCell(tileStartCol + 3).value = total > 0 ? entry.v / total : 0;
+
+        row.getCell(tileStartCol + 2).numFmt = currencyFormat;
+        row.getCell(tileStartCol + 3).numFmt = percentFormat;
+        [tileStartCol + 1, tileStartCol + 2, tileStartCol + 3].forEach((col) => {
+          const cell = row.getCell(col);
+          if (r % 2 === 1) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.alternateBg } };
+          }
+          cell.border = {
+            top: { style: 'thin' },
+            bottom: { style: 'thin' },
+            left: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+        });
+        row.getCell(tileStartCol + 1).alignment = { horizontal: 'left' };
+        row.getCell(tileStartCol + 2).alignment = { horizontal: 'right' };
+        row.getCell(tileStartCol + 3).alignment = { horizontal: 'right' };
+      }
+    }
+
+    ws7.columns = Array.from({ length: 12 }).map(() => ({ width: 12 }));
+
+    // Generate and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const fileName = `${month}_${year}_Monthly_Report.xlsx`;
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    return { success: true, fileName };
+  } catch (error) {
+    console.error('Comprehensive Excel Export error:', error);
+    throw new Error(`Failed to generate comprehensive monthly report: ${error.message}`);
   }
 };

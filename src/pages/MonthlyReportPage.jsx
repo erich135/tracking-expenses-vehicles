@@ -19,7 +19,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Printer, Download, ChevronLeft, ChevronRight, FileText, CalendarIcon, TableIcon, BarChartIcon, FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { downloadAsCsv, downloadAsPdf } from '@/lib/exportUtils';
+import { downloadAsCsv, downloadAsPdf, generateComprehensiveMonthlyReport } from '@/lib/exportUtils';
 
 const COLORS = ['#4285F4', '#FBBC05', '#34A853', '#EA4335', '#9C27B0', '#03A9F4', '#8BC34A', '#FF7043', '#9575CD', '#4DB6AC', '#FFCA28', '#E91E63', '#795548', '#607D8B'];
 
@@ -450,8 +450,27 @@ const MonthlyReportPage = () => {
     return 'text-green-600';
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    try {
+      await generateComprehensiveMonthlyReport({
+        costingData,
+        rentalData,
+        slaData,
+        month: months[selectedMonth],
+        year: selectedYear,
+        selectedJobTypes
+      });
+      toast({
+        title: 'Report exported successfully',
+        description: 'Excel file has been downloaded',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Export failed',
+        description: error.message || 'Failed to export report',
+      });
+    }
   };
 
   const CustomTooltip = ({ active, payload }) => {
@@ -1216,8 +1235,8 @@ const MonthlyReportPage = () => {
               />
             </div>
             <Button onClick={handlePrint} className="bg-green-600 hover:bg-green-700">
-              <Printer className="w-4 h-4 mr-2" />
-              Print / Save PDF
+              <FileDown className="w-4 h-4 mr-2" />
+              Export to Excel
             </Button>
           </div>
         </div>
