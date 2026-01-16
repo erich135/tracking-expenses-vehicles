@@ -14,7 +14,18 @@ export const AuthProvider = ({ children }) => {
 
   const callInviteApi = async (path, payload) => {
     try {
-      if (!session?.access_token) return { skipped: true };
+      // Always pull a fresh session at call time.
+      // The in-memory `session` state can be stale if the tab has been open a long time.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const initialToken = sessionData?.session?.access_token || session?.access_token;
+      if (!initialToken) {
+        return {
+          error: {
+            code: 'NO_SESSION',
+            message: 'Your session has expired. Please sign out and sign in again.',
+          },
+        };
+      }
 
       const doFetch = async (token) => {
         const response = await fetch(path, {
@@ -30,26 +41,34 @@ export const AuthProvider = ({ children }) => {
       };
 
       // Initial attempt
-      let { response, data } = await doFetch(session.access_token);
+      let { response, data } = await doFetch(initialToken);
       if (response.status === 401) {
-        // Try to fetch the latest session first
-        const fresh = await supabase.auth.getSession();
-        const latestToken = fresh?.data?.session?.access_token;
-        if (latestToken && latestToken !== session.access_token) {
-          ({ response, data } = await doFetch(latestToken));
+        // Try explicit refresh, then retry once.
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        const refreshedSession = refreshData?.session || null;
+        const refreshedToken = refreshedSession?.access_token || null;
+        if (!refreshError && refreshedSession) {
+          // Keep context state aligned with refreshed token.
+          setSession(refreshedSession);
         }
-        // If still unauthorized, try explicit refresh
-        if (response.status === 401) {
-          const { data: refresh } = await supabase.auth.refreshSession();
-          const newToken = refresh?.session?.access_token;
-          if (newToken) {
-            ({ response, data } = await doFetch(newToken));
-          }
+        if (refreshedToken) {
+          ({ response, data } = await doFetch(refreshedToken));
         }
       }
 
       if (!response.ok) {
-        return { error: { message: data?.error || 'Invite request failed' }, details: data };
+        const serverMessage = data?.error || 'Invite request failed';
+        if (response.status === 401) {
+          return {
+            error: {
+              code: 'SESSION_EXPIRED',
+              message: 'Your session is invalid or expired. Please sign out and sign in again, then retry.',
+            },
+            details: { serverMessage, ...data },
+          };
+        }
+
+        return { error: { message: serverMessage }, details: data };
       }
       return { data };
     } catch (err) {
@@ -67,7 +86,12 @@ export const AuthProvider = ({ children }) => {
     if (apiResult?.data?.ok && apiResult.data.actionLink) {
       return { actionLink: apiResult.data.actionLink };
     }
-    return { error: { message: apiResult?.error?.message || 'Failed to generate invite link' } };
+    return {
+      error: {
+        message: apiResult?.error?.message || 'Failed to generate invite link',
+        code: apiResult?.error?.code,
+      },
+    };
   };
 
   // ✅ Handle session and user setup
@@ -232,6 +256,14 @@ export const AuthProvider = ({ children }) => {
         lastName,
       });
 
+      if (apiResult?.error?.code === 'NO_SESSION' || apiResult?.error?.code === 'SESSION_EXPIRED') {
+        return {
+          data: newUser,
+          warning:
+            'User was added, but your admin session is invalid/expired so the invite could not be sent. Please sign out and sign in again, then use “Resend invite” or “Copy link”.',
+        };
+      }
+
       if (apiResult?.data?.ok) {
         const actionLink = apiResult.data.actionLink;
         const warning = apiResult.data.emailSent
@@ -330,8 +362,10 @@ export const AuthProvider = ({ children }) => {
     // Do not send reset-password email for invites; surface manual-link guidance instead
     return {
       error: {
-        message:
-          'Could not send the invite automatically. Please use the manual link if provided, or try again shortly.',
+        message: apiResult?.error?.message
+          ? apiResult.error.message
+          : 'Could not send the invite automatically. Please use the manual link if provided, or try again shortly.',
+        code: apiResult?.error?.code,
       },
     };
   };
