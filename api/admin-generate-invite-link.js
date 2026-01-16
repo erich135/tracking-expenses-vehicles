@@ -3,11 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 const SUPER_ADMIN_EMAIL = 'erich.oberholzer@gmail.com';
 
 function getSupabaseUrl() {
-  return process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const raw = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  return typeof raw === 'string' ? raw.trim() : raw;
 }
 
 function getServiceRoleKey() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const raw = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return typeof raw === 'string' ? raw.trim() : raw;
 }
 
 function getBearerToken(req) {
@@ -19,7 +21,7 @@ function getBearerToken(req) {
 
 function normalizeSupabaseUrl(url) {
   if (!url || typeof url !== 'string') return null;
-  return url.replace(/\/+$/, '');
+  return url.trim().replace(/\/+$/, '');
 }
 
 function base64UrlDecode(input) {
