@@ -78,8 +78,8 @@ const ViewCostingsPage = () => {
   };
 
   const getMarginColor = (margin) => {
-    if (margin < 30) return 'text-red-600 font-bold';
-    if (margin >= 30 && margin < 40) return 'text-yellow-500 font-bold';
+    if (margin <= 30) return 'text-red-600 font-bold';
+    if (margin < 40) return 'text-yellow-500 font-bold';
     return 'text-green-600 font-semibold';
   };
 

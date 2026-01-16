@@ -1184,7 +1184,7 @@ export const generateComprehensiveMonthlyReport = async ({
 
       // Color margin
       const marginCell = row.getCell(11);
-      if (margin < 30) {
+      if (margin <= 30) {
         marginCell.font = { bold: true, color: { argb: colors.danger } };
       } else if (margin < 40) {
         marginCell.font = { bold: true, color: { argb: 'DAA520' } };

@@ -411,8 +411,8 @@ const MonthlyReportPage = () => {
   };
 
   const getDetailedMarginColor = (margin) => {
-    if (margin >= 60) return "text-green-600";
-    if (margin >= 40) return "text-yellow-600";
+    if (margin >= 40) return "text-green-600";
+    if (margin > 30) return "text-yellow-600";
     return "text-red-600";
   };
 
@@ -445,7 +445,7 @@ const MonthlyReportPage = () => {
   };
 
   const getMarginColor = (margin) => {
-    if (margin < 30) return 'text-red-600';
+    if (margin <= 30) return 'text-red-600';
     if (margin < 40) return 'text-yellow-600';
     return 'text-green-600';
   };
