@@ -4,12 +4,12 @@ const SUPER_ADMIN_EMAIL = 'erich.oberholzer@gmail.com';
 
 function getSupabaseUrl() {
   const raw = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  return typeof raw === 'string' ? raw.trim() : raw;
+  return typeof raw === 'string' ? raw.replace(/\\n/g, '').trim() : raw;
 }
 
 function getServiceRoleKey() {
   const raw = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return typeof raw === 'string' ? raw.trim() : raw;
+  return typeof raw === 'string' ? raw.replace(/\\n/g, '').trim() : raw;
 }
 
 function getBearerToken(req) {
@@ -21,7 +21,7 @@ function getBearerToken(req) {
 
 function normalizeSupabaseUrl(url) {
   if (!url || typeof url !== 'string') return null;
-  return url.trim().replace(/\/+$/, '');
+  return url.replace(/\\n/g, '').trim().replace(/\/+$/, '');
 }
 
 function base64UrlDecode(input) {
@@ -47,6 +47,11 @@ function decodeJwtClaims(token) {
   } catch {
     return null;
   }
+}
+
+function getJwtRole(token) {
+  const claims = decodeJwtClaims(token);
+  return claims?.role || claims?.user_role || null;
 }
 
 async function requireAdmin(supabaseAdmin, accessToken, supabaseUrl) {
@@ -117,6 +122,17 @@ export default async function handler(req, res) {
     res.status(500).json({
       error: 'Server invite not configured',
       hint: 'Set SUPABASE_URL (or VITE_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY',
+    });
+    return;
+  }
+
+  const serviceRole = getJwtRole(serviceRoleKey);
+  if (serviceRole && serviceRole !== 'service_role') {
+    res.status(500).json({
+      error: 'Server invite not configured',
+      hint:
+        'SUPABASE_SERVICE_ROLE_KEY is not a service_role key. In Vercel, set SUPABASE_SERVICE_ROLE_KEY to the Supabase Project Settings → API → service_role secret (not the anon key).',
+      details: { role: serviceRole },
     });
     return;
   }
