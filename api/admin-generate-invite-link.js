@@ -17,14 +17,68 @@ function getBearerToken(req) {
   return match?.[1] || null;
 }
 
-async function requireAdmin(supabaseAdmin, accessToken) {
+function normalizeSupabaseUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  return url.replace(/\/+$/, '');
+}
+
+function base64UrlDecode(input) {
+  if (!input || typeof input !== 'string') return null;
+  const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = base64.length % 4;
+  const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
+  try {
+    return Buffer.from(padded, 'base64').toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+function decodeJwtClaims(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+  const json = base64UrlDecode(parts[1]);
+  if (!json) return null;
+  try {
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+async function requireAdmin(supabaseAdmin, accessToken, supabaseUrl) {
   if (!accessToken) {
-    return { ok: false, status: 401, message: 'Missing Authorization bearer token' };
+    return {
+      ok: false,
+      status: 401,
+      message: 'Missing Authorization bearer token',
+      hint: 'You may need to sign out and sign in again.',
+    };
+  }
+
+  const normalizedUrl = normalizeSupabaseUrl(supabaseUrl);
+  const expectedIss = normalizedUrl ? `${normalizedUrl}/auth/v1` : null;
+  const claims = decodeJwtClaims(accessToken);
+  if (expectedIss && claims?.iss && claims.iss !== expectedIss) {
+    return {
+      ok: false,
+      status: 401,
+      message: 'Token issuer mismatch',
+      details: { tokenIss: claims.iss, expectedIss },
+      hint: 'The deployed API is likely configured for a different Supabase project. Ensure Vercel env vars SUPABASE_URL (or VITE_SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY match the frontend VITE_SUPABASE_URL.',
+    };
   }
 
   const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
   if (userError || !userData?.user?.email) {
-    return { ok: false, status: 401, message: 'Invalid or expired session' };
+    return {
+      ok: false,
+      status: 401,
+      message: 'Invalid or expired session',
+      details: userError?.message || null,
+      hint: 'If you already signed out/in and this persists, check for a Supabase project mismatch between frontend and Vercel serverless env vars.',
+    };
   }
 
   const requesterEmail = userData.user.email.toLowerCase();
@@ -70,9 +124,9 @@ export default async function handler(req, res) {
   });
 
   const accessToken = getBearerToken(req);
-  const authz = await requireAdmin(supabaseAdmin, accessToken);
+  const authz = await requireAdmin(supabaseAdmin, accessToken, supabaseUrl);
   if (!authz.ok) {
-    res.status(authz.status).json({ error: authz.message });
+    res.status(authz.status).json({ error: authz.message, details: authz.details || null, hint: authz.hint || null });
     return;
   }
 
