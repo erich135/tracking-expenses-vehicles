@@ -1083,62 +1083,230 @@ export const generateComprehensiveMonthlyReport = async ({
       });
     };
 
-    // ============= Sheet 1: Cover Page =============
+    // ============= Sheet 1: Cover Page (styled to match app UI) =============
     const ws1 = workbook.addWorksheet('Cover');
-    ws1.mergeCells('A2:E6');
-    const coverTitle = ws1.getCell('A2');
-    coverTitle.value = `Monthly Costing Report\n${month} ${year}`;
-    coverTitle.font = { size: 24, bold: true, color: { argb: colors.primary } };
-    coverTitle.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-
-    ws1.mergeCells('A8:E9');
-    const coverSystem = ws1.getCell('A8');
-    coverSystem.value = 'FleetFlow Management System';
-    coverSystem.font = { size: 14, italic: true };
-    coverSystem.alignment = { horizontal: 'center', vertical: 'middle' };
-
-    ws1.mergeCells('A11:B11');
-    ws1.getCell('A11').value = 'Total Sales:';
-    ws1.getCell('A11').font = { bold: true };
-    ws1.getCell('C11').value = totalSales;
-    ws1.getCell('C11').numFmt = currencyFormat;
-    ws1.getCell('C11').font = { bold: true, color: { argb: colors.primary } };
-
-    ws1.mergeCells('A12:B12');
-    ws1.getCell('A12').value = 'Total Cost:';
-    ws1.getCell('A12').font = { bold: true };
-    ws1.getCell('C12').value = totalCost;
-    ws1.getCell('C12').numFmt = currencyFormat;
-    ws1.getCell('C12').font = { bold: true, color: { argb: colors.danger } };
-
-    ws1.mergeCells('A13:B13');
-    ws1.getCell('A13').value = 'Total Profit:';
-    ws1.getCell('A13').font = { bold: true };
-    ws1.getCell('C13').value = totalProfit;
-    ws1.getCell('C13').numFmt = currencyFormat;
-    ws1.getCell('C13').font = { bold: true, color: { argb: colors.secondary } };
-
-    ws1.mergeCells('A14:B14');
-    ws1.getCell('A14').value = 'Overall Margin:';
-    ws1.getCell('A14').font = { bold: true };
     const overallMargin = totalSales > 0 ? totalProfit / totalSales : 0;
-    ws1.getCell('C14').value = overallMargin;
-    ws1.getCell('C14').numFmt = percentFormat;
-    ws1.getCell('C14').font = { bold: true };
 
-    ws1.mergeCells('A16:B16');
-    ws1.getCell('A16').value = 'Total Entries:';
-    ws1.getCell('A16').font = { bold: true };
-    ws1.getCell('C16').value = allEntries.length;
-    ws1.getCell('C16').font = { bold: true };
+    // Define the cover area dimensions — 8 columns wide, 30 rows tall
+    const coverCols = 8;
+    const coverRows = 30;
 
-    ws1.mergeCells('A18:E19');
-    const generatedText = ws1.getCell('A18');
-    generatedText.value = `Generated on ${new Date().toLocaleDateString('en-ZA')}\nat ${new Date().toLocaleTimeString('en-ZA')}`;
-    generatedText.font = { size: 10, color: { argb: '808080' } };
-    generatedText.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    // Set column widths for a balanced layout
+    ws1.columns = [
+      { width: 5 },   // A - spacer
+      { width: 22 },  // B
+      { width: 22 },  // C
+      { width: 22 },  // D
+      { width: 22 },  // E
+      { width: 22 },  // F
+      { width: 22 },  // G
+      { width: 5 },   // H - spacer
+    ];
 
-    ws1.columns = [{ width: 15 }, { width: 15 }, { width: 20 }, { width: 15 }, { width: 15 }];
+    // Blue background fill & border for the entire cover area
+    const blueFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1B3A6B' } };
+    const noBorder = {
+      top: { style: 'thin', color: { argb: '1B3A6B' } },
+      bottom: { style: 'thin', color: { argb: '1B3A6B' } },
+      left: { style: 'thin', color: { argb: '1B3A6B' } },
+      right: { style: 'thin', color: { argb: '1B3A6B' } },
+    };
+
+    // Paint entire cover area blue
+    for (let r = 1; r <= coverRows; r++) {
+      ws1.getRow(r).height = r >= 20 && r <= 25 ? 32 : 20;
+      for (let c = 1; c <= coverCols; c++) {
+        const cell = ws1.getRow(r).getCell(c);
+        cell.fill = blueFill;
+        cell.border = noBorder;
+        cell.font = { color: { argb: 'FFFFFF' } };
+      }
+    }
+
+    // Row heights for spacing
+    ws1.getRow(1).height = 30;
+    ws1.getRow(6).height = 8;  // spacer
+    ws1.getRow(8).height = 8;  // spacer before title
+    ws1.getRow(9).height = 42; // title row
+    ws1.getRow(10).height = 8; // spacer
+    ws1.getRow(11).height = 34; // month/year row
+    ws1.getRow(12).height = 15;
+    ws1.getRow(13).height = 4; // thin separator
+    ws1.getRow(14).height = 15;
+    ws1.getRow(15).height = 24; // system name
+    ws1.getRow(16).height = 20; // generated date
+    ws1.getRow(17).height = 10;
+    ws1.getRow(18).height = 10;
+    ws1.getRow(19).height = 8;  // spacer before stats
+
+    // ---- Report icon row ----
+    ws1.mergeCells('A5:H5');
+    const iconCell = ws1.getCell('A5');
+    iconCell.value = '📊';
+    iconCell.font = { size: 36, color: { argb: 'FFFFFF' } };
+    iconCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    iconCell.fill = blueFill;
+
+    // ---- Title: "Monthly Costing Report" ----
+    ws1.mergeCells('A9:H9');
+    const titleCell = ws1.getCell('A9');
+    titleCell.value = 'Monthly Costing Report';
+    titleCell.font = { size: 28, bold: true, color: { argb: 'FFFFFF' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.fill = blueFill;
+
+    // ---- Subtitle: month year ----
+    ws1.mergeCells('A11:H11');
+    const subtitleCell = ws1.getCell('A11');
+    subtitleCell.value = `${month} ${year}`;
+    subtitleCell.font = { size: 20, color: { argb: 'D0D8E8' } };
+    subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    subtitleCell.fill = blueFill;
+
+    // ---- Separator line ----
+    for (let c = 2; c <= 7; c++) {
+      const cell = ws1.getRow(13).getCell(c);
+      cell.fill = blueFill;
+      cell.border = {
+        ...noBorder,
+        bottom: { style: 'thin', color: { argb: '4A7AB5' } },
+      };
+    }
+
+    // ---- FleetFlow Management System ----
+    ws1.mergeCells('A15:H15');
+    const systemCell = ws1.getCell('A15');
+    systemCell.value = 'FleetFlow Management System';
+    systemCell.font = { size: 14, color: { argb: 'B0C4DE' } };
+    systemCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    systemCell.fill = blueFill;
+
+    // ---- Generated date ----
+    ws1.mergeCells('A16:H16');
+    const genCell = ws1.getCell('A16');
+    genCell.value = `Generated: ${new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}, ${new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}`;
+    genCell.font = { size: 10, color: { argb: '8899AA' } };
+    genCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    genCell.fill = blueFill;
+
+    // ---- KPI stat cards row (matching the 4 cards in the app) ----
+    const statRow = 21;
+    const labelRow = 22;
+
+    // Row heights for stat area
+    ws1.getRow(20).height = 20;
+    ws1.getRow(statRow).height = 40;
+    ws1.getRow(labelRow).height = 20;
+    ws1.getRow(23).height = 10;
+
+    // Card backgrounds — slightly lighter blue cards
+    const cardFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1E4D8C' } };
+    const cardBorder = {
+      top: { style: 'thin', color: { argb: '2A5FAA' } },
+      bottom: { style: 'thin', color: { argb: '2A5FAA' } },
+      left: { style: 'thin', color: { argb: '2A5FAA' } },
+      right: { style: 'thin', color: { argb: '2A5FAA' } },
+    };
+
+    // Format values for display
+    const fmtCurrency = (val) => {
+      return 'R ' + val.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    // Stat 1: Total Jobs (col B)
+    ws1.getCell(statRow, 2).value = allEntries.length;
+    ws1.getCell(statRow, 2).font = { size: 22, bold: true, color: { argb: 'FFFFFF' } };
+    ws1.getCell(statRow, 2).alignment = { horizontal: 'center', vertical: 'middle' };
+    ws1.getCell(statRow, 2).fill = cardFill;
+    ws1.getCell(statRow, 2).border = cardBorder;
+    ws1.getCell(labelRow, 2).value = 'Total Jobs';
+    ws1.getCell(labelRow, 2).font = { size: 10, color: { argb: 'A0B4CC' } };
+    ws1.getCell(labelRow, 2).alignment = { horizontal: 'center', vertical: 'top' };
+    ws1.getCell(labelRow, 2).fill = cardFill;
+    ws1.getCell(labelRow, 2).border = cardBorder;
+
+    // Stat 2: Total Sales (cols C-D merged)
+    ws1.mergeCells(statRow, 3, statRow, 4);
+    ws1.getCell(statRow, 3).value = fmtCurrency(totalSales);
+    ws1.getCell(statRow, 3).font = { size: 22, bold: true, color: { argb: 'FFFFFF' } };
+    ws1.getCell(statRow, 3).alignment = { horizontal: 'center', vertical: 'middle' };
+    ws1.getCell(statRow, 3).fill = cardFill;
+    ws1.getCell(statRow, 3).border = cardBorder;
+    ws1.getCell(statRow, 4).fill = cardFill;
+    ws1.getCell(statRow, 4).border = cardBorder;
+    ws1.mergeCells(labelRow, 3, labelRow, 4);
+    ws1.getCell(labelRow, 3).value = 'Total Sales';
+    ws1.getCell(labelRow, 3).font = { size: 10, color: { argb: 'A0B4CC' } };
+    ws1.getCell(labelRow, 3).alignment = { horizontal: 'center', vertical: 'top' };
+    ws1.getCell(labelRow, 3).fill = cardFill;
+    ws1.getCell(labelRow, 3).border = cardBorder;
+    ws1.getCell(labelRow, 4).fill = cardFill;
+    ws1.getCell(labelRow, 4).border = cardBorder;
+
+    // Stat 3: Total Profit (cols E-F merged)
+    ws1.mergeCells(statRow, 5, statRow, 6);
+    ws1.getCell(statRow, 5).value = fmtCurrency(totalProfit);
+    ws1.getCell(statRow, 5).font = { size: 22, bold: true, color: { argb: 'FFFFFF' } };
+    ws1.getCell(statRow, 5).alignment = { horizontal: 'center', vertical: 'middle' };
+    ws1.getCell(statRow, 5).fill = cardFill;
+    ws1.getCell(statRow, 5).border = cardBorder;
+    ws1.getCell(statRow, 6).fill = cardFill;
+    ws1.getCell(statRow, 6).border = cardBorder;
+    ws1.mergeCells(labelRow, 5, labelRow, 6);
+    ws1.getCell(labelRow, 5).value = 'Total Profit';
+    ws1.getCell(labelRow, 5).font = { size: 10, color: { argb: 'A0B4CC' } };
+    ws1.getCell(labelRow, 5).alignment = { horizontal: 'center', vertical: 'top' };
+    ws1.getCell(labelRow, 5).fill = cardFill;
+    ws1.getCell(labelRow, 5).border = cardBorder;
+    ws1.getCell(labelRow, 6).fill = cardFill;
+    ws1.getCell(labelRow, 6).border = cardBorder;
+
+    // Stat 4: Margin (col G)
+    ws1.getCell(statRow, 7).value = `${(overallMargin * 100).toFixed(1)}%`;
+    ws1.getCell(statRow, 7).font = { size: 22, bold: true, color: { argb: 'FFFFFF' } };
+    ws1.getCell(statRow, 7).alignment = { horizontal: 'center', vertical: 'middle' };
+    ws1.getCell(statRow, 7).fill = cardFill;
+    ws1.getCell(statRow, 7).border = cardBorder;
+    ws1.getCell(labelRow, 7).value = 'Margin';
+    ws1.getCell(labelRow, 7).font = { size: 10, color: { argb: 'A0B4CC' } };
+    ws1.getCell(labelRow, 7).alignment = { horizontal: 'center', vertical: 'top' };
+    ws1.getCell(labelRow, 7).fill = cardFill;
+    ws1.getCell(labelRow, 7).border = cardBorder;
+
+    // ---- Summary breakdown below the stat cards ----
+    const summaryStartRow = 25;
+    ws1.getRow(24).height = 15;
+    ws1.getRow(summaryStartRow).height = 22;
+    ws1.getRow(summaryStartRow + 1).height = 22;
+    ws1.getRow(summaryStartRow + 2).height = 22;
+    ws1.getRow(summaryStartRow + 3).height = 22;
+
+    const summaryItems = [
+      { label: 'Total Sales:', value: fmtCurrency(totalSales), color: '6CB4EE' },
+      { label: 'Total Cost:', value: fmtCurrency(totalCost), color: 'EA4335' },
+      { label: 'Total Profit:', value: fmtCurrency(totalProfit), color: '34A853' },
+      { label: 'Overall Margin:', value: `${(overallMargin * 100).toFixed(2)}%`, color: 'FFFFFF' },
+    ];
+
+    summaryItems.forEach((item, idx) => {
+      const r = summaryStartRow + idx;
+      ws1.mergeCells(r, 3, r, 4);
+      ws1.getCell(r, 3).value = item.label;
+      ws1.getCell(r, 3).font = { size: 12, bold: true, color: { argb: 'C0D0E0' } };
+      ws1.getCell(r, 3).alignment = { horizontal: 'right', vertical: 'middle' };
+      ws1.getCell(r, 3).fill = blueFill;
+      ws1.getCell(r, 4).fill = blueFill;
+
+      ws1.mergeCells(r, 5, r, 6);
+      ws1.getCell(r, 5).value = item.value;
+      ws1.getCell(r, 5).font = { size: 12, bold: true, color: { argb: item.color } };
+      ws1.getCell(r, 5).alignment = { horizontal: 'left', vertical: 'middle' };
+      ws1.getCell(r, 5).fill = blueFill;
+      ws1.getCell(r, 6).fill = blueFill;
+    });
+
+    // Hide gridlines on cover sheet
+    ws1.views = [{ showGridLines: false }];
 
     // ============= Sheet 2: Detailed Entries =============
     const ws2 = workbook.addWorksheet('Detailed Entries');
