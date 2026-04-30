@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Edit, Trash2, Search, X } from 'lucide-react';
+import { Edit, Trash2, Search, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 import AddWorkshopJobPage from './AddWorkshopJobPage';
 
@@ -29,7 +29,23 @@ const ViewWorkshopJobsPage = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
   const { toast } = useToast();
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -70,6 +86,24 @@ const ViewWorkshopJobsPage = () => {
     setJobs(filteredData);
     setLoading(false);
   }, [toast, activeFilter]);
+
+  const sortedJobs = React.useMemo(() => {
+    if (!sortField) return jobs;
+    return [...jobs].sort((a, b) => {
+      let aVal, bVal;
+      if (sortField === 'technician') { aVal = a.technicians?.name || ''; bVal = b.technicians?.name || ''; }
+      else if (sortField === 'customer') { aVal = a.customers?.name || a.cash_customer_name || ''; bVal = b.customers?.name || b.cash_customer_name || ''; }
+      else { aVal = a[sortField]; bVal = b[sortField]; }
+      if (aVal === null || aVal === undefined) aVal = '';
+      if (bVal === null || bVal === undefined) bVal = '';
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+  }, [jobs, sortField, sortDirection]);
 
   useEffect(() => {
     fetchJobs();
@@ -132,16 +166,16 @@ const ViewWorkshopJobsPage = () => {
             <Table className="min-w-[1200px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Job No.</TableHead>
-                  <TableHead>Technician</TableHead>
-                  <TableHead>Equipment</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>PO Date</TableHead>
-                  <TableHead>Quote Date</TableHead>
-                  <TableHead>Quote Amt.</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('job_number')}>Job No.<SortIcon field="job_number" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('technician')}>Technician<SortIcon field="technician" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('equipment_detail')}>Equipment<SortIcon field="equipment_detail" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('customer')}>Customer<SortIcon field="customer" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('po_date')}>PO Date<SortIcon field="po_date" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('quote_date')}>Quote Date<SortIcon field="quote_date" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('quote_amount')}>Quote Amt.<SortIcon field="quote_amount" /></TableHead>
                   <TableHead>Overdue</TableHead>
-                  <TableHead>Delivery</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('delivery_date')}>Delivery<SortIcon field="delivery_date" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('status')}>Status<SortIcon field="status" /></TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -151,7 +185,7 @@ const ViewWorkshopJobsPage = () => {
                 ) : jobs.length === 0 ? (
                   <TableRow><TableCell colSpan="11" className="text-center">No jobs found.</TableCell></TableRow>
                 ) : (
-                  jobs.map((job) => {
+                  sortedJobs.map((job) => {
                     const isOverdue = job.po_date && job.days_quoted
                       ? differenceInDays(new Date(), new Date(job.po_date)) > job.days_quoted
                       : false;

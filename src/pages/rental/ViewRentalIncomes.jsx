@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { Download } from 'lucide-react';
+import { Download, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const ViewRentalIncomes = () => {
@@ -14,6 +14,18 @@ const ViewRentalIncomes = () => {
   const [entries, setEntries] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const handleSort = (field) => {
+    if (sortField === field) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -61,6 +73,17 @@ const ViewRentalIncomes = () => {
   const totalAmount = useMemo(() => {
     return entries.reduce((sum, e) => sum + Number(e.amount || 0), 0);
   }, [entries]);
+
+  const sortedEntries = useMemo(() => {
+    if (!sortField) return entries;
+    return [...entries].sort((a, b) => {
+      let aVal = sortField === 'machine' ? (a.rental_equipment?.plant_no || '') : sortField === 'customer' ? (a.customers?.name || '') : a[sortField];
+      let bVal = sortField === 'machine' ? (b.rental_equipment?.plant_no || '') : sortField === 'customer' ? (b.customers?.name || '') : b[sortField];
+      if (aVal == null) aVal = ''; if (bVal == null) bVal = '';
+      if (typeof aVal === 'number' && typeof bVal === 'number') return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      return sortDirection === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+    });
+  }, [entries, sortField, sortDirection]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this rental income entry?')) return;
@@ -159,18 +182,18 @@ const ViewRentalIncomes = () => {
         <table className="min-w-full table-auto text-sm border border-gray-200">
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-2 text-left">Date</th>
-              <th className="p-2 text-left">Machine</th>
-              <th className="p-2 text-left">Customer</th>
-              <th className="p-2 text-left">Rep</th>
-              <th className="p-2 text-left">Invoice</th>
-              <th className="p-2 text-left">Amount</th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('date')}>Date <SortIcon field="date" /></th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('machine')}>Machine <SortIcon field="machine" /></th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('customer')}>Customer <SortIcon field="customer" /></th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('rep_code')}>Rep <SortIcon field="rep_code" /></th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('invoice_number')}>Invoice <SortIcon field="invoice_number" /></th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('amount')}>Amount <SortIcon field="amount" /></th>
               <th className="p-2 text-left">Notes</th>
               <th className="p-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {entries.map((entry) => (
+            {sortedEntries.map((entry) => (
               <tr key={entry.id} className="border-t">
                 <td className="p-2">{entry.date?.split('T')[0]}</td>
                 <td className="p-2">{entry.rental_equipment?.plant_no}</td>

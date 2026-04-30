@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/customSupabaseClient';
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 const MODE = {
   ALL: 'all',
@@ -18,6 +19,22 @@ const VehicleReports = () => {
   // quick filters + search
   const [mode, setMode] = useState(MODE.ALL);
   const [q, setQ] = useState('');
+  const [sortField, setSortField] = useState('km_to_service');
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -69,12 +86,17 @@ const VehicleReports = () => {
 
     // sort: service due soonest first (nulls last)
     list = [...list].sort((a, b) => {
-      const av = a.km_to_service;
-      const bv = b.km_to_service;
+      const av = a[sortField];
+      const bv = b[sortField];
       if (av === null && bv === null) return 0;
       if (av === null) return 1;
       if (bv === null) return -1;
-      return av - bv;
+      if (typeof av === 'number' && typeof bv === 'number') {
+        return sortDirection === 'asc' ? av - bv : bv - av;
+      }
+      return sortDirection === 'asc'
+        ? String(av).localeCompare(String(bv))
+        : String(bv).localeCompare(String(av));
     });
 
     return list;
@@ -152,13 +174,11 @@ const VehicleReports = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="table-head-bold">
-Vehicle</TableHead>
-              <TableHead className="table-head-bold">
-Reg No.</TableHead>
-              <TableHead className="text-right">Current Odo</TableHead>
-              <TableHead className="text-right">Next Service Odo</TableHead>
-              <TableHead className="text-right">Km to Service</TableHead>
+              <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('name')}>Vehicle<SortIcon field="name" /></TableHead>
+              <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('registration_number')}>Reg No.<SortIcon field="registration_number" /></TableHead>
+              <TableHead className="text-right cursor-pointer select-none" onClick={() => handleSort('odometer')}>Current Odo<SortIcon field="odometer" /></TableHead>
+              <TableHead className="text-right cursor-pointer select-none" onClick={() => handleSort('next_service_odometer')}>Next Service Odo<SortIcon field="next_service_odometer" /></TableHead>
+              <TableHead className="text-right cursor-pointer select-none" onClick={() => handleSort('km_to_service')}>Km to Service<SortIcon field="km_to_service" /></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

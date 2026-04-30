@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Edit, Trash2, Search, X } from 'lucide-react';
+import { Edit, Trash2, Search, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import AddCostingPage from '@/pages/AddCostingPage';
 
 const ViewCostingsPage = () => {
@@ -18,7 +18,41 @@ const ViewCostingsPage = () => {
   const [selectedCosting, setSelectedCosting] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
   const { toast } = useToast();
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc'
+      ? <ChevronUp className="inline ml-1 h-3 w-3" />
+      : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
+
+  const sortedCostings = useMemo(() => {
+    if (!sortField) return costings;
+    return [...costings].sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+      if (aVal === null || aVal === undefined) aVal = '';
+      if (bVal === null || bVal === undefined) bVal = '';
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+  }, [costings, sortField, sortDirection]);
 
   const fetchCostings = useCallback(async () => {
     setLoading(true);
@@ -108,13 +142,13 @@ const ViewCostingsPage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="table-head-bold">Job Number</TableHead>
-                  <TableHead className="table-head-bold">Date</TableHead>
-                  <TableHead className="table-head-bold">Invoice #</TableHead>
-                  <TableHead className="table-head-bold">Customer</TableHead>
-                  <TableHead className="table-head-bold">Job Description</TableHead>
-                  <TableHead className="text-right table-head-bold">Profit (R)</TableHead>
-                  <TableHead className="text-right table-head-bold">Margin (%)</TableHead>
+                  <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('job_number')}>Job Number<SortIcon field="job_number" /></TableHead>
+                  <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('date')}>Date<SortIcon field="date" /></TableHead>
+                  <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('invoice_number')}>Invoice #<SortIcon field="invoice_number" /></TableHead>
+                  <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('customer')}>Customer<SortIcon field="customer" /></TableHead>
+                  <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('job_description')}>Job Description<SortIcon field="job_description" /></TableHead>
+                  <TableHead className="text-right table-head-bold cursor-pointer select-none" onClick={() => handleSort('profit')}>Profit (R)<SortIcon field="profit" /></TableHead>
+                  <TableHead className="text-right table-head-bold cursor-pointer select-none" onClick={() => handleSort('margin')}>Margin (%)<SortIcon field="margin" /></TableHead>
                   <TableHead className="text-right table-head-bold">Actions</TableHead>
               </TableRow>
               </TableHeader>
@@ -124,7 +158,7 @@ const ViewCostingsPage = () => {
                     <TableCell colSpan="8" className="text-center">No transactions found.</TableCell>
                   </TableRow>
                 ) : (
-                  costings.map((costing) => (
+                  sortedCostings.map((costing) => (
                     <TableRow key={costing.id}>
                       <TableCell>{costing.job_number}</TableCell>
                       <TableCell>{costing.date ? new Date(costing.date).toLocaleDateString('en-ZA') : '—'}</TableCell>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { FileDown, Calendar as CalendarIcon, PanelTop as TableIcon, BarChart as BarChartIcon } from 'lucide-react';
+import { FileDown, Calendar as CalendarIcon, PanelTop as TableIcon, BarChart as BarChartIcon, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, subDays } from 'date-fns';
@@ -28,6 +28,22 @@ const WorkshopReports = () => {
     const [selectedCustomers, setSelectedCustomers] = useState([]);
     const [selectedStatuses, setSelectedStatuses] = useState([]);
     const [selectedJobNumbers, setSelectedJobNumbers] = useState([]);
+    const [sortField, setSortField] = useState(null);
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
+    const SortIcon = ({ field }) => {
+        if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+        return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+    };
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -73,6 +89,24 @@ const WorkshopReports = () => {
             return isTechnicianSelected && isCustomerSelected && isStatusSelected && isJobNumberSelected;
         });
     }, [allJobs, selectedTechnicians, selectedCustomers, selectedStatuses, selectedJobNumbers]);
+
+    const sortedFilteredData = useMemo(() => {
+        if (!sortField) return filteredData;
+        return [...filteredData].sort((a, b) => {
+            let aVal, bVal;
+            if (sortField === 'technician') { aVal = a.technician?.name || ''; bVal = b.technician?.name || ''; }
+            else if (sortField === 'customer') { aVal = a.customer?.name || a.cash_customer_name || ''; bVal = b.customer?.name || b.cash_customer_name || ''; }
+            else { aVal = a[sortField]; bVal = b[sortField]; }
+            if (aVal === null || aVal === undefined) aVal = '';
+            if (bVal === null || bVal === undefined) bVal = '';
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+            }
+            return sortDirection === 'asc'
+                ? String(aVal).localeCompare(String(bVal))
+                : String(bVal).localeCompare(String(aVal));
+        });
+    }, [filteredData, sortField, sortDirection]);
 
 const handleExport = (exportFormat) => {
   console.log("Exporting data:", filteredData); // ✅ Add this line here
@@ -185,17 +219,17 @@ const handleExport = (exportFormat) => {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="table-head-bold">Job No.</TableHead>
-                                        <TableHead className="table-head-bold">Technician</TableHead>
-                                        <TableHead className="table-head-bold">Equipment</TableHead>
-                                        <TableHead className="table-head-bold">Customer</TableHead>
-                                        <TableHead className="table-head-bold">PO Date</TableHead>
-                                        <TableHead className="table-head-bold">Quote Amt.</TableHead>
-                                        <TableHead className="table-head-bold">Status</TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('job_number')}>Job No.<SortIcon field="job_number" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('technician')}>Technician<SortIcon field="technician" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('equipment_detail')}>Equipment<SortIcon field="equipment_detail" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('customer')}>Customer<SortIcon field="customer" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('po_date')}>PO Date<SortIcon field="po_date" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('quote_amount')}>Quote Amt.<SortIcon field="quote_amount" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('status')}>Status<SortIcon field="status" /></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredData.length > 0 ? filteredData.map(job => (
+                                    {filteredData.length > 0 ? sortedFilteredData.map(job => (
                                         <TableRow key={job.id}>
                                             <TableCell>{job.job_number}</TableCell>
                                             <TableCell>{job.technician?.name}</TableCell>

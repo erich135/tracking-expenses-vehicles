@@ -8,7 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
     import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
     import { useToast } from '@/components/ui/use-toast';
     import { supabase } from '@/lib/customSupabaseClient';
-    import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+    import { PlusCircle, Edit, Trash2, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
     const VehicleForm = ({ vehicle, onSave, closeDialog }) => {
         const [formData, setFormData] = useState({
@@ -98,7 +98,23 @@ import React, { useState, useEffect, useCallback } from 'react';
         const [selectedVehicle, setSelectedVehicle] = useState(null);
         const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
         const [vehicleToDelete, setVehicleToDelete] = useState(null);
+        const [sortField, setSortField] = useState(null);
+        const [sortDirection, setSortDirection] = useState('asc');
         const { toast } = useToast();
+
+        const handleSort = (field) => {
+            if (sortField === field) {
+                setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+            } else {
+                setSortField(field);
+                setSortDirection('asc');
+            }
+        };
+
+        const SortIcon = ({ field }) => {
+            if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+            return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+        };
 
         const fetchVehicles = useCallback(async () => {
             setLoading(true);
@@ -169,6 +185,22 @@ import React, { useState, useEffect, useCallback } from 'react';
             setIsDialogOpen(true);
         };
 
+        const sortedVehicles = React.useMemo(() => {
+            if (!sortField) return vehicles;
+            return [...vehicles].sort((a, b) => {
+                let aVal = a[sortField];
+                let bVal = b[sortField];
+                if (aVal === null || aVal === undefined) aVal = '';
+                if (bVal === null || bVal === undefined) bVal = '';
+                if (typeof aVal === 'number' && typeof bVal === 'number') {
+                    return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                }
+                return sortDirection === 'asc'
+                    ? String(aVal).localeCompare(String(bVal))
+                    : String(bVal).localeCompare(String(aVal));
+            });
+        }, [vehicles, sortField, sortDirection]);
+
         return (
             <>
                 <Card>
@@ -190,21 +222,16 @@ import React, { useState, useEffect, useCallback } from 'react';
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="table-head-bold">
-Name</TableHead>
-                                        <TableHead className="table-head-bold">
-Registration No.</TableHead>
-                                        <TableHead className="table-head-bold">
-Make</TableHead>
-                                        <TableHead className="table-head-bold">
-Model</TableHead>
-                                        <TableHead className="table-head-bold">
-Odometer</TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('name')}>Name<SortIcon field="name" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('registration_number')}>Registration No.<SortIcon field="registration_number" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('make')}>Make<SortIcon field="make" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('model')}>Model<SortIcon field="model" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('odometer')}>Odometer<SortIcon field="odometer" /></TableHead>
                                         <TableHead className="text-right table-head-bold">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {vehicles.map((vehicle) => (
+                                    {sortedVehicles.map((vehicle) => (
                                         <TableRow key={vehicle.id}>
                                             <TableCell>{vehicle.name}</TableCell>
                                             <TableCell>{vehicle.registration_number}</TableCell>

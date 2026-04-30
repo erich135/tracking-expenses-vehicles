@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { FileDown, Calendar as CalendarIcon, BarChart, Table as TableIcon } from 'lucide-react';
+import { FileDown, Calendar as CalendarIcon, BarChart, Table as TableIcon, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, subDays } from 'date-fns';
@@ -18,21 +18,59 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const ReportTable = ({ columns, data, loading, emptyText = "No data found." }) => (
+const SortIconRR = ({ sortField, field, sortDirection }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+};
+
+const ReportTable = ({ columns, data, loading, emptyText = "No data found." }) => {
+    const [sortField, setSortField] = useState(null);
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const handleSort = (key) => {
+        if (sortField === key) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(key);
+            setSortDirection('asc');
+        }
+    };
+
+    const sortedData = useMemo(() => {
+        if (!sortField) return data;
+        return [...data].sort((a, b) => {
+            let aVal = a[sortField];
+            let bVal = b[sortField];
+            if (aVal === null || aVal === undefined) aVal = '';
+            if (bVal === null || bVal === undefined) bVal = '';
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+            }
+            return sortDirection === 'asc'
+                ? String(aVal).localeCompare(String(bVal))
+                : String(bVal).localeCompare(String(aVal));
+        });
+    }, [data, sortField, sortDirection]);
+
+    return (
     <div className="overflow-x-auto">
         <Table>
             <TableHeader>
                 <TableRow>
-                    {columns.map(col => <TableHead key={col.key}>{col.label}</TableHead>)}
+                    {columns.map(col => (
+                        <TableHead key={col.key} className="cursor-pointer select-none" onClick={() => handleSort(col.key)}>
+                            {col.label}<SortIconRR sortField={sortField} field={col.key} sortDirection={sortDirection} />
+                        </TableHead>
+                    ))}
                 </TableRow>
             </TableHeader>
             <TableBody>
                 {loading ? (
                     <TableRow><TableCell colSpan={columns.length} className="text-center">Loading report...</TableCell></TableRow>
-                ) : data.length === 0 ? (
+                ) : sortedData.length === 0 ? (
                     <TableRow><TableCell colSpan={columns.length} className="text-center">{emptyText}</TableCell></TableRow>
                 ) : (
-                    data.map((row, rowIndex) => (
+                    sortedData.map((row, rowIndex) => (
                         <TableRow key={rowIndex} className={row.rowClass}>
                             {columns.map(col => <TableCell key={col.key}>{row[col.key]}</TableCell>)}
                         </TableRow>
@@ -41,7 +79,8 @@ const ReportTable = ({ columns, data, loading, emptyText = "No data found." }) =
             </TableBody>
         </Table>
     </div>
-);
+    );
+};
 
 const RentalReports = () => {
     const [rawData, setRawData] = useState({ equipment: [], incomes: [], expenses: [], expenseItems: [], customers: [] });

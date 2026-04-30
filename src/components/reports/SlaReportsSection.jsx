@@ -5,6 +5,59 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/lib/customSupabaseClient";
 import { useToast } from "@/components/ui/use-toast";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+
+const SortableSimpleTable = ({ columns, data, loading }) => {
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const handleSort = (key) => {
+    if (sortField === key) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    else { setSortField(key); setSortDirection('asc'); }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
+
+  const sorted = useMemo(() => {
+    if (!sortField) return data;
+    return [...data].sort((a, b) => {
+      let av = a[sortField]; let bv = b[sortField];
+      if (av == null) av = ''; if (bv == null) bv = '';
+      if (typeof av === 'number' && typeof bv === 'number') return sortDirection === 'asc' ? av - bv : bv - av;
+      return sortDirection === 'asc' ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+    });
+  }, [data, sortField, sortDirection]);
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {columns.map(col => (
+            <TableHead key={col.key} className={`${col.className || ''} cursor-pointer select-none`} onClick={() => handleSort(col.key)}>
+              {col.label}<SortIcon field={col.key} />
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {loading ? (
+          <TableRow><TableCell colSpan={columns.length}>Loading…</TableCell></TableRow>
+        ) : sorted.length === 0 ? (
+          <TableRow><TableCell colSpan={columns.length}>No data</TableCell></TableRow>
+        ) : (
+          sorted.map((r, i) => (
+            <TableRow key={i}>
+              {columns.map(col => <TableCell key={col.key} className={col.cellClassName || ''}>{r[col.key]}</TableCell>)}
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+};
 
 const fmt = (v) => Number.isFinite(Number(v)) ? Number(v).toFixed(2) : "0.00";
 
@@ -213,27 +266,14 @@ export default function SlaReportsSection() {
       <Card>
         <CardHeader><CardTitle>Cost by Unit</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="table-head-bold">
-Unit</TableHead>
-                <TableHead className="text-right">Total Cost (R)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {costByUnit.length === 0 ? (
-                <TableRow><TableCell colSpan={2}>No data</TableCell></TableRow>
-              ) : (
-                costByUnit.map((r) => (
-                  <TableRow key={r.unit}>
-                    <TableCell>{r.unit}</TableCell>
-                    <TableCell className="text-right">{fmt(r.total)}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <SortableSimpleTable
+            loading={loading}
+            columns={[
+              { key: 'unit', label: 'Unit', className: 'table-head-bold' },
+              { key: 'totalFmt', label: 'Total Cost (R)', className: 'text-right', cellClassName: 'text-right' },
+            ]}
+            data={costByUnit.map(r => ({ ...r, totalFmt: fmt(r.total) }))}
+          />
         </CardContent>
       </Card>
 
@@ -241,27 +281,14 @@ Unit</TableHead>
       <Card>
         <CardHeader><CardTitle>Income by Unit</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="table-head-bold">
-Unit</TableHead>
-                <TableHead className="text-right">Total Income (R)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {incomeByUnit.length === 0 ? (
-                <TableRow><TableCell colSpan={2}>No data</TableCell></TableRow>
-              ) : (
-                incomeByUnit.map((r) => (
-                  <TableRow key={r.unit}>
-                    <TableCell>{r.unit}</TableCell>
-                    <TableCell className="text-right">{fmt(r.total)}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <SortableSimpleTable
+            loading={loading}
+            columns={[
+              { key: 'unit', label: 'Unit', className: 'table-head-bold' },
+              { key: 'totalFmt', label: 'Total Income (R)', className: 'text-right', cellClassName: 'text-right' },
+            ]}
+            data={incomeByUnit.map(r => ({ ...r, totalFmt: fmt(r.total) }))}
+          />
         </CardContent>
       </Card>
 
@@ -269,31 +296,21 @@ Unit</TableHead>
       <Card>
         <CardHeader><CardTitle>Totals per Month (All Units)</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="table-head-bold">
-Month</TableHead>
-                <TableHead className="text-right">Income (R)</TableHead>
-                <TableHead className="text-right">Expense (R)</TableHead>
-                <TableHead className="text-right">Net (R)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {totalsByMonth.length === 0 ? (
-                <TableRow><TableCell colSpan={4}>No data</TableCell></TableRow>
-              ) : (
-                totalsByMonth.map((r) => (
-                  <TableRow key={r.month}>
-                    <TableCell>{r.month}</TableCell>
-                    <TableCell className="text-right">{fmt(r.incomes)}</TableCell>
-                    <TableCell className="text-right">{fmt(r.expenses)}</TableCell>
-                    <TableCell className="text-right">{fmt((r.incomes || 0) - (r.expenses || 0))}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <SortableSimpleTable
+            loading={loading}
+            columns={[
+              { key: 'month', label: 'Month', className: 'table-head-bold' },
+              { key: 'incomesFmt', label: 'Income (R)', className: 'text-right', cellClassName: 'text-right' },
+              { key: 'expensesFmt', label: 'Expense (R)', className: 'text-right', cellClassName: 'text-right' },
+              { key: 'netFmt', label: 'Net (R)', className: 'text-right', cellClassName: 'text-right' },
+            ]}
+            data={totalsByMonth.map(r => ({
+              ...r,
+              incomesFmt: fmt(r.incomes),
+              expensesFmt: fmt(r.expenses),
+              netFmt: fmt((r.incomes || 0) - (r.expenses || 0)),
+            }))}
+          />
         </CardContent>
       </Card>
 
@@ -302,53 +319,27 @@ Month</TableHead>
         <Card>
           <CardHeader><CardTitle>Cost by Date</CardTitle></CardHeader>
           <CardContent className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="table-head-bold">
-Date</TableHead>
-                  <TableHead className="text-right">Cost (R)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {costByDate.length === 0 ? (
-                  <TableRow><TableCell colSpan={2}>No data</TableCell></TableRow>
-                ) : (
-                  costByDate.map((r) => (
-                    <TableRow key={r.date}>
-                      <TableCell>{r.date}</TableCell>
-                      <TableCell className="text-right">{fmt(r.total)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            <SortableSimpleTable
+              loading={loading}
+              columns={[
+                { key: 'date', label: 'Date', className: 'table-head-bold' },
+                { key: 'totalFmt', label: 'Cost (R)', className: 'text-right', cellClassName: 'text-right' },
+              ]}
+              data={costByDate.map(r => ({ ...r, totalFmt: fmt(r.total) }))}
+            />
           </CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Income by Date</CardTitle></CardHeader>
           <CardContent className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="table-head-bold">
-Date</TableHead>
-                  <TableHead className="text-right">Income (R)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {incomeByDate.length === 0 ? (
-                  <TableRow><TableCell colSpan={2}>No data</TableCell></TableRow>
-                ) : (
-                  incomeByDate.map((r) => (
-                    <TableRow key={r.date}>
-                      <TableCell>{r.date}</TableCell>
-                      <TableCell className="text-right">{fmt(r.total)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            <SortableSimpleTable
+              loading={loading}
+              columns={[
+                { key: 'date', label: 'Date', className: 'table-head-bold' },
+                { key: 'totalFmt', label: 'Income (R)', className: 'text-right', cellClassName: 'text-right' },
+              ]}
+              data={incomeByDate.map(r => ({ ...r, totalFmt: fmt(r.total) }))}
+            />
           </CardContent>
         </Card>
       </div>

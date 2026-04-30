@@ -32,6 +32,18 @@ const ViewRentalEquipmentPage = () => {
     const [editFormData, setEditFormData] = useState({});
     const [addFormData, setAddFormData] = useState({});
     const { toast } = useToast();
+    const [sortField, setSortField] = useState(null);
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const handleSort = (key) => {
+        if (sortField === key) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        else { setSortField(key); setSortDirection('asc'); }
+    };
+
+    const SortIcon = ({ field }) => {
+        if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+        return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+    };
 
     // Filters
     const [selectedCustomers, setSelectedCustomers] = useState([]);
@@ -83,6 +95,18 @@ const ViewRentalEquipmentPage = () => {
             return customerMatch && attributeMatch;
         });
     }, [allEquipment, selectedCustomers, attributeFilter]);
+
+    const sortedEquipment = useMemo(() => {
+        if (!sortField) return filteredEquipment;
+        return [...filteredEquipment].sort((a, b) => {
+            const col = columns.find(c => c.key === sortField);
+            let aVal = sortField === 'customer' ? (a.customer?.name || '') : sortField === 'hours_to_service' ? ((a.next_service_hours || 0) - (a.current_hours || 0)) : a[sortField];
+            let bVal = sortField === 'customer' ? (b.customer?.name || '') : sortField === 'hours_to_service' ? ((b.next_service_hours || 0) - (b.current_hours || 0)) : b[sortField];
+            if (aVal == null) aVal = ''; if (bVal == null) bVal = '';
+            if (typeof aVal === 'number' && typeof bVal === 'number') return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+            return sortDirection === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+        });
+    }, [filteredEquipment, sortField, sortDirection, columns]);
 
     const handleEditClick = (machine) => {
         setSelectedMachine(machine);
@@ -224,7 +248,7 @@ const ViewRentalEquipmentPage = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    {columns.map(col => <TableHead key={col.key}>{col.label}</TableHead>)}
+                                    {columns.map(col => <TableHead key={col.key} className="cursor-pointer select-none" onClick={() => handleSort(col.key)}>{col.label}<SortIcon field={col.key} /></TableHead>)}
                                     <TableHead className="text-right table-head-bold">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -234,7 +258,7 @@ const ViewRentalEquipmentPage = () => {
                                 ) : filteredEquipment.length === 0 ? (
                                     <TableRow><TableCell colSpan={columns.length + 1} className="text-center">No equipment found matching your filters.</TableCell></TableRow>
                                 ) : (
-                                    filteredEquipment.map((machine) => {
+                                    sortedEquipment.map((machine) => {
                                         const hoursToService = (machine.next_service_hours || 0) - (machine.current_hours || 0);
                                         return (
                                             <TableRow key={machine.id} style={getServiceStatusStyle(machine)}>

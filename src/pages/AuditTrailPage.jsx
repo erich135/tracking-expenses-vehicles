@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableHead, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const PAGE_SIZE = 50;
@@ -41,6 +42,34 @@ export default function AuditTrailPage() {
 
   // pagination
   const [page, setPage] = useState(0);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortDirection, setSortDirection] = useState('desc');
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
+
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+      if (aVal === null || aVal === undefined) aVal = '';
+      if (bVal === null || bVal === undefined) bVal = '';
+      return sortDirection === 'asc'
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+  }, [rows, sortField, sortDirection]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -172,11 +201,11 @@ export default function AuditTrailPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Table</TableHead>
-                  <TableHead>Record</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('created_at')}>Time<SortIcon field="created_at" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('user_email')}>User<SortIcon field="user_email" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('action')}>Action<SortIcon field="action" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('table_name')}>Table<SortIcon field="table_name" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('record_id')}>Record<SortIcon field="record_id" /></TableHead>
                   <TableHead>Details</TableHead>
                 </TableRow>
               </TableHeader>
@@ -191,7 +220,7 @@ export default function AuditTrailPage() {
                     <TableCell colSpan={6}>No results</TableCell>
                   </TableRow>
                 )}
-                {!loading && rows.map((r) => (
+                {!loading && sortedRows.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</TableCell>
                     <TableCell>{r.user_email || '-'}</TableCell>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, PlusCircle, Search, X } from 'lucide-react';
+import { Edit, Trash2, PlusCircle, Search, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 export const GenericMaintenanceTable = ({ tableName, columns, title }) => {
     const [data, setData] = useState([]);
@@ -18,6 +18,38 @@ export const GenericMaintenanceTable = ({ tableName, columns, title }) => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [formData, setFormData] = useState({});
     const { toast } = useToast();
+    const [sortField, setSortField] = useState(null);
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const handleSort = (accessor) => {
+        if (sortField === accessor) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(accessor);
+            setSortDirection('asc');
+        }
+    };
+
+    const SortIcon = ({ field }) => {
+        if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+        return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+    };
+
+    const sortedData = useMemo(() => {
+        if (!sortField) return data;
+        return [...data].sort((a, b) => {
+            let aVal = a[sortField];
+            let bVal = b[sortField];
+            if (aVal === null || aVal === undefined) aVal = '';
+            if (bVal === null || bVal === undefined) bVal = '';
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+            }
+            return sortDirection === 'asc'
+                ? String(aVal).localeCompare(String(bVal))
+                : String(bVal).localeCompare(String(aVal));
+        });
+    }, [data, sortField, sortDirection]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -122,7 +154,7 @@ export const GenericMaintenanceTable = ({ tableName, columns, title }) => {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            {columns.map(col => <TableHead key={col.accessor}>{col.header}</TableHead>)}
+                            {columns.map(col => <TableHead key={col.accessor} className="cursor-pointer select-none" onClick={() => handleSort(col.accessor)}>{col.header}<SortIcon field={col.accessor} /></TableHead>)}
                             <TableHead className="text-right table-head-bold">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -130,7 +162,7 @@ export const GenericMaintenanceTable = ({ tableName, columns, title }) => {
                         {loading ? (
                             <TableRow><TableCell colSpan={columns.length + 1} className="text-center">Loading...</TableCell></TableRow>
                         ) : data.length > 0 ? (
-                            data.map(item => (
+                            sortedData.map(item => (
                                 <TableRow key={item.id}>
                                     {columns.map(col => <TableCell key={col.accessor}>{item[col.accessor]}</TableCell>)}
                                     <TableCell className="text-right">

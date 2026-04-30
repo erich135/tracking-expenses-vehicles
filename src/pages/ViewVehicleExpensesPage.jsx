@@ -7,7 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { format, parseISO } from 'date-fns';
-import { Edit, Trash2, Calendar as CalendarIcon, Filter, X } from 'lucide-react';
+import { Edit, Trash2, Calendar as CalendarIcon, Filter, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import AddVehicleExpensePage from '@/pages/AddVehicleExpensePage';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -26,6 +26,22 @@ const ViewVehicleExpensesPage = () => {
     const [filterVehicle, setFilterVehicle] = useState('all');
     const [filterDate, setFilterDate] = useState({ from: null, to: null });
     const [activeFilters, setActiveFilters] = useState({ vehicle: 'all', date: { from: null, to: null } });
+    const [sortField, setSortField] = useState(null);
+    const [sortDirection, setSortDirection] = useState('asc');
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
+    const SortIcon = ({ field }) => {
+        if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+        return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+    };
 
     const fetchVehicles = useCallback(async () => {
         const { data, error } = await supabase.from('vehicles').select('id, name, registration_number');
@@ -114,6 +130,22 @@ const ViewVehicleExpensesPage = () => {
         return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount || 0);
     }
 
+    const sortedExpenses = React.useMemo(() => {
+        if (!sortField) return expenses;
+        return [...expenses].sort((a, b) => {
+            let aVal = sortField === 'vehicle' ? (a.vehicles?.name || '') : a[sortField];
+            let bVal = sortField === 'vehicle' ? (b.vehicles?.name || '') : b[sortField];
+            if (aVal === null || aVal === undefined) aVal = '';
+            if (bVal === null || bVal === undefined) bVal = '';
+            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+            }
+            return sortDirection === 'asc'
+                ? String(aVal).localeCompare(String(bVal))
+                : String(bVal).localeCompare(String(aVal));
+        });
+    }, [expenses, sortField, sortDirection]);
+
     return (
         <>
             <Card>
@@ -184,16 +216,12 @@ const ViewVehicleExpensesPage = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="table-head-bold">
-Date</TableHead>
-                                    <TableHead className="table-head-bold">
-Vehicle</TableHead>
-                                    <TableHead className="table-head-bold">
-Category</TableHead>
-                                    <TableHead className="table-head-bold">
-Supplier</TableHead>
-                                    <TableHead className="text-right">Amount</TableHead>
-                                    <TableHead className="text-right">Odometer</TableHead>
+                                    <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('date')}>Date<SortIcon field="date" /></TableHead>
+                                    <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('vehicle')}>Vehicle<SortIcon field="vehicle" /></TableHead>
+                                    <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('category')}>Category<SortIcon field="category" /></TableHead>
+                                    <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('supplier')}>Supplier<SortIcon field="supplier" /></TableHead>
+                                    <TableHead className="text-right cursor-pointer select-none" onClick={() => handleSort('amount')}>Amount<SortIcon field="amount" /></TableHead>
+                                    <TableHead className="text-right cursor-pointer select-none" onClick={() => handleSort('odometer')}>Odometer<SortIcon field="odometer" /></TableHead>
                                     <TableHead className="text-right table-head-bold">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -203,7 +231,7 @@ Supplier</TableHead>
                                         <TableCell colSpan="7" className="text-center">No expenses found for the selected filters.</TableCell>
                                     </TableRow>
                                 ) : (
-                                    expenses.map((expense) => (
+                                    sortedExpenses.map((expense) => (
                                         <TableRow key={expense.id}>
                                             <TableCell>{format(parseISO(expense.date), 'PPP')}</TableCell>
                                             <TableCell>{expense.vehicles?.name || 'N/A'} ({expense.vehicles?.registration_number || 'N/A'})</TableCell>

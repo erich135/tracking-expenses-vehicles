@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Edit, Trash2, Search, X } from 'lucide-react';
+import { Edit, Trash2, Search, X, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,7 +22,19 @@ const ViewSLAIncomesPage = () => {
   const [filterText, setFilterText] = useState('');
   const [activeFilter, setActiveFilter] = useState('');
   const [editFormData, setEditFormData] = useState({});
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
   const { toast } = useToast();
+
+  const handleSort = (field) => {
+    if (sortField === field) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -58,6 +70,17 @@ const ViewSLAIncomesPage = () => {
       (income.invoice_number || '').toLowerCase().includes(searchTerm)
     );
   });
+
+  const sortedIncomes = React.useMemo(() => {
+    if (!sortField) return filteredIncomes;
+    return [...filteredIncomes].sort((a, b) => {
+      let aVal = sortField === 'sla_unit' ? (a.sla_unit?.unit_number || '') : sortField === 'customer' ? (a.customer?.name || '') : a[sortField];
+      let bVal = sortField === 'sla_unit' ? (b.sla_unit?.unit_number || '') : sortField === 'customer' ? (b.customer?.name || '') : b[sortField];
+      if (aVal == null) aVal = ''; if (bVal == null) bVal = '';
+      if (typeof aVal === 'number' && typeof bVal === 'number') return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      return sortDirection === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+    });
+  }, [filteredIncomes, sortField, sortDirection]);
 
   const handleApplyFilter = () => {
     setActiveFilter(filterText);
@@ -169,11 +192,11 @@ const ViewSLAIncomesPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>SLA Unit</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Invoice Number</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => handleSort('date')}>Date<SortIcon field="date" /></TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => handleSort('sla_unit')}>SLA Unit<SortIcon field="sla_unit" /></TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => handleSort('customer')}>Customer<SortIcon field="customer" /></TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => handleSort('invoice_number')}>Invoice Number<SortIcon field="invoice_number" /></TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => handleSort('amount')}>Amount<SortIcon field="amount" /></TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -188,7 +211,7 @@ const ViewSLAIncomesPage = () => {
                   <TableCell colSpan={7} className="text-center">No incomes found.</TableCell>
                 </TableRow>
               ) : (
-                filteredIncomes.map((income) => (
+                sortedIncomes.map((income) => (
                   <TableRow key={income.id}>
                     <TableCell>
                       {format(new Date(income.date), 'yyyy/MM/dd')}

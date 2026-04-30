@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2, Plus, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +40,18 @@ const ViewSLAEquipmentPage = () => {
   // Delete confirm
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // row object or {id}
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const handleSort = (field) => {
+    if (sortField === field) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
 
   const { toast } = useToast();
 
@@ -77,6 +89,17 @@ const ViewSLAEquipmentPage = () => {
     // (keeping simple—no filtering UI shown here)
     return allEquipment;
   }, [allEquipment]);
+
+  const sortedEquipment = useMemo(() => {
+    if (!sortField) return filteredEquipment;
+    return [...filteredEquipment].sort((a, b) => {
+      let aVal = sortField === 'customer' ? (a.customer?.name || '') : a[sortField];
+      let bVal = sortField === 'customer' ? (b.customer?.name || '') : b[sortField];
+      if (aVal == null) aVal = ''; if (bVal == null) bVal = '';
+      if (typeof aVal === 'number' && typeof bVal === 'number') return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      return sortDirection === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+    });
+  }, [filteredEquipment, sortField, sortDirection]);
 
   const handleEditClick = (machine) => {
     setEditFormData({
@@ -212,18 +235,12 @@ const ViewSLAEquipmentPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="table-head-bold">
-Unit</TableHead>
-                <TableHead className="table-head-bold">
-Make</TableHead>
-                <TableHead className="table-head-bold">
-Model</TableHead>
-                <TableHead className="table-head-bold">
-Customer</TableHead>
-                <TableHead className="table-head-bold">
-Location</TableHead>
-                <TableHead className="table-head-bold">
-Actions</TableHead>
+                <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('unit_number')}>Unit<SortIcon field="unit_number" /></TableHead>
+                <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('make')}>Make<SortIcon field="make" /></TableHead>
+                <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('model')}>Model<SortIcon field="model" /></TableHead>
+                <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('customer')}>Customer<SortIcon field="customer" /></TableHead>
+                <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('location')}>Location<SortIcon field="location" /></TableHead>
+                <TableHead className="table-head-bold">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -236,7 +253,7 @@ Actions</TableHead>
                   <TableCell colSpan={6}>No equipment found.</TableCell>
                 </TableRow>
               ) : (
-                filteredEquipment.map((machine) => (
+                sortedEquipment.map((machine) => (
                   <TableRow key={machine.id || machine.unit_number}>
                     <TableCell>{machine.unit_number}</TableCell>
                     <TableCell>{machine.make}</TableCell>

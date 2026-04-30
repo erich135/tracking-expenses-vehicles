@@ -26,7 +26,9 @@ import {
   Shield,
   ShieldCheck,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ChevronUp,
+  ChevronsUpDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -137,6 +139,31 @@ const AdminPage = () => {
   const [resendingTo, setResendingTo] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [expandedInviteGroups, setExpandedInviteGroups] = useState({});
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const handleSort = (field) => {
+    if (sortField === field) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
+
+  const sortedUsers = React.useMemo(() => {
+    if (!sortField) return approvedUsers;
+    return [...approvedUsers].sort((a, b) => {
+      let aVal = sortField === 'name' ? (`${a.first_name || ''} ${a.last_name || ''}`.trim() || a.email) : a[sortField];
+      let bVal = sortField === 'name' ? (`${b.first_name || ''} ${b.last_name || ''}`.trim() || b.email) : b[sortField];
+      if (aVal == null) aVal = ''; if (bVal == null) bVal = '';
+      if (typeof aVal === 'boolean') aVal = aVal ? 1 : 0;
+      if (typeof bVal === 'boolean') bVal = bVal ? 1 : 0;
+      if (typeof aVal === 'number' && typeof bVal === 'number') return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      return sortDirection === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+    });
+  }, [approvedUsers, sortField, sortDirection]);
   
   // Invite form state
   const [inviteForm, setInviteForm] = useState({
@@ -575,11 +602,11 @@ const AdminPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Role</TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => handleSort('name')}>User<SortIcon field="name" /></TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => handleSort('status')}>Status<SortIcon field="status" /></TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => handleSort('is_admin')}>Role<SortIcon field="is_admin" /></TableHead>
                     <TableHead>Permissions</TableHead>
-                    <TableHead>Active</TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => handleSort('is_active')}>Active<SortIcon field="is_active" /></TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -600,7 +627,7 @@ const AdminPage = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    approvedUsers.map((user) => (
+                    sortedUsers.map((user) => (
                       <TableRow key={user.id} className={user.is_active === false ? 'opacity-50' : ''}>
                         <TableCell>
                           <div className="flex flex-col">

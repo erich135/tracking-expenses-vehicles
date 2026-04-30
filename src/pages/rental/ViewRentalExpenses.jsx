@@ -1,14 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 export default function ViewRentalExpenses() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [entries, setEntries] = useState([]);
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const handleSort = (field) => {
+    if (sortField === field) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('asc'); }
+  };
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ChevronsUpDown className="inline ml-1 h-3 w-3 opacity-40" />;
+    return sortDirection === 'asc' ? <ChevronUp className="inline ml-1 h-3 w-3" /> : <ChevronDown className="inline ml-1 h-3 w-3" />;
+  };
+
+  const sortedEntries = useMemo(() => {
+    if (!sortField) return entries;
+    return [...entries].sort((a, b) => {
+      let aVal = sortField === 'machine' ? (a.rental_equipment?.plant_no || '') : sortField === 'supplier' ? (a.suppliers?.name || '') : a[sortField];
+      let bVal = sortField === 'machine' ? (b.rental_equipment?.plant_no || '') : sortField === 'supplier' ? (b.suppliers?.name || '') : b[sortField];
+      if (aVal == null) aVal = ''; if (bVal == null) bVal = '';
+      if (typeof aVal === 'number' && typeof bVal === 'number') return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      return sortDirection === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+    });
+  }, [entries, sortField, sortDirection]);
 
   useEffect(() => {
     fetchEntries();
@@ -61,15 +85,15 @@ export default function ViewRentalExpenses() {
         <table className="min-w-full table-auto text-sm border border-gray-200">
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-2 text-left">Date</th>
-              <th className="p-2 text-left">Machine</th>
-              <th className="p-2 text-left">Supplier</th>
-              <th className="p-2 text-left">Amount</th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('date')}>Date <SortIcon field="date" /></th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('machine')}>Machine <SortIcon field="machine" /></th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('supplier')}>Supplier <SortIcon field="supplier" /></th>
+              <th className="p-2 text-left cursor-pointer select-none" onClick={() => handleSort('total_amount')}>Amount <SortIcon field="total_amount" /></th>
               <th className="p-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {entries.map((e) => (
+            {sortedEntries.map((e) => (
               <tr key={e.id} className="border-t">
                 <td className="p-2">{e.date?.split('T')[0]}</td>
                 <td className="p-2">{e.rental_equipment?.plant_no ?? '—'}</td>
