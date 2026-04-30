@@ -108,12 +108,11 @@ const ViewCostingsPage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="table-head-bold">
-Job Number</TableHead>
-                  <TableHead className="table-head-bold">
-Customer</TableHead>
-                  <TableHead className="table-head-bold">
-Job Description</TableHead>
+                  <TableHead className="table-head-bold">Job Number</TableHead>
+                  <TableHead className="table-head-bold">Date</TableHead>
+                  <TableHead className="table-head-bold">Invoice #</TableHead>
+                  <TableHead className="table-head-bold">Customer</TableHead>
+                  <TableHead className="table-head-bold">Job Description</TableHead>
                   <TableHead className="text-right table-head-bold">Profit (R)</TableHead>
                   <TableHead className="text-right table-head-bold">Margin (%)</TableHead>
                   <TableHead className="text-right table-head-bold">Actions</TableHead>
@@ -122,12 +121,14 @@ Job Description</TableHead>
               <TableBody>
                 {costings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan="6" className="text-center">No transactions found.</TableCell>
+                    <TableCell colSpan="8" className="text-center">No transactions found.</TableCell>
                   </TableRow>
                 ) : (
                   costings.map((costing) => (
                     <TableRow key={costing.id}>
                       <TableCell>{costing.job_number}</TableCell>
+                      <TableCell>{costing.date ? new Date(costing.date).toLocaleDateString('en-ZA') : '—'}</TableCell>
+                      <TableCell>{costing.invoice_number || '—'}</TableCell>
                       <TableCell>{costing.customer}</TableCell>
                       <TableCell className="max-w-[250px] truncate">{costing.job_description}</TableCell>
                       <TableCell className="text-right">{Number(costing.profit).toFixed(2)}</TableCell>
