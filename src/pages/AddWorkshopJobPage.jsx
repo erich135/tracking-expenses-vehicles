@@ -78,6 +78,13 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
   const [notes, setNotes] = useState('');
   const [cashCustomer, setCashCustomer] = useState('');
   const [customerList, setCustomerList] = useState([]);
+  const [jobType, setJobType] = useState('');
+  const [model, setModel] = useState('');
+  const [receivedDate, setReceivedDate] = useState(null);
+  const [startDate, setStartDate] = useState(null);
+  const [etaDate, setEtaDate] = useState(null);
+  const [completionDate, setCompletionDate] = useState(null);
+  const [reasonForHoldUp, setReasonForHoldUp] = useState('');
   const [technicianList, setTechnicianList] = useState([]);
   const [selectedTechnician, setSelectedTechnician] = useState(null);
   const fetchTechnicians = useCallback(async () => {
@@ -109,6 +116,13 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
       setStatus(jobData.status || '');
       setNotes(jobData.notes || '');
       setCashCustomer(jobData.cash_customer_name || '');
+      setJobType(jobData.job_type || '');
+      setModel(jobData.model || '');
+      setReceivedDate(jobData.received_date ? new Date(jobData.received_date) : null);
+      setStartDate(jobData.start_date ? new Date(jobData.start_date) : null);
+      setEtaDate(jobData.eta_date ? new Date(jobData.eta_date) : null);
+      setCompletionDate(jobData.completion_date ? new Date(jobData.completion_date) : null);
+      setReasonForHoldUp(jobData.reason_for_hold_up || '');
 
       // Fetch full customer and technician records for edit mode
       const fetchRelatedRecords = async () => {
@@ -181,6 +195,13 @@ const AddWorkshopJobPage = ({ isEditMode = false, jobData, onSuccess }) => {
       customer_id_int: selectedCustomer?.id || null,
       updated_at: toLocalISOString(new Date()),
       technician_id: selectedTechnician?.id || null,
+      job_type: jobType || null,
+      model: model || null,
+      received_date: receivedDate ? formatDateLocal(receivedDate) : null,
+      start_date: startDate ? formatDateLocal(startDate) : null,
+      eta_date: etaDate ? formatDateLocal(etaDate) : null,
+      completion_date: completionDate ? formatDateLocal(completionDate) : null,
+      reason_for_hold_up: reasonForHoldUp || null,
     };
 
     if (!isEditMode) {
@@ -390,6 +411,90 @@ if (!["Rental", "Other"].includes(area)) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label>Job Type</Label>
+            <Select value={jobType} onValueChange={setJobType}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                {['PDI', 'SLA', 'Warranty', 'Rental', 'Normal'].map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label>Model</Label>
+            <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Enter model..." />
+          </div>
+
+          <div>
+            <Label>Received Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  {receivedDate ? format(receivedDate, 'yyyy-MM-dd') : 'Pick a date'}
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar mode="single" selected={receivedDate} onSelect={setReceivedDate} />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label>Start Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  {startDate ? format(startDate, 'yyyy-MM-dd') : 'Pick a date'}
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar mode="single" selected={startDate} onSelect={setStartDate} />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label>ETA Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  {etaDate ? format(etaDate, 'yyyy-MM-dd') : 'Pick a date'}
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar mode="single" selected={etaDate} onSelect={setEtaDate} />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label>Completion Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  {completionDate ? format(completionDate, 'yyyy-MM-dd') : 'Pick a date'}
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent>
+                <Calendar mode="single" selected={completionDate} onSelect={setCompletionDate} />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="md:col-span-2">
+            <Label>Reason for Hold Up / Comment</Label>
+            <Textarea value={reasonForHoldUp} onChange={(e) => setReasonForHoldUp(e.target.value)} placeholder="Enter any comments or reason for hold up..." />
           </div>
 
           <div className="md:col-span-2">

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
 } from '@/components/ui/card';
@@ -30,8 +30,24 @@ const ViewWorkshopJobsPage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sortField, setSortField] = useState(null);
-  const [sortDirection, setSortDirection] = useState('asc');
+  const sortDirectionState = useState('asc');
+  const [sortDirection, setSortDirection] = sortDirectionState;
   const { toast } = useToast();
+
+  const tableContainerRef = useRef(null);
+  const topScrollRef = useRef(null);
+
+  const handleTopScroll = (e) => {
+    if (tableContainerRef.current && tableContainerRef.current.scrollLeft !== e.target.scrollLeft) {
+      tableContainerRef.current.scrollLeft = e.target.scrollLeft;
+    }
+  };
+
+  const handleTableScroll = (e) => {
+    if (topScrollRef.current && topScrollRef.current.scrollLeft !== e.target.scrollLeft) {
+      topScrollRef.current.scrollLeft = e.target.scrollLeft;
+    }
+  };
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -136,14 +152,14 @@ const ViewWorkshopJobsPage = () => {
   };
 
   return (
-    <>
-      <Card>
-        <CardHeader>
+    <div className="space-y-4">
+      <Card className="shadow-sm border-0">
+        <CardHeader className="p-4 pb-2">
           <CardTitle>All Workshop Jobs</CardTitle>
           <CardDescription>View, filter, and manage all workshop jobs.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 mb-4">
+        <CardContent className="p-4 pt-2">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             <Input
               placeholder="Filter jobs..."
               value={filter}
@@ -162,13 +178,24 @@ const ViewWorkshopJobsPage = () => {
             </Button>
           </div>
 
-          <div className="w-full overflow-x-auto">
-            <Table className="min-w-[1200px]">
-              <TableHeader>
+          <div
+            ref={topScrollRef}
+            className="w-full overflow-x-auto border border-b-0 rounded-t-md bg-gray-50 dark:bg-gray-900 custom-scrollbar"
+            onScroll={handleTopScroll}
+          >
+            <div style={{ width: '2000px', height: '1px' }}></div>
+          </div>
+          <Table 
+            containerRef={tableContainerRef}
+            onScroll={handleTableScroll}
+            containerClassName="flex-1 min-h-0 border rounded-b-md [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" 
+            className="min-w-[2000px]"
+          >
+              <TableHeader className="sticky top-0 z-20 bg-white dark:bg-background">
                 <TableRow>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort('job_number')}>Job No.<SortIcon field="job_number" /></TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort('technician')}>Technician<SortIcon field="technician" /></TableHead>
-                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('equipment_detail')}>Equipment<SortIcon field="equipment_detail" /></TableHead>
+                  <TableHead className="cursor-pointer select-none min-w-[200px]" onClick={() => handleSort('equipment_detail')}>Equipment<SortIcon field="equipment_detail" /></TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort('customer')}>Customer<SortIcon field="customer" /></TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort('po_date')}>PO Date<SortIcon field="po_date" /></TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort('quote_date')}>Quote Date<SortIcon field="quote_date" /></TableHead>
@@ -176,14 +203,22 @@ const ViewWorkshopJobsPage = () => {
                   <TableHead>Overdue</TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort('delivery_date')}>Delivery<SortIcon field="delivery_date" /></TableHead>
                   <TableHead className="cursor-pointer select-none" onClick={() => handleSort('status')}>Status<SortIcon field="status" /></TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('job_type')}>Type<SortIcon field="job_type" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('model')}>Model<SortIcon field="model" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('received_date')}>Received<SortIcon field="received_date" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('start_date')}>Start Date<SortIcon field="start_date" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('eta_date')}>ETA<SortIcon field="eta_date" /></TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => handleSort('completion_date')}>Completion<SortIcon field="completion_date" /></TableHead>
+                  <TableHead>Lead Time</TableHead>
+                  <TableHead className="cursor-pointer select-none min-w-[150px]" onClick={() => handleSort('reason_for_hold_up')}>Hold Up Reason<SortIcon field="reason_for_hold_up" /></TableHead>
+                  <TableHead className="text-right sticky right-0 bg-white dark:bg-background z-10 w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan="11" className="text-center">Loading jobs...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan="19" className="text-center">Loading jobs...</TableCell></TableRow>
                 ) : jobs.length === 0 ? (
-                  <TableRow><TableCell colSpan="11" className="text-center">No jobs found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan="19" className="text-center">No jobs found.</TableCell></TableRow>
                 ) : (
                   sortedJobs.map((job) => {
                     const isOverdue = job.po_date && job.days_quoted
@@ -202,11 +237,26 @@ const ViewWorkshopJobsPage = () => {
                         <TableCell className="text-center font-bold">{isOverdue ? 'YES' : 'NO'}</TableCell>
                         <TableCell>{job.delivery_date ? format(new Date(job.delivery_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
                         <TableCell>
-                        <span className={`status-label ${job.status?.toLowerCase().replace(/\s+/g, '-').replace(/\//g, '-') || 'default'}`}>
-                          {job.status || 'N/A'}
-                        </span>
-                      </TableCell>
-                        <TableCell className="text-right whitespace-nowrap">
+                          <span className={`status-label ${job.status?.toLowerCase().replace(/\s+/g, '-').replace(/\//g, '-') || 'default'}`}>
+                            {job.status || 'N/A'}
+                          </span>
+                        </TableCell>
+                        <TableCell>{job.job_type || 'N/A'}</TableCell>
+                        <TableCell>{job.model || 'N/A'}</TableCell>
+                        <TableCell>{job.received_date ? format(new Date(job.received_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                        <TableCell>{job.start_date ? format(new Date(job.start_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                        <TableCell>{job.eta_date ? format(new Date(job.eta_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                        <TableCell>{job.completion_date ? format(new Date(job.completion_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                        <TableCell>{
+                          job.received_date
+                            ? differenceInDays(
+                                job.completion_date ? new Date(job.completion_date) : new Date(),
+                                new Date(job.received_date)
+                              )
+                            : 'N/A'
+                        }</TableCell>
+                        <TableCell>{job.reason_for_hold_up || 'N/A'}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap sticky right-0 bg-white dark:bg-background z-10">
                           <Button variant="ghost" size="icon" onClick={() => { setSelectedJob(job); setIsEditDialogOpen(true); }}>
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -220,14 +270,13 @@ const ViewWorkshopJobsPage = () => {
                 )}
               </TableBody>
             </Table>
-          </div>
         </CardContent>
       </Card>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar">
           <DialogHeader><DialogTitle>Edit Workshop Job</DialogTitle></DialogHeader>
-          <div className="py-4">
+          <div className="py-2">
             <AddWorkshopJobPage
               isEditMode={true}
               jobData={selectedJob}
@@ -254,7 +303,7 @@ const ViewWorkshopJobsPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -6,14 +6,14 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { FileDown, Calendar as CalendarIcon, PanelTop as TableIcon, BarChart as BarChartIcon, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { format, subDays } from 'date-fns';
+import { format, subDays, differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MultiSelect } from '@/components/ui/multi-select.jsx';
 import { downloadAsCsv } from '@/lib/exportUtils';
 import { jobStatuses } from '@/pages/AddWorkshopJobPage';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -30,6 +30,21 @@ const WorkshopReports = () => {
     const [selectedJobNumbers, setSelectedJobNumbers] = useState([]);
     const [sortField, setSortField] = useState(null);
     const [sortDirection, setSortDirection] = useState('asc');
+
+    const tableContainerRef = useRef(null);
+    const topScrollRef = useRef(null);
+
+    const handleTopScroll = (e) => {
+        if (tableContainerRef.current && tableContainerRef.current.scrollLeft !== e.target.scrollLeft) {
+            tableContainerRef.current.scrollLeft = e.target.scrollLeft;
+        }
+    };
+
+    const handleTableScroll = (e) => {
+        if (topScrollRef.current && topScrollRef.current.scrollLeft !== e.target.scrollLeft) {
+            topScrollRef.current.scrollLeft = e.target.scrollLeft;
+        }
+    };
 
     const handleSort = (field) => {
         if (sortField === field) {
@@ -114,25 +129,42 @@ const handleExport = (exportFormat) => {
   console.log('typeof format:', typeof exportFormat);
 
   const title = 'Workshop Jobs Report';
-  const head = [["Job No.", "Technician", "Equipment", "Customer", "PO Date", "Quote Amt.", "Status"]];
-  const body = filteredData.map(j => [
-    j.job_number,
-    j.technician?.name,
-    j.equipment_detail,
-    j.customer?.name || j.cash_customer_name,
-    j.po_date ? format(new Date(j.po_date), 'yyyy-MM-dd') : 'N/A',
-    `R ${Number(j.quote_amount || 0).toFixed(2)}`,
-    j.status,
-  ]);
+  const head = [["Job No.", "Technician", "Equipment", "Customer", "PO Date", "Quote Amt.", "Status", "Type", "Model", "Received", "Start Date", "ETA", "Completion", "Lead Time (days)", "Comment / Reason for Hold Up"]];
+  const body = filteredData.map(j => {
+    const leadTime = j.received_date
+      ? differenceInDays(
+          j.completion_date ? new Date(j.completion_date) : new Date(),
+          new Date(j.received_date)
+        )
+      : 'N/A';
+    return [
+      j.job_number,
+      j.technician?.name || '',
+      j.equipment_detail || '',
+      j.customer?.name || j.cash_customer_name || '',
+      j.po_date ? format(new Date(j.po_date), 'yyyy-MM-dd') : 'N/A',
+      `R ${Number(j.quote_amount || 0).toFixed(2)}`,
+      j.status || '',
+      j.job_type || '',
+      j.model || '',
+      j.received_date ? format(new Date(j.received_date), 'yyyy-MM-dd') : 'N/A',
+      j.start_date ? format(new Date(j.start_date), 'yyyy-MM-dd') : 'N/A',
+      j.eta_date ? format(new Date(j.eta_date), 'yyyy-MM-dd') : 'N/A',
+      j.completion_date ? format(new Date(j.completion_date), 'yyyy-MM-dd') : 'N/A',
+      String(leadTime),
+      j.reason_for_hold_up || '',
+    ];
+  });
 
   // 🧾 EXPORT LOGIC GOES HERE:
   if (exportFormat === 'pdf') {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'landscape' });
     doc.text(title, 14, 16);
-    doc.autoTable({
+    autoTable(doc, {
       head: head,
       body: body,
       startY: 20,
+      styles: { fontSize: 7 },
     });
     doc.save('workshop-report.pdf');
   } else if (exportFormat === 'csv') {
@@ -216,16 +248,37 @@ const handleExport = (exportFormat) => {
                 <CardContent>
                     {loading ? <p>Loading report...</p> : (
                         viewMode === 'table' ? (
-                            <Table>
-                                <TableHeader>
+                            <>
+                            <div
+                                ref={topScrollRef}
+                                className="w-full overflow-x-auto border border-b-0 rounded-t-md bg-gray-50 dark:bg-gray-900 custom-scrollbar flex-none"
+                                onScroll={handleTopScroll}
+                            >
+                                <div style={{ width: '1700px', height: '1px' }}></div>
+                            </div>
+                            <Table 
+                                containerRef={tableContainerRef}
+                                onScroll={handleTableScroll}
+                                containerClassName="flex-1 min-h-0 border rounded-b-md [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" 
+                                className="min-w-[1700px]"
+                            >
+                                <TableHeader className="sticky top-0 z-20 bg-white dark:bg-background">
                                     <TableRow>
                                         <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('job_number')}>Job No.<SortIcon field="job_number" /></TableHead>
                                         <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('technician')}>Technician<SortIcon field="technician" /></TableHead>
-                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('equipment_detail')}>Equipment<SortIcon field="equipment_detail" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none min-w-[200px]" onClick={() => handleSort('equipment_detail')}>Equipment<SortIcon field="equipment_detail" /></TableHead>
                                         <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('customer')}>Customer<SortIcon field="customer" /></TableHead>
                                         <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('po_date')}>PO Date<SortIcon field="po_date" /></TableHead>
                                         <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('quote_amount')}>Quote Amt.<SortIcon field="quote_amount" /></TableHead>
                                         <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('status')}>Status<SortIcon field="status" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('job_type')}>Type<SortIcon field="job_type" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('model')}>Model<SortIcon field="model" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('received_date')}>Received<SortIcon field="received_date" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('start_date')}>Start Date<SortIcon field="start_date" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('eta_date')}>ETA<SortIcon field="eta_date" /></TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none" onClick={() => handleSort('completion_date')}>Completion<SortIcon field="completion_date" /></TableHead>
+                                        <TableHead className="table-head-bold">Lead Time</TableHead>
+                                        <TableHead className="table-head-bold cursor-pointer select-none min-w-[150px]" onClick={() => handleSort('reason_for_hold_up')}>Hold Up Reason<SortIcon field="reason_for_hold_up" /></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -242,16 +295,32 @@ const handleExport = (exportFormat) => {
                                                     {job.status || 'N/A'}
                                                 </span>
                                             </TableCell>
+                                            <TableCell>{job.job_type || 'N/A'}</TableCell>
+                                            <TableCell>{job.model || 'N/A'}</TableCell>
+                                            <TableCell>{job.received_date ? format(new Date(job.received_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                                            <TableCell>{job.start_date ? format(new Date(job.start_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                                            <TableCell>{job.eta_date ? format(new Date(job.eta_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                                            <TableCell>{job.completion_date ? format(new Date(job.completion_date), 'yyyy-MM-dd') : 'N/A'}</TableCell>
+                                            <TableCell>{
+                                                job.received_date
+                                                  ? differenceInDays(
+                                                      job.completion_date ? new Date(job.completion_date) : new Date(),
+                                                      new Date(job.received_date)
+                                                    )
+                                                  : 'N/A'
+                                            }</TableCell>
+                                            <TableCell>{job.reason_for_hold_up || 'N/A'}</TableCell>
                                         </TableRow>
                                     )) : (
                                         <TableRow>
-                                            <TableCell colSpan={7} className="text-center">
+                                            <TableCell colSpan={15} className="text-center">
                                                 No data available for the selected filters.
                                             </TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
                             </Table>
+                            </>
                         ) : (
                             <div style={{ width: '100%', height: 400 }}>
                                 <ResponsiveContainer>

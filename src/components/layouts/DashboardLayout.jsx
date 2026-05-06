@@ -236,10 +236,10 @@ const DashboardLayout = () => {
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   return (
-    <div className="flex bg-gray-100 dark:bg-slate-950/95">
+    <div className="flex bg-gray-100 dark:bg-slate-950/95 h-screen overflow-hidden">
       <Sidebar isCollapsed={isCollapsed} toggleCollapse={toggleCollapse} />
       <main
-        className={`flex-1 p-8 overflow-auto h-screen transition-all duration-300`}
+        className={`flex-1 p-8 overflow-y-auto transition-all duration-300`}
         style={{ marginLeft: isCollapsed ? '4rem' : '16rem' }}
       >
         <Outlet />
