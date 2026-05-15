@@ -158,17 +158,85 @@ export default async function handler(req, res) {
   }
 
   // Resend strategy:
-  // - Try invite (works for users not yet created)
-  // - Otherwise generate a recovery link for manual delivery
-  const { error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(emailLower, {
-    redirectTo: redirect || undefined,
-  });
+  // 1. Try invite (works for users not yet created in Auth)
+  // 2. If "already registered", look up the existing auth user.
+  //    - If they have NOT confirmed (still pending invite acceptance), delete the
+  //      stale auth user and re-invite. This is the common case when the original
+  //      invite email failed to deliver.
+  //    - If they HAVE confirmed, do not delete; surface a clear message.
+  // 3. As a final fallback, generate a manual invite link for delivery.
+  let { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+    emailLower,
+    { redirectTo: redirect || undefined }
+  );
 
   if (!inviteError) {
-    res.status(200).json({ ok: true, emailSent: true });
+    res.status(200).json({ ok: true, emailSent: true, userId: inviteData?.user?.id || null });
     return;
   }
 
+  const alreadyRegistered = /already\s+been\s+registered|already\s+registered|already\s+exists/i.test(
+    inviteError.message || ''
+  );
+
+  if (alreadyRegistered) {
+    // Find the existing auth user.
+    let existingUser = null;
+    try {
+      // listUsers does not support a server-side email filter in all SDK versions; page through.
+      let page = 1;
+      const perPage = 200;
+      // Cap pages to avoid runaway loops.
+      while (page <= 25 && !existingUser) {
+        const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+          page,
+          perPage,
+        });
+        if (listError) break;
+        const users = list?.users || [];
+        existingUser = users.find((u) => (u.email || '').toLowerCase() === emailLower) || null;
+        if (users.length < perPage) break;
+        page += 1;
+      }
+    } catch (e) {
+      // ignore lookup failure; we'll fall through to manual link
+    }
+
+    const isPending = existingUser && !existingUser.email_confirmed_at && !existingUser.last_sign_in_at;
+
+    if (existingUser && isPending) {
+      // Delete and re-invite to refresh the invitation token and re-send the email.
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+      if (!deleteError) {
+        const retry = await supabaseAdmin.auth.admin.inviteUserByEmail(emailLower, {
+          redirectTo: redirect || undefined,
+        });
+        if (!retry.error) {
+          res.status(200).json({
+            ok: true,
+            emailSent: true,
+            userId: retry.data?.user?.id || null,
+            note: 'Stale unconfirmed invite was reset and a fresh invitation email was sent.',
+          });
+          return;
+        }
+        inviteError = retry.error;
+      } else {
+        // surface delete error in details below
+        inviteError = new Error(
+          `${inviteError.message} (cleanup of stale auth user failed: ${deleteError.message})`
+        );
+      }
+    } else if (existingUser && !isPending) {
+      res.status(409).json({
+        ok: false,
+        error: 'This user has already accepted their invitation and signed in. Use "Reset password" instead of resending an invite.',
+      });
+      return;
+    }
+  }
+
+  // Final fallback: produce a manual link the admin can deliver.
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: 'invite',
     email: emailLower,

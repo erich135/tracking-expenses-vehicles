@@ -157,13 +157,64 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+  let { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: 'invite',
     email: emailLower,
     options: {
       redirectTo: redirect || undefined,
     },
   });
+
+  // If the user already exists in Auth (e.g. a previous invite was created but
+  // the email never arrived), generateLink type=invite errors. Detect the stale
+  // pending invite, delete it, and retry so we can produce a fresh invite link.
+  if (linkError) {
+    const alreadyRegistered = /already\s+been\s+registered|already\s+registered|already\s+exists/i.test(
+      linkError.message || ''
+    );
+
+    if (alreadyRegistered) {
+      let existingUser = null;
+      try {
+        let page = 1;
+        const perPage = 200;
+        while (page <= 25 && !existingUser) {
+          const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+            page,
+            perPage,
+          });
+          if (listError) break;
+          const users = list?.users || [];
+          existingUser = users.find((u) => (u.email || '').toLowerCase() === emailLower) || null;
+          if (users.length < perPage) break;
+          page += 1;
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      const isPending = existingUser && !existingUser.email_confirmed_at && !existingUser.last_sign_in_at;
+
+      if (existingUser && isPending) {
+        const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(existingUser.id);
+        if (!deleteError) {
+          const retry = await supabaseAdmin.auth.admin.generateLink({
+            type: 'invite',
+            email: emailLower,
+            options: { redirectTo: redirect || undefined },
+          });
+          linkData = retry.data;
+          linkError = retry.error;
+        }
+      } else if (existingUser && !isPending) {
+        res.status(409).json({
+          ok: false,
+          error: 'This user has already accepted their invitation. Use a password recovery link instead of generating a new invite link.',
+        });
+        return;
+      }
+    }
+  }
 
   if (linkError) {
     res.status(400).json({
