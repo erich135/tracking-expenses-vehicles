@@ -148,12 +148,28 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { email, redirectTo } = req.body || {};
+  const { email, redirectTo, type: requestedType } = req.body || {};
   const emailLower = typeof email === 'string' ? email.toLowerCase().trim() : '';
   const redirect = typeof redirectTo === 'string' && redirectTo.trim() ? redirectTo.trim() : null;
+  const linkType = requestedType === 'recovery' ? 'recovery' : 'invite';
 
   if (!emailLower) {
     res.status(400).json({ error: 'Missing email' });
+    return;
+  }
+
+  // For 'recovery' we don't need stale-pending detection logic - just emit the link.
+  if (linkType === 'recovery') {
+    const { data: recData, error: recError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: emailLower,
+      options: { redirectTo: redirect || undefined },
+    });
+    if (recError) {
+      res.status(400).json({ ok: false, error: recError.message || 'Failed to generate recovery link' });
+      return;
+    }
+    res.status(200).json({ ok: true, actionLink: recData?.properties?.action_link || null, type: 'recovery' });
     return;
   }
 
@@ -224,5 +240,5 @@ export default async function handler(req, res) {
     return;
   }
 
-  res.status(200).json({ ok: true, actionLink: linkData?.properties?.action_link || null });
+  res.status(200).json({ ok: true, actionLink: linkData?.properties?.action_link || null, type: 'invite' });
 }

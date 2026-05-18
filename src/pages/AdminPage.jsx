@@ -178,7 +178,7 @@ const AdminPage = () => {
 
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { inviteUser, resendInvitation, generateInviteLink } = useAuth();
+  const { inviteUser, resendInvitation, generateInviteLink, generateRecoveryLink } = useAuth();
   const [copyingFor, setCopyingFor] = useState(null);
 
   const fetchApprovedUsers = useCallback(async () => {
@@ -362,18 +362,42 @@ const AdminPage = () => {
   };
 
   // Reset invite state: flips password_set back to false and re-issues an invite.
-  // Use when a user appears "Active" but never actually completed the invite
-  // (e.g. password_set was force-set by the migration but they never received
-  // or used the link).
+  // If the user has already accepted their invite and signed in before, the
+  // invite API returns 409; in that case we automatically fall back to a
+  // password-recovery link (admin-generated, bypasses email rate limits).
   const handleResetInviteState = async (user) => {
     if (!user?.id || !user?.email) return;
     const confirmed = window.confirm(
-      `Reset invite state for ${user.email}?\n\nThis will mark them as "not yet set password" and send a fresh invite email. Their existing password (if any) will no longer work until they complete the new invite.`
+      `Reset invite / send password link for ${user.email}?\n\nIf they have never signed in, this re-issues their invite. If they have signed in before, this generates a password-recovery link instead. The link will be copied to your clipboard so you can send it manually.`
     );
     if (!confirmed) return;
 
+    const showLinkToast = (title, link, extra) => {
+      navigator.clipboard.writeText(link).catch(() => {});
+      toast({
+        title,
+        description: (
+          <div className="space-y-2">
+            {extra && <p>{extra}</p>}
+            <p className="text-xs">Link copied to clipboard. Click to copy again:</p>
+            <div
+              className="bg-muted p-2 rounded text-xs break-all cursor-pointer"
+              onClick={() => {
+                navigator.clipboard.writeText(link);
+                toast({ title: 'Link copied!' });
+              }}
+            >
+              {link}
+            </div>
+          </div>
+        ),
+        duration: 60000,
+      });
+    };
+
     setResettingFor(user.id);
     try {
+      // Always reset the password_set flag so the normal Resend/Copy buttons return.
       const { error: updateError } = await supabase
         .from('approved_users')
         .update({ password_set: false })
@@ -388,54 +412,49 @@ const AdminPage = () => {
         return;
       }
 
-      // Try a normal resend (this will also clear any stale pending auth user).
-      const { error: resendError } = await resendInvitation(user.email);
-      if (resendError) {
-        // Fall back to a manual invite link.
-        try {
-          const { actionLink } = await generateInviteLink(user.email);
-          if (actionLink) {
-            await navigator.clipboard.writeText(actionLink).catch(() => {});
-            toast({
-              title: 'Invite reset - manual link copied',
-              description: (
-                <div className="space-y-2">
-                  <p>Email could not be sent. Link copied to clipboard - paste into email/chat:</p>
-                  <div
-                    className="bg-muted p-2 rounded text-xs break-all cursor-pointer"
-                    onClick={() => {
-                      navigator.clipboard.writeText(actionLink);
-                      toast({ title: 'Link copied!' });
-                    }}
-                  >
-                    {actionLink}
-                  </div>
-                </div>
-              ),
-              duration: 30000,
-            });
-          } else {
-            toast({
-              variant: 'destructive',
-              title: 'Invite reset, but resend failed',
-              description: resendError.message,
-            });
-          }
-        } catch (linkErr) {
-          toast({
-            variant: 'destructive',
-            title: 'Invite reset, but resend failed',
-            description: resendError.message,
-          });
-        }
-      } else {
-        toast({
-          title: 'Invite state reset',
-          description: `A fresh invitation email was sent to ${user.email}.`,
-        });
+      // First try an invite link (works for never-signed-in users and stale
+      // pending invites).
+      const inviteAttempt = await generateInviteLink(user.email);
+      if (inviteAttempt?.actionLink) {
+        showLinkToast(
+          'Fresh invite link ready',
+          inviteAttempt.actionLink,
+          `${user.email} can use this link to set their password.`
+        );
+        fetchApprovedUsers();
+        return;
       }
 
-      fetchApprovedUsers();
+      const inviteErrMsg = inviteAttempt?.error?.message || '';
+      const alreadyAccepted = /already\s+accepted|already\s+signed\s+in|use\s+a?\s*password\s+recovery/i.test(
+        inviteErrMsg
+      );
+
+      if (alreadyAccepted) {
+        // Fall back to a password recovery link.
+        const recoveryAttempt = await generateRecoveryLink(user.email);
+        if (recoveryAttempt?.actionLink) {
+          showLinkToast(
+            'Password recovery link ready',
+            recoveryAttempt.actionLink,
+            `${user.email} has already onboarded. Send them this password-reset link.`
+          );
+          fetchApprovedUsers();
+          return;
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Failed to generate recovery link',
+          description: recoveryAttempt?.error?.message || 'Unknown error',
+        });
+        return;
+      }
+
+      toast({
+        variant: 'destructive',
+        title: 'Failed to generate invite link',
+        description: inviteErrMsg || 'Unknown error',
+      });
     } finally {
       setResettingFor(null);
     }
@@ -872,6 +891,38 @@ const AdminPage = () => {
                                   <RotateCcw className="w-3 h-3" />
                                 )}
                                 Reset invite
+                              </Button>
+                            )}
+                            {user.is_active !== false && user.email !== 'erich.oberholzer@gmail.com' && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={async () => {
+                                  setCopyingFor(user.id);
+                                  try {
+                                    const { actionLink, error } = await generateRecoveryLink(user.email);
+                                    if (error || !actionLink) throw new Error(error?.message || 'Failed');
+                                    await navigator.clipboard.writeText(actionLink);
+                                    toast({
+                                      title: 'Password recovery link copied',
+                                      description: `Send this link to ${user.email} so they can set a new password.`,
+                                    });
+                                  } catch (err) {
+                                    toast({ variant: 'destructive', title: 'Could not generate recovery link', description: err.message });
+                                  } finally {
+                                    setCopyingFor(null);
+                                  }
+                                }}
+                                disabled={copyingFor === user.id}
+                                className="gap-1"
+                                title="Generate a password-reset link for a user who has already onboarded"
+                              >
+                                {copyingFor === user.id ? (
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                                Reset password
                               </Button>
                             )}
                             <Button

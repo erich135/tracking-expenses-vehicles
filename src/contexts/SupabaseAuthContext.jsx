@@ -94,6 +94,27 @@ export const AuthProvider = ({ children }) => {
     };
   };
 
+  // Generate a manual password recovery link for a user (admin only).
+  // Use this for users who have already accepted their invite/signed in but
+  // need their password reset (e.g. lost password, can't receive recovery email).
+  const generateRecoveryLink = async (email) => {
+    const redirectTo = `${window.location.origin}/update-password`;
+    const apiResult = await callInviteApi('/api/admin-generate-invite-link', {
+      email: email.toLowerCase(),
+      redirectTo,
+      type: 'recovery',
+    });
+    if (apiResult?.data?.ok && apiResult.data.actionLink) {
+      return { actionLink: apiResult.data.actionLink };
+    }
+    return {
+      error: {
+        message: apiResult?.error?.message || 'Failed to generate recovery link',
+        code: apiResult?.error?.code,
+      },
+    };
+  };
+
   // ✅ Handle session and user setup
   const handleSession = useCallback(async (session) => {
     setSession(session);
@@ -393,6 +414,7 @@ export const AuthProvider = ({ children }) => {
       inviteUser,
       resendInvitation,
       generateInviteLink,
+      generateRecoveryLink,
       refreshUserProfile,
       hasPermission,
       isAdmin,
