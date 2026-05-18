@@ -28,7 +28,8 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  ChevronsUpDown
+  ChevronsUpDown,
+  RotateCcw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -137,6 +138,7 @@ const AdminPage = () => {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [resendingTo, setResendingTo] = useState(null);
+  const [resettingFor, setResettingFor] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [expandedInviteGroups, setExpandedInviteGroups] = useState({});
   const [sortField, setSortField] = useState(null);
@@ -357,6 +359,86 @@ const AdminPage = () => {
       fetchApprovedUsers();
     }
     setResendingTo(null);
+  };
+
+  // Reset invite state: flips password_set back to false and re-issues an invite.
+  // Use when a user appears "Active" but never actually completed the invite
+  // (e.g. password_set was force-set by the migration but they never received
+  // or used the link).
+  const handleResetInviteState = async (user) => {
+    if (!user?.id || !user?.email) return;
+    const confirmed = window.confirm(
+      `Reset invite state for ${user.email}?\n\nThis will mark them as "not yet set password" and send a fresh invite email. Their existing password (if any) will no longer work until they complete the new invite.`
+    );
+    if (!confirmed) return;
+
+    setResettingFor(user.id);
+    try {
+      const { error: updateError } = await supabase
+        .from('approved_users')
+        .update({ password_set: false })
+        .eq('id', user.id);
+
+      if (updateError) {
+        toast({
+          variant: 'destructive',
+          title: 'Reset failed',
+          description: updateError.message,
+        });
+        return;
+      }
+
+      // Try a normal resend (this will also clear any stale pending auth user).
+      const { error: resendError } = await resendInvitation(user.email);
+      if (resendError) {
+        // Fall back to a manual invite link.
+        try {
+          const { actionLink } = await generateInviteLink(user.email);
+          if (actionLink) {
+            await navigator.clipboard.writeText(actionLink).catch(() => {});
+            toast({
+              title: 'Invite reset - manual link copied',
+              description: (
+                <div className="space-y-2">
+                  <p>Email could not be sent. Link copied to clipboard - paste into email/chat:</p>
+                  <div
+                    className="bg-muted p-2 rounded text-xs break-all cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(actionLink);
+                      toast({ title: 'Link copied!' });
+                    }}
+                  >
+                    {actionLink}
+                  </div>
+                </div>
+              ),
+              duration: 30000,
+            });
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Invite reset, but resend failed',
+              description: resendError.message,
+            });
+          }
+        } catch (linkErr) {
+          toast({
+            variant: 'destructive',
+            title: 'Invite reset, but resend failed',
+            description: resendError.message,
+          });
+        }
+      } else {
+        toast({
+          title: 'Invite state reset',
+          description: `A fresh invitation email was sent to ${user.email}.`,
+        });
+      }
+
+      fetchApprovedUsers();
+    } finally {
+      setResettingFor(null);
+    }
   };
 
   // Generate and copy a fresh invite link for a user
@@ -774,6 +856,23 @@ const AdminPage = () => {
                                   Copy link
                                 </Button>
                               </>
+                            )}
+                            {user.password_set && user.is_active !== false && user.email !== 'erich.oberholzer@gmail.com' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleResetInviteState(user)}
+                                disabled={resettingFor === user.id}
+                                className="gap-1"
+                                title="Mark this user as not-yet-onboarded and send a fresh invite"
+                              >
+                                {resettingFor === user.id ? (
+                                  <RefreshCw className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <RotateCcw className="w-3 h-3" />
+                                )}
+                                Reset invite
+                              </Button>
                             )}
                             <Button
                               variant="destructive"
