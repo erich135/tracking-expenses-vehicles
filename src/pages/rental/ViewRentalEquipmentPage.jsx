@@ -96,6 +96,16 @@ const ViewRentalEquipmentPage = () => {
         });
     }, [allEquipment, selectedCustomers, attributeFilter]);
 
+    const columns = [
+        { key: 'plant_no', label: 'Plant No.' },
+        { key: 'make', label: 'Make' },
+        { key: 'model', label: 'Model' },
+        { key: 'customer', label: 'Customer' },
+        { key: 'current_hours', label: 'Current Hours' },
+        { key: 'next_service_hours', label: 'Next Service' },
+        { key: 'hours_to_service', label: 'Hours to Service' },
+    ];
+
     const sortedEquipment = useMemo(() => {
         if (!sortField) return filteredEquipment;
         return [...filteredEquipment].sort((a, b) => {
@@ -175,16 +185,6 @@ const ViewRentalEquipmentPage = () => {
         }
     };
 
-    const columns = [
-        { key: 'plant_no', label: 'Plant No.' },
-        { key: 'make', label: 'Make' },
-        { key: 'model', label: 'Model' },
-        { key: 'customer', label: 'Customer' },
-        { key: 'current_hours', label: 'Current Hours' },
-        { key: 'next_service_hours', label: 'Next Service' },
-        { key: 'hours_to_service', label: 'Hours to Service' },
-    ];
-    
     const editFields = [
       { key: 'plant_no', label: 'Plant No.', type: 'text' },
       { key: 'branch', label: 'Branch', type: 'text' },
