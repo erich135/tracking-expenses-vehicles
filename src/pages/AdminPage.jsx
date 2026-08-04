@@ -28,8 +28,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  ChevronsUpDown,
-  RotateCcw
+  ChevronsUpDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -138,7 +137,6 @@ const AdminPage = () => {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [resendingTo, setResendingTo] = useState(null);
-  const [resettingFor, setResettingFor] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [expandedInviteGroups, setExpandedInviteGroups] = useState({});
   const [sortField, setSortField] = useState(null);
@@ -359,105 +357,6 @@ const AdminPage = () => {
       fetchApprovedUsers();
     }
     setResendingTo(null);
-  };
-
-  // Reset invite state: flips password_set back to false and re-issues an invite.
-  // If the user has already accepted their invite and signed in before, the
-  // invite API returns 409; in that case we automatically fall back to a
-  // password-recovery link (admin-generated, bypasses email rate limits).
-  const handleResetInviteState = async (user) => {
-    if (!user?.id || !user?.email) return;
-    const confirmed = window.confirm(
-      `Reset invite / send password link for ${user.email}?\n\nIf they have never signed in, this re-issues their invite. If they have signed in before, this generates a password-recovery link instead. The link will be copied to your clipboard so you can send it manually.`
-    );
-    if (!confirmed) return;
-
-    const showLinkToast = (title, link, extra) => {
-      navigator.clipboard.writeText(link).catch(() => {});
-      toast({
-        title,
-        description: (
-          <div className="space-y-2">
-            {extra && <p>{extra}</p>}
-            <p className="text-xs">Link copied to clipboard. Click to copy again:</p>
-            <div
-              className="bg-muted p-2 rounded text-xs break-all cursor-pointer"
-              onClick={() => {
-                navigator.clipboard.writeText(link);
-                toast({ title: 'Link copied!' });
-              }}
-            >
-              {link}
-            </div>
-          </div>
-        ),
-        duration: 60000,
-      });
-    };
-
-    setResettingFor(user.id);
-    try {
-      // Always reset the password_set flag so the normal Resend/Copy buttons return.
-      const { error: updateError } = await supabase
-        .from('approved_users')
-        .update({ password_set: false })
-        .eq('id', user.id);
-
-      if (updateError) {
-        toast({
-          variant: 'destructive',
-          title: 'Reset failed',
-          description: updateError.message,
-        });
-        return;
-      }
-
-      // First try an invite link (works for never-signed-in users and stale
-      // pending invites).
-      const inviteAttempt = await generateInviteLink(user.email);
-      if (inviteAttempt?.actionLink) {
-        showLinkToast(
-          'Fresh invite link ready',
-          inviteAttempt.actionLink,
-          `${user.email} can use this link to set their password.`
-        );
-        fetchApprovedUsers();
-        return;
-      }
-
-      const inviteErrMsg = inviteAttempt?.error?.message || '';
-      const alreadyAccepted = /already\s+accepted|already\s+signed\s+in|use\s+a?\s*password\s+recovery/i.test(
-        inviteErrMsg
-      );
-
-      if (alreadyAccepted) {
-        // Fall back to a password recovery link.
-        const recoveryAttempt = await generateRecoveryLink(user.email);
-        if (recoveryAttempt?.actionLink) {
-          showLinkToast(
-            'Password recovery link ready',
-            recoveryAttempt.actionLink,
-            `${user.email} has already onboarded. Send them this password-reset link.`
-          );
-          fetchApprovedUsers();
-          return;
-        }
-        toast({
-          variant: 'destructive',
-          title: 'Failed to generate recovery link',
-          description: recoveryAttempt?.error?.message || 'Unknown error',
-        });
-        return;
-      }
-
-      toast({
-        variant: 'destructive',
-        title: 'Failed to generate invite link',
-        description: inviteErrMsg || 'Unknown error',
-      });
-    } finally {
-      setResettingFor(null);
-    }
   };
 
   // Generate and copy a fresh invite link for a user
@@ -875,23 +774,6 @@ const AdminPage = () => {
                                   Copy link
                                 </Button>
                               </>
-                            )}
-                            {user.password_set && user.is_active !== false && user.email !== 'erich.oberholzer@gmail.com' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleResetInviteState(user)}
-                                disabled={resettingFor === user.id}
-                                className="gap-1"
-                                title="Mark this user as not-yet-onboarded and send a fresh invite"
-                              >
-                                {resettingFor === user.id ? (
-                                  <RefreshCw className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <RotateCcw className="w-3 h-3" />
-                                )}
-                                Reset invite
-                              </Button>
                             )}
                             {user.is_active !== false && user.email !== 'erich.oberholzer@gmail.com' && (
                               <Button

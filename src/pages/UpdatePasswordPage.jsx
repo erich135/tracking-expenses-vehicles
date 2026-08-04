@@ -61,7 +61,25 @@ const UpdatePasswordPage = () => {
 
   useEffect(() => {
     let isMounted = true;
-    let recoveryCallbackProcessed = false;
+
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const queryParams = new URLSearchParams(window.location.search);
+    const callbackType = hashParams.get('type') || queryParams.get('type');
+    const callbackErrorCode = hashParams.get('error_code') || queryParams.get('error_code');
+    const callbackCode = queryParams.get('code');
+    const hasHashParameters = Array.from(hashParams.keys()).length > 0;
+    const hasQueryParameters = Array.from(queryParams.keys()).length > 0;
+
+    const reportAuthDiagnostics = (authEvent, session, errorCode = callbackErrorCode) => {
+      console.info('[password-recovery]', {
+        authEvent,
+        sessionExists: Boolean(session),
+        callbackType: callbackType || null,
+        callbackErrorCode: errorCode || null,
+        hasHashParameters,
+        hasQueryParameters,
+      });
+    };
 
     const finishVerification = (session) => {
       if (!isMounted) return;
@@ -71,29 +89,56 @@ const UpdatePasswordPage = () => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        recoveryCallbackProcessed = true;
+      reportAuthDiagnostics(event, session);
+
+      if (event === 'PASSWORD_RECOVERY' && session?.user) {
         finishVerification(session);
       }
     });
 
     const verifyRecoverySession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-
-      if (!isMounted) return;
-
-      // A recovery event may be queued just after getSession() completes.
-      // Give Supabase a turn to publish it before declaring the link expired.
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      if (!isMounted || recoveryCallbackProcessed) return;
-
-      if (error) {
-        console.error('Failed to verify recovery session:', error.message);
+      if (callbackErrorCode) {
+        reportAuthDiagnostics(null, null);
+        finishVerification(null);
+        return;
       }
 
-      recoveryCallbackProcessed = true;
-      finishVerification(session);
+      // Wait for the client's configured callback flow to finish. With the
+      // current client this consumes an implicit hash; a PKCE-configured client
+      // exchanges its `code` during the same initialization step.
+      const { error: initializeError } = await supabase.auth.initialize();
+      if (!isMounted) return;
+
+      const { data: { session: existingSession }, error: sessionError } = await supabase.auth.getSession();
+      if (!isMounted) return;
+
+      let session = existingSession;
+      let callbackProcessingError = initializeError || sessionError;
+
+      // initialize() performs this exchange for a PKCE-configured client. This
+      // fallback covers a code that remains unconsumed after initialization.
+      if (!session && callbackCode) {
+        const { data: exchangeData, error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(callbackCode);
+        if (!isMounted) return;
+        session = exchangeData?.session || null;
+        callbackProcessingError = callbackProcessingError || exchangeError;
+      }
+
+      reportAuthDiagnostics(
+        null,
+        session,
+        callbackProcessingError?.code || null
+      );
+
+      // A recovery event may have fired before this page mounted; the session
+      // established by that callback is sufficient to display the form.
+      if (session?.user) {
+        finishVerification(session);
+      } else if (callbackProcessingError) {
+        // A null session alone is not proof that a recovery link is expired.
+        finishVerification(null);
+      }
     };
 
     verifyRecoverySession();
@@ -102,7 +147,7 @@ const UpdatePasswordPage = () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, []);
 
   if (!tokenChecked) {
     return (

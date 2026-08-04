@@ -104,12 +104,20 @@ export const AuthProvider = ({ children }) => {
       redirectTo,
       type: 'recovery',
     });
-    if (apiResult?.data?.ok && apiResult.data.actionLink) {
+    if (
+      apiResult?.data?.ok &&
+      apiResult.data.type === 'recovery' &&
+      apiResult.data.actionLink
+    ) {
       return { actionLink: apiResult.data.actionLink };
     }
     return {
       error: {
-        message: apiResult?.error?.message || 'Failed to generate recovery link',
+        message:
+          apiResult?.error?.message ||
+          (apiResult?.data?.type && apiResult.data.type !== 'recovery'
+            ? 'Server returned a non-recovery link'
+            : 'Failed to generate recovery link'),
         code: apiResult?.error?.code,
       },
     };
