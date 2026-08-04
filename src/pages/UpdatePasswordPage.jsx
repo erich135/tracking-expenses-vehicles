@@ -60,62 +60,48 @@ const UpdatePasswordPage = () => {
   };
 
   useEffect(() => {
-    // Supabase sends tokens in the hash fragment, not query params
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
-    const errorCode = hashParams.get('error_code');
-    const errorDescription = hashParams.get('error_description');
+    let isMounted = true;
+    let recoveryCallbackProcessed = false;
 
-    // Check if there's an error in the URL (e.g., expired link)
-    if (errorCode) {
-      let errorMessage = 'This password reset link is invalid or has expired.';
-      
-      if (errorCode === 'otp_expired') {
-        errorMessage = 'This password reset link has expired. Please request a new one.';
-      } else if (errorDescription) {
-        errorMessage = errorDescription.replace(/\+/g, ' ');
+    const finishVerification = (session) => {
+      if (!isMounted) return;
+
+      setValidToken(Boolean(session?.user));
+      setTokenChecked(true);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        recoveryCallbackProcessed = true;
+        finishVerification(session);
+      }
+    });
+
+    const verifyRecoverySession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (!isMounted) return;
+
+      // A recovery event may be queued just after getSession() completes.
+      // Give Supabase a turn to publish it before declaring the link expired.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      if (!isMounted || recoveryCallbackProcessed) return;
+
+      if (error) {
+        console.error('Failed to verify recovery session:', error.message);
       }
 
-      toast({
-        variant: 'destructive',
-        title: 'Link Expired',
-        description: errorMessage,
-      });
-      setValidToken(false);
-      setTokenChecked(true);
-      return;
-    }
+      recoveryCallbackProcessed = true;
+      finishVerification(session);
+    };
 
-    if (accessToken) {
-      supabase.auth
-        .setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken || '',
-        })
-        .then(({ error }) => {
-          if (error) {
-            console.error('Failed to set session:', error.message);
-            toast({
-              variant: 'destructive',
-              title: 'Invalid Reset Link',
-              description: 'This password reset link is invalid or has expired. Please request a new one.',
-            });
-            setValidToken(false);
-          } else {
-            setValidToken(true);
-          }
-          setTokenChecked(true);
-        });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'No Reset Token',
-        description: 'Please use the link from your password reset email.',
-      });
-      setValidToken(false);
-      setTokenChecked(true);
-    }
+    verifyRecoverySession();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [toast]);
 
   if (!tokenChecked) {
